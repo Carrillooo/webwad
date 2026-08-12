@@ -184,6 +184,10 @@ export interface ConversationState {
   recentEventIds?: string[];
   /** Last created event id, for "deshacer". */
   lastCreatedEventId?: string;
+  /** Bulk deletion awaiting confirmation ("borra todas las tareas/eventos"). */
+  pendingBulk?: { type: "tasks" | "events"; startIso?: string; endIso?: string } | null;
+  /** Event with resolved times but unknown title — waiting for the name. */
+  pendingEventDraft?: { startIso: string; endIso: string; dayLabel: string } | null;
 }
 
 export interface AssistantProvider {

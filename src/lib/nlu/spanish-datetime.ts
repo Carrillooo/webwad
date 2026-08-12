@@ -97,6 +97,20 @@ export function parseTime(text: string): number | null {
   if (/\bmediod[íi]a\b/.test(t)) return 12 * 60;
   if (/\bmedianoche\b/.test(t)) return 0;
 
+  // Ultra-colloquial: "1 tarde", "9 noche", "una y media tarde" ("de la" optional).
+  // "mañana" requires "de la" (bare "mañana" means tomorrow).
+  const loose = t.match(
+    /\b(\d{1,2}|una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|once|doce)(?:\s+y\s+(media|cuarto))?\s+(?:de\s+la\s+)?(tarde|noche)\b/,
+  );
+  if (loose) {
+    let h = wordOrNumber(loose[1]);
+    if (h !== null) {
+      const min = loose[2] ? (wordOrNumber(loose[2]) ?? 0) : 0;
+      if (h < 12) h += 12;
+      return clampTime(h * 60 + min);
+    }
+  }
+
   // 24h / colon forms: 19:30, 19.30, 19h30, 19h, 9h
   const m1 = t.match(/\b(\d{1,2})[:.h](\d{2})\b/);
   if (m1) return clampTime(Number(m1[1]) * 60 + Number(m1[2]));

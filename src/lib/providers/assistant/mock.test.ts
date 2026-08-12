@@ -112,6 +112,53 @@ describe("briefing", () => {
   });
 });
 
+describe("colloquial creation + clean titles", () => {
+  it("'gimnasio mañana 1 tarde' creates 'Gimnasio' at 13:00", async () => {
+    const turn = await say("añade gimnasio mañana 1 tarde");
+    expect(turn.reply).toMatch(/Gimnasio/);
+    expect(turn.reply).toContain("13:00");
+  });
+
+  it("asks for the name instead of inserting garbage, then creates with the answer", async () => {
+    const first = await say("ponme algo mañana a las 15:00");
+    expect(first.reply.toLowerCase()).toContain("cómo llamo");
+    expect(first.state?.pendingEventDraft).toBeTruthy();
+    const second = await say("dentista", first.state);
+    expect(second.reply).toMatch(/Dentista/);
+    const { start, end } = dayBounds(addDaysZoned(new Date(), 1));
+    const events = await getProviders().calendar.listEvents(start.toISOString(), end.toISOString());
+    expect(events.some((e) => e.title === "Dentista")).toBe(true);
+  });
+});
+
+describe("bulk deletion (high risk, needs confirmation)", () => {
+  it("deletes all tasks only after explicit confirmation", async () => {
+    const first = await say("borra todas las tareas");
+    expect(first.proposal?.risk).toBe("high");
+    // Nothing deleted yet.
+    expect((await getProviders().tasks.listTasks()).filter((t) => t.status === "needsAction").length).toBeGreaterThan(0);
+    const second = await say("sí", first.state);
+    expect(second.receipts?.[0].kind).toBe("task.delete_all");
+    expect((await getProviders().tasks.listTasks()).filter((t) => t.status === "needsAction").length).toBe(0);
+  });
+
+  it("deletes all events of a day after confirmation", async () => {
+    const first = await say("borra todos los eventos de hoy");
+    expect(first.proposal?.risk).toBe("high");
+    const second = await say("sí", first.state);
+    expect(second.receipts?.[0].kind).toBe("event.delete_all");
+    const { start, end } = dayBounds(new Date());
+    expect((await getProviders().calendar.listEvents(start.toISOString(), end.toISOString())).length).toBe(0);
+  });
+
+  it("cancel keeps everything", async () => {
+    const first = await say("borra todas las tareas");
+    const second = await say("no, cancela", first.state);
+    expect(second.reply.toLowerCase()).toContain("lo dejo");
+    expect((await getProviders().tasks.listTasks()).length).toBeGreaterThan(0);
+  });
+});
+
 describe("security: untrusted document data", () => {
   it("summarizing a doc with injected instructions performs no destructive action", async () => {
     const docs = getProviders().documents;

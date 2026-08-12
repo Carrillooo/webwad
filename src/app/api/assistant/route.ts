@@ -15,6 +15,18 @@ const BodySchema = z.object({
       pendingProposal: z.any().optional().nullable(),
       recentEventIds: z.array(z.string()).optional(),
       lastCreatedEventId: z.string().optional(),
+      pendingBulk: z
+        .object({
+          type: z.enum(["tasks", "events"]),
+          startIso: z.string().optional(),
+          endIso: z.string().optional(),
+        })
+        .optional()
+        .nullable(),
+      pendingEventDraft: z
+        .object({ startIso: z.string(), endIso: z.string(), dayLabel: z.string() })
+        .optional()
+        .nullable(),
     })
     .optional(),
 });

@@ -42,7 +42,8 @@ function receipt(kind: string, label: string, ok: boolean, extra?: Partial<Actio
 
 type Intent =
   | "confirm" | "cancel" | "query_day" | "free_slots" | "create_event"
-  | "move_event" | "delete_event" | "create_task" | "list_tasks"
+  | "move_event" | "delete_event" | "delete_all_events" | "delete_all_tasks"
+  | "create_task" | "list_tasks"
   | "complete_task" | "plan_day" | "search_doc" | "summarize_doc"
   | "create_doc" | "briefing" | "greeting" | "unknown";
 
@@ -56,6 +57,8 @@ const RE = {
   queryDay: /\bqu[eé]\s+tengo\b|\bqu[eé]\s+ten[íi]a\b|\bmi\s+agenda\b|\bagenda\b|\bmi\s+calendario\b|\bcalendario\b|qu[eé]\s+hay\b|\beventos?\b|mu[eé]strame|ens[eé][ñn]ame|ver\s+(?:mi\s+)?(?:agenda|calendario|d[íi]a)|qu[eé]\s+hago|mis\s+planes/i,
   createEvent: /\b(a[ñn][aá]deme|a[ñn][aá]de|ponme|pon|agenda|ag[eé]ndame|reserva|res[eé]rvame|crea(?:me)?\s+(?:un\s+)?evento|mete|m[eé]teme|[eé]chame|apunta(?:me)?\s+(?:una\s+)?reuni|quiero)/i,
   moveEvent: /\b(mu[eé]ve|mu[eé]veme|cambia|c[aá]mbialo|traslada|pasa)\b/i,
+  deleteAllEvents: /\b(borra|elimina|quita|limpia|vac[íi]a|cancela)\b.*\btodos?\s+(los\s+)?eventos\b/i,
+  deleteAllTasks: /\b(borra|elimina|quita|limpia|vac[íi]a)\b.*\btodas?\s+(las\s+)?tareas\b/i,
   deleteEvent: /\b(borra|elimina|quita|cancela)\b.*\b(evento|reuni[oó]n|entrenamiento|cita)/i,
   createTask: /\b(ap[uú]ntame|apunta|recu[eé]rdame|a[ñn][aá]de(?:me)?\s+(?:una\s+)?tarea|crea(?:me)?\s+(?:una\s+)?tarea|tengo que)\b/i,
   listTasks: /\b(qu[eé]\s+tareas|mis tareas|tareas pendientes|pendientes)\b/i,
@@ -76,6 +79,8 @@ function classify(text: string, hasPending: boolean): Intent {
   if (RE.freeSlots.test(t)) return "free_slots";
   if (RE.summarizeDoc.test(t)) return "summarize_doc";
   if (RE.createDoc.test(t)) return "create_doc";
+  if (RE.deleteAllEvents.test(t)) return "delete_all_events";
+  if (RE.deleteAllTasks.test(t)) return "delete_all_tasks";
   if (RE.deleteEvent.test(t)) return "delete_event";
   if (RE.moveEvent.test(t)) return "move_event";
   if (RE.completeTask.test(t)) return "complete_task";
@@ -135,21 +140,26 @@ function freeSlots(day: ParsedDay, busy: { start: string; end: string }[]) {
   return slots;
 }
 
-/** Strip trigger verbs to guess an event/task title. */
-function guessTitle(text: string, fallback: string): string {
+/** Strip trigger verbs/fillers to guess a clean event/task title.
+ *  Returns "" when nothing meaningful survives — the caller must then ASK for
+ *  the name instead of inserting garbage. */
+function guessTitle(text: string): string {
   const t = text
-    .replace(/[¿?¡!.]/g, " ")
+    .replace(/[¿?¡!.,]/g, " ")
     .replace(RE.createEvent, " ")
     .replace(RE.createTask, " ")
-    .replace(/\b(a[ñn][aá]deme|ponme|agenda|ag[eé]ndame|reserva|res[eé]rvame|ap[uú]ntame|apunta|recu[eé]rdame)\b/gi, " ")
-    .replace(/\b(ma[ñn]ana|hoy|pasado ma[ñn]ana|ayer|el|la|los|las|un|una|de|durante|a|para|me|mi)\b/gi, " ")
+    .replace(/\b(a[ñn][aá]deme|a[ñn][aá]de|ponme|pon|agenda|ag[eé]ndame|reserva|res[eé]rvame|ap[uú]ntame|apunta|recu[eé]rdame|m[eé]teme|mete|quiero|crea(?:me)?)\b/gi, " ")
+    .replace(/\b(que\s+tengo|tengo\s+que|tengo|que|al\s+calendario|en\s+el\s+calendario|calendario|un\s+evento|evento|una\s+cita|cita)\b/gi, " ")
+    .replace(/\b(ma[ñn]ana|hoy|pasado\s+ma[ñn]ana|ayer|el|la|los|las|un|una|de|del|durante|a|para|me|mi|por|sobre|hacia|eso|esto|algo|cosa|cosas|ah[íi])\b/gi, " ")
     .replace(/\b(lunes|martes|mi[eé]rcoles|jueves|viernes|s[áa]bado|domingo)\b/gi, " ")
     .replace(/\b\d{1,2}[:.h]\d{0,2}\b/g, " ")
-    .replace(/\b(hora|horas|media|cuarto|min|minutos?|y)\b/gi, " ")
+    .replace(/\b(tarde|noche|madrugada|mediod[íi]a|medianoche|hora|horas|media|cuarto|min|minutos?|y|menos)\b/gi, " ")
     .replace(/\b(una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|once|doce)\b/gi, " ")
+    .replace(/\b\d+\b/g, " ")
     .replace(/\s+/g, " ")
     .trim();
-  return t.length >= 2 ? t.charAt(0).toUpperCase() + t.slice(1) : fallback;
+  if (t.length < 2) return "";
+  return t.charAt(0).toUpperCase() + t.slice(1);
 }
 
 export class MockAssistantProvider implements AssistantProvider {
@@ -166,11 +176,35 @@ export class MockAssistantProvider implements AssistantProvider {
     const intent = classify(text, !!state.pendingProposal);
     const base = new Date(ctx.nowIso);
 
+    // A previous turn resolved the time but not the name → this message IS the name.
+    if (state.pendingEventDraft && intent === "unknown") {
+      const draft = state.pendingEventDraft;
+      const title = text.trim().replace(/[.,!]$/g, "");
+      const clean = title.charAt(0).toUpperCase() + title.slice(1);
+      const created = await this.providers.calendar.createEvent({
+        title: clean,
+        start: draft.startIso,
+        end: draft.endIso,
+        idempotencyKey: `${clean}-${draft.startIso}`,
+      });
+      return {
+        reply: `Hecho. ${clean} ${draft.dayLabel} de ${humanTime(draft.startIso)} a ${humanTime(draft.endIso)}.`,
+        view: "calendar",
+        focusDate: draft.startIso,
+        receipts: [receipt("event.create", `Evento creado · ${clean}`, true, { undoable: true, detail: created.id })],
+        state: { ...state, pendingEventDraft: null, lastCreatedEventId: created.id },
+      };
+    }
+
     switch (intent) {
       case "confirm":
         return this.applyProposal(state);
       case "cancel":
-        return { reply: "De acuerdo, lo dejo así.", view: "home", state: { ...state, pendingProposal: null } };
+        return {
+          reply: "De acuerdo, lo dejo así.",
+          view: "home",
+          state: { ...state, pendingProposal: null, pendingBulk: null, pendingEventDraft: null },
+        };
       case "greeting":
         return {
           reply: `${greetingReply(ctx)} ¿En qué puedo ayudarle?`,
@@ -187,6 +221,10 @@ export class MockAssistantProvider implements AssistantProvider {
         return this.moveEvent(text, base, state);
       case "delete_event":
         return this.deleteEventFlow(text, base, state);
+      case "delete_all_events":
+        return this.deleteAllEventsFlow(text, base, state);
+      case "delete_all_tasks":
+        return this.deleteAllTasksFlow(state);
       case "create_task":
         return this.createTask(text, base);
       case "list_tasks":
@@ -266,7 +304,16 @@ export class MockAssistantProvider implements AssistantProvider {
     }
     const startIso = toIso(day, time);
     const endIso = toIso(day, time + dur);
-    const title = guessTitle(text, "Evento");
+    const title = guessTitle(text);
+    // Unclear name → ask instead of inserting garbage; keep the resolved times.
+    if (!title) {
+      return {
+        reply: `Perfecto, ${day.label} de ${humanTime(startIso)} a ${humanTime(endIso)}. ¿Cómo llamo al evento?`,
+        view: "calendar",
+        focusDate: toIso(day, 0),
+        state: { ...state, pendingEventDraft: { startIso, endIso, dayLabel: day.label } },
+      };
+    }
     const cal = this.providers.calendar;
 
     const busy = await cal.freeBusy(
@@ -380,10 +427,59 @@ export class MockAssistantProvider implements AssistantProvider {
     };
   }
 
+  private async deleteAllEventsFlow(
+    text: string,
+    base: Date,
+    state: ConversationState,
+  ): Promise<AssistantTurn & { state?: ConversationState }> {
+    // Range: the mentioned day, or everything upcoming (1 year) if none.
+    const hasDay = /\b(hoy|ma[ñn]ana|pasado|lunes|martes|mi[eé]rcoles|jueves|viernes|s[áa]bado|domingo)\b/i.test(text);
+    const day = parseDay(text, base);
+    const startIso = hasDay ? toIso(day, 0) : base.toISOString();
+    const endIso = hasDay ? toIso(day, 24 * 60 - 1) : new Date(base.getTime() + 365 * 86400000).toISOString();
+    const events = await this.providers.calendar.listEvents(startIso, endIso);
+    if (!events.length) {
+      return { reply: hasDay ? `No hay eventos ${day.label}.` : "No hay eventos que borrar.", view: "calendar", focusDate: startIso, state };
+    }
+    const scope = hasDay ? day.label : "en total";
+    const proposal: Proposal = {
+      id: `bulk-ev-${Date.now()}`,
+      kind: "delete",
+      summary: `Eliminar ${events.length} ${events.length === 1 ? "evento" : "eventos"} ${scope}`,
+      risk: "high",
+    };
+    return {
+      reply: `Va a eliminar ${events.length} ${events.length === 1 ? "evento" : "eventos"} ${scope}. ¿Confirma?`,
+      view: "calendar",
+      focusDate: startIso,
+      proposal,
+      state: { ...state, pendingProposal: proposal, pendingBulk: { type: "events", startIso, endIso } },
+    };
+  }
+
+  private async deleteAllTasksFlow(
+    state: ConversationState,
+  ): Promise<AssistantTurn & { state?: ConversationState }> {
+    const pending = (await this.providers.tasks.listTasks()).filter((t) => t.status === "needsAction");
+    if (!pending.length) return { reply: "No hay tareas pendientes que borrar.", view: "tasks", state };
+    const proposal: Proposal = {
+      id: `bulk-task-${Date.now()}`,
+      kind: "delete",
+      summary: `Eliminar TODAS las tareas (${pending.length})`,
+      risk: "high",
+    };
+    return {
+      reply: `Va a eliminar ${pending.length} ${pending.length === 1 ? "tarea" : "tareas"}. Esta acción no se puede deshacer. ¿Confirma?`,
+      view: "tasks",
+      proposal,
+      state: { ...state, pendingProposal: proposal, pendingBulk: { type: "tasks" } },
+    };
+  }
+
   private async createTask(text: string, base: Date): Promise<AssistantTurn & { state?: ConversationState }> {
     const day = parseDay(text, base);
     const hasDay = /\b(hoy|ma[ñn]ana|lunes|martes|mi[eé]rcoles|jueves|viernes|s[áa]bado|domingo)\b/i.test(text);
-    const title = guessTitle(text, "Tarea");
+    const title = guessTitle(text) || "Tarea";
     const due = hasDay ? toZonedIso(day.date).slice(0, 10) : undefined;
     const created = await this.providers.tasks.createTask({ title, due });
     const when = hasDay ? ` para ${day.label}` : "";
@@ -475,6 +571,41 @@ export class MockAssistantProvider implements AssistantProvider {
     const p = state.pendingProposal;
     if (!p) return { reply: "No hay nada pendiente por confirmar.", view: "home", state };
     const cal = this.providers.calendar;
+
+    // Confirmed bulk deletion.
+    if (state.pendingBulk) {
+      const bulk = state.pendingBulk;
+      let deleted = 0;
+      if (bulk.type === "tasks") {
+        const pending = (await this.providers.tasks.listTasks()).filter((t) => t.status === "needsAction");
+        for (const t of pending) {
+          try {
+            await this.providers.tasks.deleteTask(t.id, t.listId);
+            deleted += 1;
+          } catch { /* count real deletions only */ }
+        }
+        return {
+          reply: `Hecho. He eliminado ${deleted} ${deleted === 1 ? "tarea" : "tareas"}.`,
+          view: "tasks",
+          receipts: [receipt("task.delete_all", `${deleted} tareas eliminadas`, true)],
+          state: { ...state, pendingProposal: null, pendingBulk: null },
+        };
+      }
+      const events = await cal.listEvents(bulk.startIso!, bulk.endIso!);
+      for (const ev of events) {
+        try {
+          await cal.deleteEvent(ev.id, ev.calendarId);
+          deleted += 1;
+        } catch { /* count real deletions only */ }
+      }
+      return {
+        reply: `Hecho. He eliminado ${deleted} ${deleted === 1 ? "evento" : "eventos"}.`,
+        view: "calendar",
+        focusDate: bulk.startIso,
+        receipts: [receipt("event.delete_all", `${deleted} eventos eliminados`, true)],
+        state: { ...state, pendingProposal: null, pendingBulk: null },
+      };
+    }
 
     if (p.kind === "delete") {
       const id = state.recentEventIds?.[0];

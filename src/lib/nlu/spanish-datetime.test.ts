@@ -44,6 +44,10 @@ describe("parseTime", () => {
     expect(parseTime("a medianoche")).toBe(0);
   });
   it("parses 'las tres menos cuarto' → 14:45", () => expect(parseTime("las tres menos cuarto de la tarde")).toBe(14 * 60 + 45));
+  it("parses colloquial '1 tarde' → 13:00", () => expect(parseTime("gimnasio 1 tarde")).toBe(13 * 60));
+  it("parses '9 noche' → 21:00", () => expect(parseTime("cena 9 noche")).toBe(21 * 60));
+  it("bare 'mañana' still means tomorrow, not 'de la mañana'", () =>
+    expect(parseTime("gimnasio mañana")).toBeNull());
   it("returns null when no time", () => expect(parseTime("qué tengo mañana")).toBeNull());
 });
 

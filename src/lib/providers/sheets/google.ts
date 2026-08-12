@@ -42,4 +42,19 @@ export class GoogleSheetsProvider implements SheetsProvider {
       { values: [values] },
     );
   }
+
+  async updateRange(spreadsheetId: string, range: string, values: string[][]): Promise<void> {
+    await this.req(
+      `${SHEETS}/${encodeURIComponent(spreadsheetId)}/values/${encodeURIComponent(range)}?valueInputOption=USER_ENTERED`,
+      "PUT",
+      { values },
+    );
+  }
+
+  async listTabs(spreadsheetId: string): Promise<string[]> {
+    const data = await this.req<{ sheets?: { properties?: { title?: string } }[] }>(
+      `${SHEETS}/${encodeURIComponent(spreadsheetId)}?fields=sheets.properties.title`,
+    );
+    return (data.sheets ?? []).map((s) => s.properties?.title ?? "").filter(Boolean);
+  }
 }

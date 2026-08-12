@@ -46,7 +46,13 @@ export const serverConfig = {
     privateKey: process.env.VAPID_PRIVATE_KEY ?? "",
     subject: process.env.VAPID_SUBJECT ?? "mailto:danielrolmovil@gmail.com",
   },
+  /** The spreadsheet ZERO uses for tasks-by-person (set after converting the
+   *  Excel to a Google Sheet). The assistant reads its structure before writing. */
+  tasksSpreadsheetId: process.env.TASKS_SPREADSHEET_ID ?? "",
 } as const;
+
+/** Marker appended to anything ZERO writes into the tasks spreadsheet. */
+export const ZERO_ATTRIBUTION = "(by zerodc)";
 
 export function isPushConfigured(): boolean {
   return serverConfig.vapid.publicKey.length > 0 && serverConfig.vapid.privateKey.length > 0;

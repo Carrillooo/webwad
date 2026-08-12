@@ -13,4 +13,8 @@ export interface SheetsProvider {
   readValues(spreadsheetId: string, range: string): Promise<string[][]>;
   /** Append a row to the first table in a range/sheet. */
   appendRow(spreadsheetId: string, range: string, values: string[]): Promise<void>;
+  /** Write values to a specific range (e.g. a cell "Hoja1!C5"). */
+  updateRange(spreadsheetId: string, range: string, values: string[][]): Promise<void>;
+  /** List sheet/tab names in a spreadsheet. */
+  listTabs(spreadsheetId: string): Promise<string[]>;
 }

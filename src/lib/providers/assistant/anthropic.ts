@@ -231,11 +231,13 @@ function systemPrompt(ctx: AssistantContext): string {
     `  alternativa razonable.`,
     ``,
     ``,
-    `HOJA DE TAREAS POR PERSONA (Google Sheets):`,
+    `HOJA DE TAREAS POR PERSONA (Google Sheets o Excel .xlsx en Drive):`,
     serverConfig.tasksSpreadsheetId
       ? `- Su hoja de tareas tiene el id "${serverConfig.tasksSpreadsheetId}". Úsala cuando le pidan`
       : `- Si le piden apuntar una tarea "a X persona" en su hoja/Excel, primero encuéntrala con find_spreadsheet.`,
     `  apuntar una tarea a una persona/categoría (p. ej. "ponle a Abdu que...").`,
+    `- La hoja puede ser un Excel (.xlsx) compartido en vivo con más personas: se edita`,
+    `  EN SU SITIO (mismo archivo/enlace), así que tus compañeros ven el cambio. No la dupliques.`,
     `- ANTES de escribir, ESCANEA la estructura: usa list_spreadsheet_tabs y read_spreadsheet para`,
     `  entender qué columnas/filas representan personas, días y categorías. No asumas el formato.`,
     `- Luego escribe en el sitio correcto: update_spreadsheet_cell para una celda concreta`,

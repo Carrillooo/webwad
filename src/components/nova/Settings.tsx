@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useState } from "react";
 import { useNova, defaultSettings, type Settings as S } from "@/lib/store";
 import { WebSpeechTTS } from "@/lib/providers/speech/browser";
+import { usePush } from "@/hooks/usePush";
 
 function rgbToHex(rgb: string): string {
   const [r, g, b] = rgb.split(" ").map(Number);
@@ -90,6 +91,41 @@ function GoogleConnection() {
         >
           Conectar
         </a>
+      )}
+    </div>
+  );
+}
+
+function NotificationsSetting() {
+  const { state, enable, test } = usePush();
+  const label: Record<string, string> = {
+    unsupported: "Tu navegador no admite notificaciones push.",
+    unconfigured: "Sin configurar (faltan claves VAPID en el servidor).",
+    default: "Activa avisos de eventos y tareas.",
+    denied: "Permiso denegado en el navegador.",
+    granted: "Permitido — activa la suscripción.",
+    subscribed: "Activadas ✓",
+  };
+  const canEnable = state === "default" || state === "granted";
+  return (
+    <div className="glass holo-border px-3 py-2.5 flex items-center justify-between gap-3">
+      <div className="min-w-0">
+        <div className="text-sm">Web Push</div>
+        <div className="text-[11px] text-faint">{label[state]}</div>
+      </div>
+      {state === "subscribed" ? (
+        <button onClick={() => void test()} className="px-3 py-1.5 rounded-lg text-xs" style={{ background: "rgb(var(--nova-accent) / 0.22)" }}>
+          Probar
+        </button>
+      ) : (
+        <button
+          onClick={() => void enable()}
+          disabled={!canEnable}
+          className="px-3 py-1.5 rounded-lg text-xs disabled:opacity-40"
+          style={{ background: "rgb(var(--nova-accent) / 0.22)" }}
+        >
+          Activar
+        </button>
       )}
     </div>
   );
@@ -193,6 +229,11 @@ export function Settings() {
             <section className="mb-4">
               <h3 className="text-[11px] uppercase tracking-wide text-faint mb-1">Integraciones</h3>
               <GoogleConnection />
+            </section>
+
+            <section className="mb-4">
+              <h3 className="text-[11px] uppercase tracking-wide text-faint mb-1">Notificaciones</h3>
+              <NotificationsSetting />
             </section>
 
             <button onClick={() => update(defaultSettings)} className="w-full glass holo-border py-2 text-sm text-dim hover:text-fg mt-2">

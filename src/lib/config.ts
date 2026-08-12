@@ -41,7 +41,16 @@ export const serverConfig = {
     phoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID ?? "",
     appSecret: process.env.WHATSAPP_APP_SECRET ?? "",
   },
+  vapid: {
+    publicKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? "",
+    privateKey: process.env.VAPID_PRIVATE_KEY ?? "",
+    subject: process.env.VAPID_SUBJECT ?? "mailto:owner@nova.local",
+  },
 } as const;
+
+export function isPushConfigured(): boolean {
+  return serverConfig.vapid.publicKey.length > 0 && serverConfig.vapid.privateKey.length > 0;
+}
 
 export type ServiceStatus = "READY" | "MISSING" | "ERROR";
 

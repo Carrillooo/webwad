@@ -10,6 +10,8 @@ import { MockDocumentsProvider } from "./documents/mock";
 import { GoogleCalendarProvider } from "./calendar/google";
 import { GoogleTasksProvider } from "./tasks/google";
 import { GoogleDocumentsProvider } from "./documents/google";
+import { GoogleSheetsProvider } from "./sheets/google";
+import { SheetsProvider } from "./sheets/types";
 import { isGoogleConfigured } from "../google/oauth";
 import { getAccessToken } from "../google/connection";
 
@@ -17,6 +19,8 @@ export interface Providers {
   calendar: CalendarProvider;
   tasks: TasksProvider;
   documents: DocumentsProvider;
+  /** Present only when Google is connected (no mock equivalent). */
+  sheets?: SheetsProvider;
   demoMode: boolean;
 }
 
@@ -48,6 +52,7 @@ export async function resolveProviders(userId: string, authed: boolean): Promise
       calendar: new GoogleCalendarProvider(token),
       tasks: new GoogleTasksProvider(token),
       documents: new GoogleDocumentsProvider(token),
+      sheets: new GoogleSheetsProvider(token),
       demoMode: false,
     };
   } catch {

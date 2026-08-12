@@ -27,10 +27,12 @@ mock). Conecta Google, Supabase y Anthropic cuando quieras para activar el modo 
   `GoogleCalendarProvider` REST detrás del factory, conexión desde Ajustes (se activa con credenciales)
 - ✅ **Fase 5** — Google Tasks **real** (`GoogleTasksProvider`)
 - ✅ **Fase 6** — Google Drive + Docs **real** (`GoogleDocumentsProvider`: buscar/leer/crear/append/update)
-- ✅ **Fase 7** — Asistente **Anthropic** conversacional con tool-calling (12 herramientas);
-  con `ANTHROPIC_API_KEY`. Sin ella, el motor NLU local del demo.
-- ⏳ **Fase 8–9** — Web Push, offline avanzado, despliegue
-- ⏸️ **Fase 10** — WhatsApp (opcional, no inicia hasta que se solicite)
+- ✅ **Fase 7** — Asistente **Anthropic** conversacional con tool-calling (15 herramientas,
+  incl. Google Sheets); con `ANTHROPIC_API_KEY`. Sin ella (o si falla), el motor NLU local.
+- ✅ **Fase 8** — **Web Push**: suscripción, envío (VAPID), botón en Ajustes, SW con
+  handlers de notificación. Instalación PWA en iPhone documentada.
+- ✅ **Fase 9** — Despliegue: `vercel.json` (región París), `/api/health`, checklist.
+- ⏸️ **Fase 10** — WhatsApp (opcional, solo API oficial; no iniciado por diseño)
 
 Consulta `PROGRESS.md` para el estado exacto y el próximo paso.
 

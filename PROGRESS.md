@@ -3,9 +3,19 @@
 Estado exhaustivo del desarrollo de NOVA. Permite a otra sesión continuar
 exactamente donde se quedó.
 
-_Última actualización: Fases 1–7 construidas. Google Calendar/Tasks/Docs reales,
-Supabase con persistencia (modo un-solo-dueño) y asistente Anthropic con
-tool-calling; todo se activa al añadir credenciales. El demo sigue sin ellas._
+_Última actualización: Fases 1–9 construidas (falta solo la 10, WhatsApp opcional).
+Google Calendar/Tasks/Docs/Sheets reales, Supabase con persistencia, asistente
+Anthropic (tool-calling, con fallback al motor local), Web Push y config de deploy.
+Todo se activa con credenciales; el demo funciona sin ellas._
+
+## Fases 5–9 (resumen)
+- **5 Tasks / 6 Docs+Drive / +Sheets**: providers reales; al conectar Google se
+  activan a la vez. La IA puede leer/añadir filas en una **hoja de Google Sheets**
+  (p. ej. tus tareas en un Excel → conviértelo a Google Sheet).
+- **7 Anthropic**: `AnthropicAssistantProvider` con 15 herramientas; si Anthropic
+  falla (p. ej. sin saldo), el endpoint **cae al motor local** automáticamente.
+- **8 Web Push**: `/api/push/{subscribe,send}`, `usePush`, botón en Ajustes, VAPID.
+- **9 Deploy**: `vercel.json` (región `cdg1`, cabeceras SW/manifest), `/api/health`.
 
 ---
 

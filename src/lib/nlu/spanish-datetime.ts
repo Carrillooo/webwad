@@ -75,18 +75,44 @@ export function parseDay(text: string, base: Date = new Date()): ParsedDay {
   return { date: today, label: "hoy" };
 }
 
-/** Extract a time-of-day in minutes-since-midnight, or null. */
+/** Applies a period-of-day ("de la tarde/noche/mañana") to a 1–12 hour. */
+function applyPeriod(h: number, t: string): number {
+  const afternoon = /\b(de\s+la\s+tarde|por\s+la\s+tarde|del\s+mediod[íi]a)\b/.test(t);
+  const night = /\b(de\s+la\s+noche|por\s+la\s+noche)\b/.test(t);
+  const morning = /\b(de\s+la\s+ma[ñn]ana|por\s+la\s+ma[ñn]ana|de\s+la\s+madrugada)\b/.test(t);
+  if ((afternoon || night) && h < 12) return h + 12;
+  if (morning && h === 12) return 0;
+  return h;
+}
+
+/**
+ * Extract a time-of-day in minutes-since-midnight, or null. Forgiving: handles
+ * "19:30", "a las 5", "5 de la tarde", "2 y media de la tarde", "sobre las 8",
+ * "mediodía", "medianoche" — no need for super-precise phrasing.
+ */
 export function parseTime(text: string): number | null {
   const t = normalize(text);
 
-  // 24h / colon forms: 19:30, 19.30, 19h, 9h
+  // Special words.
+  if (/\bmediod[íi]a\b/.test(t)) return 12 * 60;
+  if (/\bmedianoche\b/.test(t)) return 0;
+
+  // 24h / colon forms: 19:30, 19.30, 19h30, 19h, 9h
   const m1 = t.match(/\b(\d{1,2})[:.h](\d{2})\b/);
   if (m1) return clampTime(Number(m1[1]) * 60 + Number(m1[2]));
   const m2 = t.match(/\b(\d{1,2})\s*h\b/);
   if (m2) return clampTime(Number(m2[1]) * 60);
 
-  // "a las cinco (y media / y cuarto)", "a las 8"
-  const m3 = t.match(/\ba\s+las?\s+([a-záéíóú]+|\d{1,2})(?:\s+y\s+(media|cuarto|[a-záéíóú]+|\d{1,2}))?/);
+  // Optional lead-in: "a las", "sobre las", "hacia las", "a eso de las", "para las".
+  // Hour as word or number, optional "y media/cuarto/N" or "menos cuarto".
+  const lead = "(?:a\\s+las?\\s+|sobre\\s+las?\\s+|hacia\\s+las?\\s+|a\\s+eso\\s+de\\s+las?\\s+|para\\s+las?\\s+|las?\\s+)?";
+  const m3 = t.match(
+    new RegExp(
+      `\\b${lead}(\\d{1,2}|una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|once|doce)` +
+        `(?:\\s+y\\s+(media|cuarto|\\d{1,2})|\\s+menos\\s+(cuarto|\\d{1,2}))?` +
+        `(?:\\s+(?:de|por)\\s+la\\s+(tarde|noche|ma[ñn]ana|madrugada)|\\s+del\\s+mediod[íi]a)?`,
+    ),
+  );
   if (m3) {
     let h = wordOrNumber(m3[1]);
     if (h === null) return null;
@@ -94,16 +120,20 @@ export function parseTime(text: string): number | null {
     if (m3[2]) {
       const frac = wordOrNumber(m3[2]);
       if (frac !== null) min = frac;
+    } else if (m3[3]) {
+      const frac = wordOrNumber(m3[3]); // "menos cuarto"/"menos N"
+      if (frac !== null) {
+        min = 60 - frac;
+        h -= 1;
+      }
     }
-    // Heuristic: "a las cinco" spoken usually means afternoon for small hours
-    // in an assistant context, but keep it literal unless "de la tarde/noche".
-    if (/\bde\s+la\s+tarde\b|\bde\s+la\s+noche\b/.test(t) && h < 12) h += 12;
+    // Only trust a bare number as a time if there's a lead-in or a period,
+    // otherwise it might be a duration/date (handled by the caller's context).
+    const hasContext = /\b(a\s+las?|sobre|hacia|para\s+las?|las?|de\s+la|por\s+la|y\s+media|y\s+cuarto|menos)\b/.test(t);
+    if (!hasContext && !m3[4]) return null;
+    h = applyPeriod(h, t);
     return clampTime(h * 60 + min);
   }
-
-  // bare 24h number "a las 20"
-  const m4 = t.match(/\blas?\s+(\d{1,2})\b/);
-  if (m4) return clampTime(Number(m4[1]) * 60);
 
   return null;
 }

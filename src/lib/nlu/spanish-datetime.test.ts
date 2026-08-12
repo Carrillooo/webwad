@@ -34,6 +34,16 @@ describe("parseTime", () => {
   it("parses 'a las cinco de la tarde'", () =>
     expect(parseTime("a las cinco de la tarde")).toBe(17 * 60));
   it("parses 'a las ocho y media'", () => expect(parseTime("a las ocho y media")).toBe(8 * 60 + 30));
+  it("parses '2 de la tarde' → 14:00", () => expect(parseTime("calendario mañana 2 de la tarde")).toBe(14 * 60));
+  it("parses '10 de la noche' → 22:00", () => expect(parseTime("cena 10 de la noche")).toBe(22 * 60));
+  it("parses '8 de la mañana' → 08:00", () => expect(parseTime("gym 8 de la mañana")).toBe(8 * 60));
+  it("parses 'sobre las 5' → 17? no, literal 5", () => expect(parseTime("sobre las 5")).toBe(5 * 60));
+  it("parses '2 y media de la tarde' → 14:30", () => expect(parseTime("2 y media de la tarde")).toBe(14 * 60 + 30));
+  it("parses 'mediodía' and 'medianoche'", () => {
+    expect(parseTime("quedamos a mediodía")).toBe(12 * 60);
+    expect(parseTime("a medianoche")).toBe(0);
+  });
+  it("parses 'las tres menos cuarto' → 14:45", () => expect(parseTime("las tres menos cuarto de la tarde")).toBe(14 * 60 + 45));
   it("returns null when no time", () => expect(parseTime("qué tengo mañana")).toBeNull());
 });
 

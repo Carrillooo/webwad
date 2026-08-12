@@ -53,8 +53,8 @@ const RE = {
   cancel: /(^|\s)(no|cancela|c[aá]ncelalo|d[eé]jalo|olvida|anula)(\s|$|[.,!¡?])/i,
   briefing: /\bbriefing\b|res[uú]men del d[íi]a|c[oó]mo est[áa] mi d[íi]a|resumen de hoy/i,
   freeSlots: /\bhuecos?\b|tiempo libre|disponibilidad|cu[aá]ndo estoy libre/i,
-  queryDay: /\bqu[eé]\s+tengo\b|mi agenda|mi calendario|qu[eé]\s+hay\b|eventos?\b/i,
-  createEvent: /\b(a[ñn][aá]deme|ponme|agenda|ag[eé]ndame|reserva|res[eé]rvame|crea(?:me)?\s+(?:un\s+)?evento|mete|apunta(?:me)?\s+(?:una\s+)?reuni)/i,
+  queryDay: /\bqu[eé]\s+tengo\b|\bqu[eé]\s+ten[íi]a\b|\bmi\s+agenda\b|\bagenda\b|\bmi\s+calendario\b|\bcalendario\b|qu[eé]\s+hay\b|\beventos?\b|mu[eé]strame|ens[eé][ñn]ame|ver\s+(?:mi\s+)?(?:agenda|calendario|d[íi]a)|qu[eé]\s+hago|mis\s+planes/i,
+  createEvent: /\b(a[ñn][aá]deme|a[ñn][aá]de|ponme|pon|agenda|ag[eé]ndame|reserva|res[eé]rvame|crea(?:me)?\s+(?:un\s+)?evento|mete|m[eé]teme|[eé]chame|apunta(?:me)?\s+(?:una\s+)?reuni|quiero)/i,
   moveEvent: /\b(mu[eé]ve|mu[eé]veme|cambia|c[aá]mbialo|traslada|pasa)\b/i,
   deleteEvent: /\b(borra|elimina|quita|cancela)\b.*\b(evento|reuni[oó]n|entrenamiento|cita)/i,
   createTask: /\b(ap[uú]ntame|apunta|recu[eé]rdame|a[ñn][aá]de(?:me)?\s+(?:una\s+)?tarea|crea(?:me)?\s+(?:una\s+)?tarea|tengo que)\b/i,
@@ -84,6 +84,16 @@ function classify(text: string, hasPending: boolean): Intent {
   if (RE.createEvent.test(t)) return "create_event";
   if (RE.searchDoc.test(t) && /\bbusca\b/i.test(t)) return "search_doc";
   if (RE.queryDay.test(t)) return "query_day";
+  // Loose fallback: a message with BOTH a time and an activity word (no query
+  // keyword) is almost always "create an event" — e.g. "entrenamiento mañana 2
+  // de la tarde", "gym el viernes a las 5".
+  if (
+    parseTime(t) !== null &&
+    !/\bqu[eé]\s+tengo|qu[eé]\s+hay|calendario|agenda|huecos?\b/i.test(t) &&
+    /[a-záéíóúñ]{3,}/i.test(t.replace(/\b(hoy|ma[ñn]ana|el|la|las|los|a|de|por|y|media|cuarto|tarde|noche|manana|lunes|martes|mi[eé]rcoles|jueves|viernes|s[áa]bado|domingo)\b/gi, "").trim())
+  ) {
+    return "create_event";
+  }
   if (RE.confirm.test(t)) return "confirm";
   if (RE.greeting.test(t)) return "greeting";
   return "unknown";

@@ -13,6 +13,8 @@ export default defineConfig({
       TOKEN_ENCRYPTION_KEY: "unit-test-encryption-key-abc123",
       GOOGLE_CLIENT_SECRET: "unit-test-google-secret",
       WHATSAPP_VERIFY_TOKEN: "verify-token-test",
+      // The assistant tests exercise the seeded demo dataset.
+      DEMO_MODE: "true",
     },
   },
   resolve: {

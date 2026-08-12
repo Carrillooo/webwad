@@ -72,14 +72,11 @@ body {
 body {
   color: var(--fg);
   font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
-  /* Black stage with a white grid pattern + a faint red field glow */
+  /* Black stage + a faint red field glow (the moving grid lives in ::before) */
   background-color: var(--bg-0);
   background-image:
     radial-gradient(1100px 750px at 50% 118%, rgb(var(--nova-primary) / 0.12), transparent 62%),
-    radial-gradient(750px 520px at 88% -12%, rgb(var(--nova-primary) / 0.06), transparent 55%),
-    linear-gradient(rgb(var(--grid-line) / var(--grid-alpha)) 1px, transparent 1px),
-    linear-gradient(90deg, rgb(var(--grid-line) / var(--grid-alpha)) 1px, transparent 1px);
-  background-size: 100% 100%, 100% 100%, 44px 44px, 44px 44px;
+    radial-gradient(750px 520px at 88% -12%, rgb(var(--nova-primary) / 0.06), transparent 55%);
   background-attachment: fixed;
   overflow: hidden;
   overscroll-behavior: none;
@@ -87,6 +84,32 @@ body {
   /* iOS safe areas */
   padding: env(safe-area-inset-top) env(safe-area-inset-right)
     env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+
+/* Moving grid: white squares drifting diagonally over the black stage.
+   Oversized + translated exactly one tile per loop, so it cycles seamlessly.
+   GPU-only transform → cheap. Honors prefers-reduced-motion (global rule)
+   and the "reduced effects" toggle below. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: -44px;
+  z-index: -1;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgb(var(--grid-line) / var(--grid-alpha)) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(var(--grid-line) / var(--grid-alpha)) 1px, transparent 1px);
+  background-size: 44px 44px;
+  animation: grid-pan 26s linear infinite;
+  will-change: transform;
+}
+@keyframes grid-pan {
+  to {
+    transform: translate3d(44px, 44px, 0);
+  }
+}
+:root[data-effects="reduced"] body::before {
+  animation: none;
 }
 
 /* Glass panel utility */

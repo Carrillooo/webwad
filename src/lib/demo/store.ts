@@ -7,6 +7,7 @@
  */
 import { CalendarEvent, TaskItem, TaskList, DriveFile, DocContent } from "../providers/types";
 import { toZonedIso, makeZonedInstant, nowZoned, addDaysZoned } from "../datetime";
+import { serverConfig } from "../config";
 
 interface DemoState {
   events: CalendarEvent[];
@@ -33,6 +34,20 @@ function eventAt(day: Date, offsetDays: number, sh: number, sm: number, eh: numb
 }
 
 function seed(): DemoState {
+  // FINAL mode: without an explicit DEMO_MODE=true there is no prefab data —
+  // the local store starts clean (it still works as scratch storage until
+  // Google is connected).
+  if (!serverConfig.demoMode) {
+    return {
+      events: [],
+      taskLists: [{ id: "list-1", title: "Mis tareas" }],
+      tasks: [],
+      files: [],
+      docs: {},
+      seeded: true,
+    };
+  }
+
   const now = new Date();
   const mkId = (p: string, n: number) => `${p}-${n}`;
 

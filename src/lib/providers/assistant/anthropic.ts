@@ -11,6 +11,7 @@ import {
 type MonitorView = NonNullable<AssistantTurn["view"]>;
 import { Providers } from "../index";
 import { serverConfig, ZERO_ATTRIBUTION } from "../../config";
+import { humanDay, humanTime } from "../../datetime";
 
 /** Ensure at least one non-empty cell carries the "(by zerodc)" marker. */
 function withAttribution(values: string[]): string[] {
@@ -268,7 +269,9 @@ function systemPrompt(ctx: AssistantContext): string {
   return [
     `Eres ZERO, el asistente personal de ${ctx.ownerName}. Respondes en español de España,`,
     `de forma breve, precisa y natural. Zona horaria Europe/Madrid, formato 24h, semana desde lunes.`,
-    `La fecha/hora actual es ${ctx.nowIso} (usa get_current_datetime si dudas).`,
+    `AHORA MISMO en Madrid es ${humanDay(new Date(ctx.nowIso))}, ${humanTime(new Date(ctx.nowIso))}`,
+    `(instante exacto: ${ctx.nowIso}). "Hoy"/"mañana"/"el viernes" se calculan SIEMPRE sobre la`,
+    `fecha de Madrid que acabo de darte — cuidado de madrugada: la fecha UTC puede ir un día atrás.`,
     ``,
     `PERSONALIDAD Y CONVERSACIÓN:`,
     `- NO eres solo un gestor de calendario: eres un asistente completo. Daniel puede`,

@@ -8,6 +8,8 @@ import { MockCalendarProvider } from "./calendar/mock";
 import { MockTasksProvider } from "./tasks/mock";
 import { MockDocumentsProvider } from "./documents/mock";
 import { GoogleCalendarProvider } from "./calendar/google";
+import { GoogleTasksProvider } from "./tasks/google";
+import { GoogleDocumentsProvider } from "./documents/google";
 import { isGoogleConfigured } from "../google/oauth";
 import { getAccessToken } from "../google/connection";
 
@@ -44,8 +46,8 @@ export async function resolveProviders(userId: string, authed: boolean): Promise
     if (!token) return mocks();
     return {
       calendar: new GoogleCalendarProvider(token),
-      tasks: new MockTasksProvider(), // Phase 5
-      documents: new MockDocumentsProvider(), // Phase 6
+      tasks: new GoogleTasksProvider(token),
+      documents: new GoogleDocumentsProvider(token),
       demoMode: false,
     };
   } catch {

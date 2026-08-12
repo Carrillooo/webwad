@@ -25,8 +25,10 @@ mock). Conecta Google, Supabase y Anthropic cuando quieras para activar el modo 
   (AES-256-GCM), `StorageProvider`, preferencias y memoria controlada (se activa con credenciales)
 - ✅ **Fase 4** — Google Calendar **real**: OAuth 2.0, refresh token cifrado,
   `GoogleCalendarProvider` REST detrás del factory, conexión desde Ajustes (se activa con credenciales)
-- ⏳ **Fases 5–6** — Google Tasks/Drive/Docs reales (Calendar ya real) → requieren
-  credenciales (ver `PROGRESS.md` → *USER ACTION REQUIRED*)
+- ✅ **Fase 5** — Google Tasks **real** (`GoogleTasksProvider`)
+- ✅ **Fase 6** — Google Drive + Docs **real** (`GoogleDocumentsProvider`: buscar/leer/crear/append/update)
+- ✅ **Fase 7** — Asistente **Anthropic** conversacional con tool-calling (12 herramientas);
+  con `ANTHROPIC_API_KEY`. Sin ella, el motor NLU local del demo.
 - ⏳ **Fase 8–9** — Web Push, offline avanzado, despliegue
 - ⏸️ **Fase 10** — WhatsApp (opcional, no inicia hasta que se solicite)
 

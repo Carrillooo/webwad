@@ -3,8 +3,9 @@
 Estado exhaustivo del desarrollo de NOVA. Permite a otra sesión continuar
 exactamente donde se quedó.
 
-_Última actualización: Fases 1, 2, 3, 4 + agente demo (Fase 7 en modo mock).
-Fases 3 y 4 construidas end-to-end; se activan al añadir credenciales._
+_Última actualización: Fases 1–7 construidas. Google Calendar/Tasks/Docs reales,
+Supabase con persistencia (modo un-solo-dueño) y asistente Anthropic con
+tool-calling; todo se activa al añadir credenciales. El demo sigue sin ellas._
 
 ---
 
@@ -56,6 +57,22 @@ Fases 3 y 4 construidas end-to-end; se activan al añadir credenciales._
   y configurado; si no, mocks (nunca lanza; degrada al mock). El asistente y las
   rutas ya reciben providers inyectados.
 - UI: sección **Integraciones** en Configuración (Conectar/Desconectar Google).
+
+### Fase 5 — Google Tasks real ✅ (se activa con conexión Google)
+- `GoogleTasksProvider` (Tasks API oficial): listas, listar, crear, actualizar,
+  completar, reabrir, borrar. `due` como fecha (Tasks no guarda hora). Enchufado en
+  `resolveProviders` junto a Calendar.
+
+### Fase 6 — Google Drive + Docs real ✅ (se activa con conexión Google)
+- `GoogleDocumentsProvider` (Drive + Docs API): buscar, recientes, leer (extrae
+  texto — UNTRUSTED), crear, append, update con confirmación de sobrescritura.
+
+### Fase 7 — Asistente Anthropic (conversacional, tool-calling) ✅ (con API key)
+- `AnthropicAssistantProvider`: bucle agéntico con Claude y 12 herramientas
+  (datetime, calendar CRUD + disponibilidad, tasks, docs) ejecutadas contra los
+  providers reales/mock. `getAssistant` usa Anthropic si hay `ANTHROPIC_API_KEY`,
+  si no el mock NLU. System prompt con seguridad: no fingir éxito, datos externos
+  UNTRUSTED, confirmaciones por riesgo, conflictos. Conversación multi-turno nativa.
 
 ## ⚠️ Qué falta para producción (faltan credenciales o fases posteriores)
 

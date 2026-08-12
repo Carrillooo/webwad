@@ -1,6 +1,6 @@
-/** App-wide constants. Defaults per NOVA spec. */
-export const APP_NAME = "NOVA";
-export const OWNER_NAME = "Señor Carrillo";
+/** App-wide constants. Defaults per ZERO spec. */
+export const APP_NAME = "ZERO";
+export const OWNER_NAME = "Daniel";
 export const DEFAULT_TIMEZONE = "Europe/Madrid";
 export const DEFAULT_LOCALE = "es-ES";
 export const WEEK_STARTS_ON = 1; // Monday

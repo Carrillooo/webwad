@@ -1,6 +1,6 @@
 # IMPLEMENTATION_PLAN.md
 
-Plan por fases para NOVA. El orden prioriza funcionamiento real y seguridad.
+Plan por fases para ZERO. El orden prioriza funcionamiento real y seguridad.
 
 ## Fase 0 — Foundation ✅
 - Next.js 16 + React 19 + TS strict + Tailwind v4.
@@ -10,7 +10,7 @@ Plan por fases para NOVA. El orden prioriza funcionamiento real y seguridad.
 ## Fase 1 — JARVIS UI ✅
 - Home (resumen calmado), TopBar (saludo/fecha/hora/estado/DEMO/config).
 - Monitor holográfico transformable con transiciones (blur/scale/opacity).
-- Núcleo NOVA (esfera energética) con 10 estados.
+- Núcleo ZERO (esfera energética) con 10 estados.
 - Vistas: Calendar (timeline día), Tasks, Documents, Planner, Briefing, History.
 - Configuración lateral con tokens en vivo (tema/colores/glow/partículas/voz).
 - PWA base: manifest, service worker, iconos, offline shell, safe-areas.

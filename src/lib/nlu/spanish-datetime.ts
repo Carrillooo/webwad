@@ -3,7 +3,7 @@
  *
  * Resolves phrases like "mañana", "el viernes", "las cinco", "19:30",
  * "durante hora y media", "media hora" against Europe/Madrid. Not exhaustive,
- * but covers the command set in the NOVA spec. The Anthropic provider (Phase 7)
+ * but covers the command set in the ZERO spec. The Anthropic provider (Phase 7)
  * replaces this with the model's own reasoning + get_current_datetime tool.
  */
 import { nowZoned, makeZonedInstant, toZonedIso, addDaysZoned } from "../datetime";

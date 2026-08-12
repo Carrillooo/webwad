@@ -1,6 +1,6 @@
 # Google Setup (Calendar / Tasks / Drive / Docs)
 
-Sigue estos pasos para conectar tu Google real. Mientras tanto, NOVA usa mocks.
+Sigue estos pasos para conectar tu Google real. Mientras tanto, ZERO usa mocks.
 
 ## 1. Proyecto y APIs
 
@@ -50,7 +50,7 @@ DEMO_MODE=false
 ## 6. Comprobar
 
 - `/setup` → «Google OAuth» = **READY**.
-- (Fase 4) Conecta la cuenta desde Configuración; NOVA guardará el refresh token
+- (Fase 4) Conecta la cuenta desde Configuración; ZERO guardará el refresh token
   cifrado en backend y usará `GoogleCalendarProvider` en vez del mock.
 
 ## Seguridad

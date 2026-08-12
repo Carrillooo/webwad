@@ -1,6 +1,6 @@
 # PROGRESS.md
 
-Estado exhaustivo del desarrollo de NOVA. Permite a otra sesión continuar
+Estado exhaustivo del desarrollo de ZERO. Permite a otra sesión continuar
 exactamente donde se quedó.
 
 _Última actualización: Fases 1–9 construidas (falta solo la 10, WhatsApp opcional).
@@ -178,7 +178,7 @@ Todo se activa con credenciales; el demo funciona sin ellas._
   ```
 - **CÓMO COMPROBAR:** `/setup` → «Anthropic» = READY.
 
-Mientras tanto, NOVA sigue funcionando con los MockProviders.
+Mientras tanto, ZERO sigue funcionando con los MockProviders.
 
 ---
 

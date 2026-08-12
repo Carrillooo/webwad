@@ -193,7 +193,7 @@ export class AnthropicAssistantProvider implements AssistantProvider {
 
 function systemPrompt(ctx: AssistantContext): string {
   return [
-    `Eres NOVA, el asistente personal de ${ctx.ownerName}. Respondes en español de España,`,
+    `Eres ZERO, el asistente personal de ${ctx.ownerName}. Respondes en español de España,`,
     `de forma breve, precisa y natural. Zona horaria Europe/Madrid, formato 24h, semana desde lunes.`,
     `La fecha/hora actual es ${ctx.nowIso} (usa get_current_datetime si dudas). Interpreta "mañana",`,
     `"el viernes", "las cinco", "hora y media" en esa zona y construye ISO-8601 con offset.`,

@@ -69,7 +69,7 @@ function seed(): DemoState {
     "doc-1": {
       id: "doc-1",
       title: "Presupuesto 2026",
-      text: "Presupuesto 2026. Objetivo de ingresos: 1,2M€. Reducir costes operativos un 8%. Decisión: aprobar inversión en marketing digital. Responsable: Señor Carrillo. Fecha límite de revisión: 15 de septiembre. Personas: equipo de finanzas, dirección.",
+      text: "Presupuesto 2026. Objetivo de ingresos: 1,2M€. Reducir costes operativos un 8%. Decisión: aprobar inversión en marketing digital. Responsable: Daniel. Fecha límite de revisión: 15 de septiembre. Personas: equipo de finanzas, dirección.",
     },
     "doc-2": {
       id: "doc-2",

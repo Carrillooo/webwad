@@ -2,11 +2,11 @@
 
 ## Flujo (push-to-talk)
 
-1. Pulsas el núcleo → NOVA entra en `listening` (texto «Te escucho…»).
+1. Pulsas el núcleo → ZERO entra en `listening` (texto «Te escucho…»).
 2. Web Audio API mide el volumen real del micro → el núcleo reacciona.
 3. Web Speech API transcribe (interim + final) → se muestra la transcripción.
 4. Al terminar, el texto se envía al asistente (`thinking` → `executing` → `speaking`).
-5. NOVA responde por voz (TTS) y texto, y muestra el resultado en el monitor.
+5. ZERO responde por voz (TTS) y texto, y muestra el resultado en el monitor.
 
 Siempre hay alternativa por teclado (Composer + `Cmd/Ctrl+K`).
 

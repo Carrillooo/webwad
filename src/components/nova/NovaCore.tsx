@@ -35,7 +35,7 @@ interface Props {
 }
 
 /**
- * The living core of NOVA — an energy sphere, not "a circle with a mic icon".
+ * The living core of ZERO — an energy sphere, not "a circle with a mic icon".
  * Layers: outer aura, orbiting particles, rotating rings, glass nucleus.
  * Reacts to real mic amplitude while listening and pulses per state.
  */
@@ -54,7 +54,7 @@ export function NovaCore({ level, onActivate, onActivateHelp, disabled }: Props 
     <div className="flex flex-col items-center gap-3 select-none">
       <button
         type="button"
-        aria-label={active ? label || "NOVA activa" : "Hablar con NOVA"}
+        aria-label={active ? label || "ZERO activa" : "Hablar con ZERO"}
         aria-pressed={listening}
         title={onActivateHelp}
         onClick={onActivate}

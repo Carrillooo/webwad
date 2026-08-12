@@ -1,4 +1,4 @@
-/* NOVA service worker — minimal offline shell.
+/* ZERO service worker — minimal offline shell.
    Network-first for navigations (so the app updates), cache fallback offline. */
 const CACHE = "nova-v1";
 const SHELL = ["/", "/offline.html", "/manifest.webmanifest", "/icons/icon.svg"];
@@ -54,10 +54,10 @@ self.addEventListener("push", (event) => {
   try {
     payload = event.data.json();
   } catch {
-    payload = { title: "NOVA", body: event.data.text() };
+    payload = { title: "ZERO", body: event.data.text() };
   }
   event.waitUntil(
-    self.registration.showNotification(payload.title || "NOVA", {
+    self.registration.showNotification(payload.title || "ZERO", {
       body: payload.body || "",
       icon: "/icons/icon-192.png",
       badge: "/icons/icon-192.png",

@@ -7,7 +7,7 @@ import type { AssistantContext, ConversationState } from "../types";
 
 function ctx(): AssistantContext {
   return {
-    ownerName: "Señor Carrillo",
+    ownerName: "Daniel",
     nowIso: new Date().toISOString(),
     timezone: "Europe/Madrid",
     demoMode: true,

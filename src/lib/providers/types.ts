@@ -141,7 +141,7 @@ export interface AssistantMessage {
 export interface AssistantTurn {
   /** Spoken/displayed reply. */
   reply: string;
-  /** Which monitor view NOVA should surface. */
+  /** Which monitor view ZERO should surface. */
   view?: "home" | "calendar" | "tasks" | "documents" | "planner" | "briefing" | "history";
   /** Structured actions the client already executed/should reflect. */
   receipts?: ActionReceipt[];

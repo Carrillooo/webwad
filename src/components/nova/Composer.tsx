@@ -75,7 +75,7 @@ export function Composer({ onSend }: Props) {
           onChange={(e) => setValue(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && submit()}
           placeholder="Escribe una orden…  p. ej. “mañana entrenamiento 19:30 90 min”"
-          aria-label="Entrada de texto para NOVA"
+          aria-label="Entrada de texto para ZERO"
           className="flex-1 bg-transparent outline-none text-sm placeholder:text-faint"
         />
         <button onClick={submit} aria-label="Enviar" className="text-dim hover:text-fg" disabled={!value.trim()}>

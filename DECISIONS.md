@@ -21,7 +21,7 @@ servidor o en `localStorage`. Así el demo funciona sin BD y la migración a rea
 un interruptor (login + credenciales), no una reescritura.
 
 ## ADR-009 — Modo demo ON por defecto
-NOVA debe ser usable antes de cualquier credencial. `DEMO_MODE` se considera
+ZERO debe ser usable antes de cualquier credencial. `DEMO_MODE` se considera
 activo salvo que se ponga explícitamente `DEMO_MODE=false`. Así una instalación
 recién clonada funciona de inmediato con mocks.
 

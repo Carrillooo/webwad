@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ turn, demoMode: providers.demoMode });
   } catch (err) {
     // If Anthropic fails (billing, rate limit, outage), degrade to the local
-    // NLU engine so NOVA keeps working instead of erroring out.
+    // NLU engine so ZERO keeps working instead of erroring out.
     console.error("assistant error", err);
     if (assistant.kind === "anthropic") {
       try {

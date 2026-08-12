@@ -1,9 +1,9 @@
-# NOVA
+# ZERO
 
 > Asistente personal inteligente, visual y conversacional — una PWA holográfica
 > inspirada en la sensación de tener un asistente tipo JARVIS, con identidad propia.
 
-NOVA escucha, transcribe, entiende, consulta tus herramientas (Calendar, Tasks,
+ZERO escucha, transcribe, entiende, consulta tus herramientas (Calendar, Tasks,
 Drive, Docs), ejecuta acciones reales cuando tiene permisos y te responde por voz
 y texto — todo dentro de un monitor holográfico que se transforma según lo que
 está haciendo.
@@ -40,7 +40,7 @@ Consulta `PROGRESS.md` para el estado exacto y el próximo paso.
 
 ```bash
 npm install
-cp .env.example .env.local      # opcional: NOVA arranca en demo sin esto
+cp .env.example .env.local      # opcional: ZERO arranca en demo sin esto
 npm run dev                     # http://localhost:3000
 ```
 
@@ -83,4 +83,4 @@ Zod · Web Audio / Web Speech API · Supabase (previsto) · Google APIs (previst
 Anthropic (previsto) · Vitest · Playwright · Vercel.
 
 Defaults: zona horaria `Europe/Madrid`, idioma `es-ES`, formato 24h, semana desde
-lunes, propietario «Señor Carrillo».
+lunes, propietario «Daniel».

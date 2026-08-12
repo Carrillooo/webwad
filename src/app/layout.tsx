@@ -6,14 +6,14 @@ const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"], dis
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"], display: "swap" });
 
 export const metadata: Metadata = {
-  title: "NOVA",
-  description: "NOVA — tu asistente personal inteligente, visual y conversacional.",
-  applicationName: "NOVA",
+  title: "ZERO",
+  description: "ZERO — tu asistente personal inteligente, visual y conversacional.",
+  applicationName: "ZERO",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "NOVA",
+    title: "ZERO",
   },
   formatDetection: { telephone: false },
   icons: {

@@ -1,6 +1,6 @@
 # Anthropic Setup (motor de IA)
 
-Con esta clave, NOVA usa Claude con **tool-calling** en lugar del asistente demo.
+Con esta clave, ZERO usa Claude con **tool-calling** en lugar del asistente demo.
 
 ## 1. API key
 

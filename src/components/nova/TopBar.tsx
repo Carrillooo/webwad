@@ -47,7 +47,7 @@ export function TopBar() {
         )}
         <span
           className="flex items-center gap-1.5 text-[11px] text-dim glass px-2.5 py-1"
-          title={`Estado de NOVA: ${novaState}`}
+          title={`Estado de ZERO: ${novaState}`}
         >
           <span
             className="w-1.5 h-1.5 rounded-full"

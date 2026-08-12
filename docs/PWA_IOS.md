@@ -1,14 +1,14 @@
-# Instalar NOVA en iPhone (PWA)
+# Instalar ZERO en iPhone (PWA)
 
-NOVA es una PWA instalable. En iPhone se instala desde Safari.
+ZERO es una PWA instalable. En iPhone se instala desde Safari.
 
 ## Pasos
 
-1. Abre **Safari** (no Chrome) y entra en la URL de NOVA (p. ej. tu despliegue de Vercel).
+1. Abre **Safari** (no Chrome) y entra en la URL de ZERO (p. ej. tu despliegue de Vercel).
 2. Toca el botón **Compartir** (el cuadrado con la flecha hacia arriba).
 3. Elige **«Añadir a pantalla de inicio»**.
-4. Confirma el nombre «NOVA» y toca **Añadir**.
-5. Abre NOVA desde el icono de la pantalla de inicio: se ejecuta en **modo standalone**
+4. Confirma el nombre «ZERO» y toca **Añadir**.
+5. Abre ZERO desde el icono de la pantalla de inicio: se ejecuta en **modo standalone**
    (sin barra de Safari), a pantalla completa.
 
 ## Requisitos y detalles

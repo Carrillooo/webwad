@@ -21,7 +21,7 @@ const GUIDES: Record<string, Guide> = {
     key: "anthropic",
     title: "Anthropic (motor de IA)",
     need: "ANTHROPIC_API_KEY",
-    why: "Permite que NOVA use Claude con tool-calling en vez del asistente demo.",
+    why: "Permite que ZERO use Claude con tool-calling en vez del asistente demo.",
     where: "https://console.anthropic.com/settings/keys",
     steps: [
       "Entra en console.anthropic.com e inicia sesión.",
@@ -89,12 +89,12 @@ export default function SetupPage() {
   return (
     <main className="max-w-2xl mx-auto p-5 sm:p-8 overflow-y-auto nova-scroll" style={{ maxHeight: "100dvh" }}>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-medium glow-text">Configuración de NOVA</h1>
+        <h1 className="text-2xl font-medium glow-text">Configuración de ZERO</h1>
         <Link href="/" className="text-sm text-dim hover:text-fg">← Volver</Link>
       </div>
 
       <p className="text-dim text-sm mb-6">
-        NOVA funciona ahora mismo en{" "}
+        ZERO funciona ahora mismo en{" "}
         <strong>modo demo</strong> {serverConfig.demoMode ? "(activo)" : "(inactivo)"}. Conecta estos servicios
         para activar las funciones reales. Los secretos nunca se muestran aquí.
       </p>
@@ -139,7 +139,7 @@ export default function SetupPage() {
       </div>
 
       <p className="text-xs text-faint mt-8">
-        Micrófono, PWA y voz se comprueban en el propio dispositivo al usar NOVA. WhatsApp es opcional
+        Micrófono, PWA y voz se comprueban en el propio dispositivo al usar ZERO. WhatsApp es opcional
         (ver docs/WHATSAPP_OPTIONAL.md).
       </p>
     </main>

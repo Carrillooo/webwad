@@ -48,7 +48,7 @@ export function Monitor() {
       />
 
       {/* Tab strip */}
-      <nav className="flex gap-1 px-3 pt-3 overflow-x-auto nova-scroll shrink-0" aria-label="Vistas de NOVA">
+      <nav className="flex gap-1 px-3 pt-3 overflow-x-auto nova-scroll shrink-0" aria-label="Vistas de ZERO">
         {TABS.map((t) => (
           <button
             key={t.key}

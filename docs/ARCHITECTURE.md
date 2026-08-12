@@ -2,7 +2,7 @@
 
 ## Visión
 
-NOVA es una PWA (Next.js App Router). El cliente renderiza el shell holográfico y
+ZERO es una PWA (Next.js App Router). El cliente renderiza el shell holográfico y
 captura voz/texto; el servidor (route handlers) ejecuta el asistente y los
 proveedores. Todo lo externo está detrás de interfaces para poder correr 100% en
 mocks (demo) y cambiar a implementaciones reales cuando hay credenciales.

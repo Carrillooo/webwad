@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /* ============================================================
-   NOVA design tokens.
+   ZERO design tokens.
    All visual identity flows through CSS variables so the Settings
    panel can retint the whole UI live. Dark is the primary theme;
    light is a supported variant. Respects prefers-reduced-motion.

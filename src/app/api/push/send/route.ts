@@ -6,7 +6,7 @@ import { listSubscriptions, removeSubscription } from "@/lib/push/store";
 import { isPushConfigured, serverConfig } from "@/lib/config";
 
 const Body = z.object({
-  title: z.string().max(120).default("NOVA"),
+  title: z.string().max(120).default("ZERO"),
   body: z.string().max(300).default(""),
   url: z.string().optional(),
 });

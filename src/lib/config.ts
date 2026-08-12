@@ -2,7 +2,7 @@
  * Central runtime configuration + capability detection.
  *
  * DEMO_MODE is the master switch. When true (or when a required credential
- * is missing) NOVA falls back to mock providers so the whole app is usable
+ * is missing) ZERO falls back to mock providers so the whole app is usable
  * without any external service configured.
  */
 
@@ -44,7 +44,7 @@ export const serverConfig = {
   vapid: {
     publicKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? "",
     privateKey: process.env.VAPID_PRIVATE_KEY ?? "",
-    subject: process.env.VAPID_SUBJECT ?? "mailto:owner@nova.local",
+    subject: process.env.VAPID_SUBJECT ?? "mailto:danielrolmovil@gmail.com",
   },
 } as const;
 
@@ -79,7 +79,7 @@ export function computeCapabilities(): Capability[] {
       label: "Modo demo",
       status: c.demoMode ? "READY" : "MISSING",
       detail: c.demoMode
-        ? "NOVA funciona con datos simulados."
+        ? "ZERO funciona con datos simulados."
         : "Modo real activo (requiere credenciales).",
       required: false,
     },

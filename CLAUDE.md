@@ -1,8 +1,8 @@
 # CLAUDE.md — Guía para agentes
 
-Este archivo orienta a cualquier sesión de Claude que continúe NOVA.
+Este archivo orienta a cualquier sesión de Claude que continúe ZERO.
 
-## Qué es NOVA
+## Qué es ZERO
 
 PWA de asistente personal (tipo JARVIS) en español, mobile-first, con voz y un
 monitor holográfico. Prioridad del proyecto (en orden): **funcionamiento real,
@@ -36,7 +36,7 @@ No consideres una fase terminada con errores de compilación. Actualiza
 ```
 src/
   app/
-    page.tsx                  # experiencia NOVA (client shell)
+    page.tsx                  # experiencia ZERO (client shell)
     setup/page.tsx            # asistente de configuración (/setup)
     api/                      # assistant, calendar, tasks, documents, briefing, capabilities
   components/nova/            # UI: NovaCore, Monitor, TopBar, Composer, Settings, views/

@@ -1,13 +1,15 @@
 /**
- * Provider factory. Chooses Mock* vs real implementations based on config and
- * (future) per-user Google connection state. Today everything resolves to
- * Mock* because no external credentials are wired yet — see PROGRESS.md.
+ * Provider factory. Chooses Mock vs real implementations based on config and
+ * the user's Google connection. Tasks/Documents remain mock until Phases 5/6.
  */
 import { serverConfig } from "../config";
 import { CalendarProvider, TasksProvider, DocumentsProvider } from "./types";
 import { MockCalendarProvider } from "./calendar/mock";
 import { MockTasksProvider } from "./tasks/mock";
 import { MockDocumentsProvider } from "./documents/mock";
+import { GoogleCalendarProvider } from "./calendar/google";
+import { isGoogleConfigured } from "../google/oauth";
+import { getAccessToken } from "../google/connection";
 
 export interface Providers {
   calendar: CalendarProvider;
@@ -16,31 +18,37 @@ export interface Providers {
   demoMode: boolean;
 }
 
-/**
- * @param userId — reserved for per-user Google credential lookup (Phase 4).
- */
-export function getProviders(_userId?: string): Providers {
-  const googleConfigured =
-    serverConfig.google.clientId.length > 0 && serverConfig.google.clientSecret.length > 0;
-
-  // Phase 4 will branch on googleConfigured + a valid connection for userId.
-  // For now we always use mocks so the whole app is exercisable.
-  const useMock = serverConfig.demoMode || !googleConfigured;
-
-  if (useMock) {
-    return {
-      calendar: new MockCalendarProvider(),
-      tasks: new MockTasksProvider(),
-      documents: new MockDocumentsProvider(),
-      demoMode: true,
-    };
-  }
-
-  // TODO(Phase 4): return Google* providers here.
+function mocks(): Providers {
   return {
     calendar: new MockCalendarProvider(),
     tasks: new MockTasksProvider(),
     documents: new MockDocumentsProvider(),
     demoMode: true,
   };
+}
+
+/** Synchronous demo factory (mocks only). Used where no user context exists. */
+export function getProviders(): Providers {
+  return mocks();
+}
+
+/**
+ * Resolve providers for a specific user. Returns the real Google Calendar when
+ * Google is configured and the user has a valid connection; otherwise mocks.
+ * Never throws — any failure degrades to the mock so the app stays usable.
+ */
+export async function resolveProviders(userId: string, authed: boolean): Promise<Providers> {
+  if (serverConfig.demoMode || !isGoogleConfigured()) return mocks();
+  try {
+    const token = await getAccessToken(userId, authed);
+    if (!token) return mocks();
+    return {
+      calendar: new GoogleCalendarProvider(token),
+      tasks: new MockTasksProvider(), // Phase 5
+      documents: new MockDocumentsProvider(), // Phase 6
+      demoMode: false,
+    };
+  } catch {
+    return mocks();
+  }
 }

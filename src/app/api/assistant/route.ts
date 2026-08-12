@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getAssistant } from "@/lib/providers/assistant";
-import { serverConfig } from "@/lib/config";
+import { resolveProviders } from "@/lib/providers";
+import { resolveUser } from "@/lib/auth";
 import { OWNER_NAME, DEFAULT_TIMEZONE } from "@/lib/constants";
 
 const BodySchema = z.object({
@@ -29,15 +30,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Petición inválida", issues: parsed.error.issues }, { status: 400 });
   }
 
-  const assistant = getAssistant();
+  const { userId, authed } = await resolveUser(req);
+  const providers = await resolveProviders(userId, authed);
+  const assistant = getAssistant(providers);
   try {
     const turn = await assistant.respond(parsed.data.messages, {
       ownerName: OWNER_NAME,
       nowIso: new Date().toISOString(),
       timezone: DEFAULT_TIMEZONE,
-      demoMode: serverConfig.demoMode,
+      demoMode: providers.demoMode,
     }, parsed.data.state ?? {});
-    return NextResponse.json({ turn, demoMode: serverConfig.demoMode });
+    return NextResponse.json({ turn, demoMode: providers.demoMode });
   } catch (err) {
     console.error("assistant error", err);
     return NextResponse.json({ error: "El asistente falló al procesar la petición." }, { status: 500 });

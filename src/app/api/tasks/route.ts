@@ -1,9 +1,11 @@
-import { NextResponse } from "next/server";
-import { getProviders } from "@/lib/providers";
+import { NextRequest, NextResponse } from "next/server";
+import { resolveProviders } from "@/lib/providers";
+import { resolveUser } from "@/lib/auth";
 
 /** GET /api/tasks — all task lists + tasks. */
-export async function GET() {
-  const providers = getProviders();
+export async function GET(req: NextRequest) {
+  const { userId, authed } = await resolveUser(req);
+  const providers = await resolveProviders(userId, authed);
   const [lists, tasks] = await Promise.all([
     providers.tasks.listTaskLists(),
     providers.tasks.listTasks(),

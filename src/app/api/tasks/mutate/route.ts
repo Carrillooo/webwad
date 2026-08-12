@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { getProviders } from "@/lib/providers";
+import { resolveProviders } from "@/lib/providers";
+import { resolveUser } from "@/lib/auth";
 
 const Schema = z.object({
   action: z.enum(["complete", "reopen", "create", "delete", "update"]),
@@ -15,7 +16,8 @@ export async function POST(req: NextRequest) {
   const parsed = Schema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "inválido" }, { status: 400 });
   const { action, id, title, notes, due } = parsed.data;
-  const tasks = getProviders().tasks;
+  const { userId, authed } = await resolveUser(req);
+  const tasks = (await resolveProviders(userId, authed)).tasks;
   try {
     switch (action) {
       case "complete":

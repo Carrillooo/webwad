@@ -1,12 +1,14 @@
-import { NextResponse } from "next/server";
-import { getProviders } from "@/lib/providers";
+import { NextRequest, NextResponse } from "next/server";
+import { resolveProviders } from "@/lib/providers";
+import { resolveUser } from "@/lib/auth";
 import { dayBounds, nowZoned, makeZonedInstant } from "@/lib/datetime";
 
 /** GET /api/briefing — structured summary of today for Home + Briefing views. */
-export async function GET() {
+export async function GET(req: NextRequest) {
   const now = new Date();
   const { start, end } = dayBounds(now);
-  const providers = getProviders();
+  const { userId, authed } = await resolveUser(req);
+  const providers = await resolveProviders(userId, authed);
   const [events, allTasks, busy] = await Promise.all([
     providers.calendar.listEvents(start.toISOString(), end.toISOString()),
     providers.tasks.listTasks(),

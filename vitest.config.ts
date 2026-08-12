@@ -9,6 +9,10 @@ export default defineConfig({
     globals: true,
     setupFiles: ["./src/test/setup.ts"],
     include: ["src/**/*.{test,spec}.{ts,tsx}"],
+    env: {
+      TOKEN_ENCRYPTION_KEY: "unit-test-encryption-key-abc123",
+      GOOGLE_CLIENT_SECRET: "unit-test-google-secret",
+    },
   },
   resolve: {
     alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) },

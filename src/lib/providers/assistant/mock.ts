@@ -17,7 +17,7 @@ import {
   Proposal,
   CalendarEvent,
 } from "../types";
-import { getProviders } from "../index";
+import type { Providers } from "../index";
 import {
   parseDay,
   parseTime,
@@ -144,6 +144,7 @@ function guessTitle(text: string, fallback: string): string {
 
 export class MockAssistantProvider implements AssistantProvider {
   readonly kind = "mock" as const;
+  constructor(private providers: Providers) {}
 
   async respond(
     history: AssistantMessage[],
@@ -204,7 +205,7 @@ export class MockAssistantProvider implements AssistantProvider {
 
   private async queryDay(text: string, base: Date): Promise<AssistantTurn & { state?: ConversationState }> {
     const day = parseDay(text, base);
-    const events = await getProviders().calendar.listEvents(toIso(day, 0), toIso(day, 24 * 60 - 1));
+    const events = await this.providers.calendar.listEvents(toIso(day, 0), toIso(day, 24 * 60 - 1));
     const focus = toIso(day, 0);
     if (events.length === 0) {
       return { reply: `No tiene nada en la agenda ${day.label}.`, view: "calendar", focusDate: focus, state: { recentEventIds: [] } };
@@ -222,7 +223,7 @@ export class MockAssistantProvider implements AssistantProvider {
 
   private async freeSlotsReply(text: string, base: Date): Promise<AssistantTurn & { state?: ConversationState }> {
     const day = parseDay(text, base);
-    const busy = await getProviders().calendar.freeBusy(
+    const busy = await this.providers.calendar.freeBusy(
       toIso(day, 0),
       toIso(day, 24 * 60 - 1),
     );
@@ -256,7 +257,7 @@ export class MockAssistantProvider implements AssistantProvider {
     const startIso = toIso(day, time);
     const endIso = toIso(day, time + dur);
     const title = guessTitle(text, "Evento");
-    const cal = getProviders().calendar;
+    const cal = this.providers.calendar;
 
     const busy = await cal.freeBusy(
       toIso(day, 0),
@@ -305,7 +306,7 @@ export class MockAssistantProvider implements AssistantProvider {
     base: Date,
     state: ConversationState,
   ): Promise<AssistantTurn & { state?: ConversationState }> {
-    const cal = getProviders().calendar;
+    const cal = this.providers.calendar;
     // Resolve which event: prefer recent list, else by keyword.
     const ids = state.recentEventIds ?? [];
     let target: CalendarEvent | null = null;
@@ -349,7 +350,7 @@ export class MockAssistantProvider implements AssistantProvider {
     base: Date,
     state: ConversationState,
   ): Promise<AssistantTurn & { state?: ConversationState }> {
-    const cal = getProviders().calendar;
+    const cal = this.providers.calendar;
     const d = parseDay(text, base);
     const events = await cal.listEvents(toIso(d, 0), toIso(d, 24 * 60 - 1));
     const target = events.find((e) => new RegExp(e.title.split(" ")[0], "i").test(text));
@@ -374,7 +375,7 @@ export class MockAssistantProvider implements AssistantProvider {
     const hasDay = /\b(hoy|ma[ñn]ana|lunes|martes|mi[eé]rcoles|jueves|viernes|s[áa]bado|domingo)\b/i.test(text);
     const title = guessTitle(text, "Tarea");
     const due = hasDay ? toZonedIso(day.date).slice(0, 10) : undefined;
-    const created = await getProviders().tasks.createTask({ title, due });
+    const created = await this.providers.tasks.createTask({ title, due });
     const when = hasDay ? ` para ${day.label}` : "";
     return {
       reply: `Anotado${when}: ${title}.`,
@@ -384,7 +385,7 @@ export class MockAssistantProvider implements AssistantProvider {
   }
 
   private async listTasks(): Promise<AssistantTurn & { state?: ConversationState }> {
-    const tasks = (await getProviders().tasks.listTasks()).filter((t) => t.status === "needsAction");
+    const tasks = (await this.providers.tasks.listTasks()).filter((t) => t.status === "needsAction");
     if (tasks.length === 0) return { reply: "No tiene tareas pendientes.", view: "tasks" };
     return {
       reply: `Tiene ${tasks.length} ${tasks.length === 1 ? "tarea pendiente" : "tareas pendientes"}: ${joinEs(tasks.map((t) => t.title))}.`,
@@ -394,12 +395,12 @@ export class MockAssistantProvider implements AssistantProvider {
   }
 
   private async completeTask(text: string): Promise<AssistantTurn & { state?: ConversationState }> {
-    const tasks = await getProviders().tasks.listTasks();
+    const tasks = await this.providers.tasks.listTasks();
     const target = tasks.find(
       (t) => t.status === "needsAction" && text.toLowerCase().includes(t.title.toLowerCase().split(" ")[0]),
     );
     if (!target) return { reply: "¿Qué tarea marco como completada?", view: "tasks" };
-    await getProviders().tasks.completeTask(target.id);
+    await this.providers.tasks.completeTask(target.id);
     return {
       reply: `Hecho. "${target.title}" completada.`,
       view: "tasks",
@@ -413,7 +414,7 @@ export class MockAssistantProvider implements AssistantProvider {
     state: ConversationState,
   ): Promise<AssistantTurn & { state?: ConversationState }> {
     const day = parseDay(text, base);
-    const cal = getProviders().calendar;
+    const cal = this.providers.calendar;
     const busy = await cal.freeBusy(
       toIso(day, 0),
       toIso(day, 24 * 60 - 1),
@@ -463,7 +464,7 @@ export class MockAssistantProvider implements AssistantProvider {
   ): Promise<AssistantTurn & { state?: ConversationState }> {
     const p = state.pendingProposal;
     if (!p) return { reply: "No hay nada pendiente por confirmar.", view: "home", state };
-    const cal = getProviders().calendar;
+    const cal = this.providers.calendar;
 
     if (p.kind === "delete") {
       const id = state.recentEventIds?.[0];
@@ -505,7 +506,7 @@ export class MockAssistantProvider implements AssistantProvider {
 
   private async searchDoc(text: string): Promise<AssistantTurn & { state?: ConversationState }> {
     const query = text.replace(/.*\bbusca\b/i, "").replace(/\b(el|la|los|las|documento|archivo|fichero|doc)\b/gi, "").trim();
-    const files = await getProviders().documents.searchFiles(query || "");
+    const files = await this.providers.documents.searchFiles(query || "");
     if (files.length === 0) return { reply: `No encontré documentos con "${query}".`, view: "documents" };
     return {
       reply: `Encontré ${files.length}: ${joinEs(files.map((f) => f.name))}.`,
@@ -516,7 +517,7 @@ export class MockAssistantProvider implements AssistantProvider {
 
   private async summarizeDoc(text: string): Promise<AssistantTurn & { state?: ConversationState }> {
     const query = text.replace(/.*\bres[uú]me\b/i, "").replace(/\b(el|la|documento|doc|este)\b/gi, "").trim();
-    const docs = getProviders().documents;
+    const docs = this.providers.documents;
     const files = query ? await docs.searchFiles(query) : await docs.recentFiles(1);
     const file = files[0];
     if (!file) return { reply: `No encontré el documento para resumir.`, view: "documents" };
@@ -534,7 +535,7 @@ export class MockAssistantProvider implements AssistantProvider {
   private async createDoc(text: string): Promise<AssistantTurn & { state?: ConversationState }> {
     const m = text.match(/llamad[oa]\s+([^.,]+)|documento\s+([^.,]+)/i);
     const title = (m?.[1] ?? m?.[2] ?? "Nuevo documento").trim();
-    const file = await getProviders().documents.createDocument(title, "");
+    const file = await this.providers.documents.createDocument(title, "");
     return {
       reply: `Documento "${title}" creado.`,
       view: "documents",
@@ -543,12 +544,12 @@ export class MockAssistantProvider implements AssistantProvider {
   }
 
   private async briefing(base: Date): Promise<AssistantTurn & { state?: ConversationState }> {
-    const cal = getProviders().calendar;
+    const cal = this.providers.calendar;
     const today = parseDay("hoy", base);
     const dayStartIso = toIso(today, 0);
     const dayEndIso = toIso(today, 24 * 60 - 1);
     const events = await cal.listEvents(dayStartIso, dayEndIso);
-    const tasks = (await getProviders().tasks.listTasks()).filter((t) => t.status === "needsAction");
+    const tasks = (await this.providers.tasks.listTasks()).filter((t) => t.status === "needsAction");
     const busy = await cal.freeBusy(dayStartIso, dayEndIso);
     const slots = freeSlots(today, busy).sort((a, b) => b.minutes - a.minutes);
     const next = events.find((e) => new Date(e.start).getTime() > Date.now());

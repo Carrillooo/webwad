@@ -42,6 +42,59 @@ function Slider({ value, min, max, step, onChange }: { value: number; min: numbe
   );
 }
 
+function GoogleConnection() {
+  const [state, setState] = useState<{ configured: boolean; connection: { connected: boolean; email?: string } } | null>(null);
+
+  useEffect(() => {
+    fetch("/api/google/status")
+      .then((r) => r.json())
+      .then(setState)
+      .catch(() => setState({ configured: false, connection: { connected: false } }));
+  }, []);
+
+  if (!state) return <p className="text-xs text-faint py-2">Comprobando…</p>;
+
+  if (!state.configured) {
+    return (
+      <div className="glass px-3 py-2.5 text-xs text-dim">
+        Google no está configurado. Añade credenciales (ver <span className="text-fg">/setup</span>) para conectar Calendar, Tasks y Docs reales.
+      </div>
+    );
+  }
+
+  const connected = state.connection.connected;
+  return (
+    <div className="glass holo-border px-3 py-2.5 flex items-center justify-between gap-3">
+      <div className="min-w-0">
+        <div className="text-sm">Google</div>
+        <div className="text-[11px] text-faint truncate">
+          {connected ? state.connection.email ?? "Conectado" : "Sin conectar"}
+        </div>
+      </div>
+      {connected ? (
+        <button
+          onClick={async () => {
+            await fetch("/api/google/disconnect", { method: "POST" });
+            setState({ ...state, connection: { connected: false } });
+          }}
+          className="px-3 py-1.5 rounded-lg text-xs text-[rgb(248,113,113)]"
+          style={{ background: "rgba(248,113,113,0.14)" }}
+        >
+          Desconectar
+        </button>
+      ) : (
+        <a
+          href="/api/google/authorize"
+          className="px-3 py-1.5 rounded-lg text-xs"
+          style={{ background: "rgb(var(--nova-accent) / 0.22)" }}
+        >
+          Conectar
+        </a>
+      )}
+    </div>
+  );
+}
+
 export function Settings() {
   const open = useNova((s) => s.settingsOpen);
   const setOpen = useNova((s) => s.setSettingsOpen);
@@ -135,6 +188,11 @@ export function Settings() {
               <Row label="Zona horaria">
                 <span className="text-sm text-faint">{settings.timezone}</span>
               </Row>
+            </section>
+
+            <section className="mb-4">
+              <h3 className="text-[11px] uppercase tracking-wide text-faint mb-1">Integraciones</h3>
+              <GoogleConnection />
             </section>
 
             <button onClick={() => update(defaultSettings)} className="w-full glass holo-border py-2 text-sm text-dim hover:text-fg mt-2">

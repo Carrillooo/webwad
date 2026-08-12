@@ -2,6 +2,24 @@
 
 Decisiones de arquitectura (ADR ligero). Más reciente arriba.
 
+## ADR-012 — Providers inyectados + `resolveProviders` asíncrono
+Las rutas resuelven el usuario y llaman `resolveProviders(userId, authed)`, que
+elige Google real (si conectado + configurado) o mocks, y **nunca lanza** (degrada
+al mock). El asistente recibe los providers por constructor en vez de un factory
+global síncrono, para poder usar la conexión real por usuario sin acoplarse.
+
+## ADR-011 — Tokens OAuth cifrados en reposo (AES-256-GCM)
+El refresh token (y el access token) se cifran con una clave derivada de
+`TOKEN_ENCRYPTION_KEY` (SHA-256 → 32 bytes) antes de guardarse. `oauth_credentials`
+tiene RLS activo y **sin** políticas de cliente → sólo accesible con service_role
+desde el backend. El `state` de OAuth va firmado con HMAC para evitar manipulación.
+
+## ADR-010 — Supabase sólo para usuarios autenticados; fallback local/memoria
+La persistencia en Postgres se usa únicamente cuando hay una sesión válida
+(`authed`). Sin sesión (demo), preferencias/memoria/tokens viven en memoria del
+servidor o en `localStorage`. Así el demo funciona sin BD y la migración a real es
+un interruptor (login + credenciales), no una reescritura.
+
 ## ADR-009 — Modo demo ON por defecto
 NOVA debe ser usable antes de cualquier credencial. `DEMO_MODE` se considera
 activo salvo que se ponga explícitamente `DEMO_MODE=false`. Así una instalación

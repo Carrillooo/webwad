@@ -21,7 +21,11 @@ mock). Conecta Google, Supabase y Anthropic cuando quieras para activar el modo 
 - ✅ **Fase 7 (demo)** — Agente NLU en español: crear/mover/borrar eventos, detección de
   conflictos, planificador, tareas, briefing, resúmenes; confirmaciones por riesgo;
   datos externos tratados como no confiables
-- ⏳ **Fases 3–6** — Supabase, Google real (Calendar/Tasks/Drive/Docs) → requieren
+- ✅ **Fase 3** — Supabase: migración con 12 tablas + RLS, cifrado de tokens
+  (AES-256-GCM), `StorageProvider`, preferencias y memoria controlada (se activa con credenciales)
+- ✅ **Fase 4** — Google Calendar **real**: OAuth 2.0, refresh token cifrado,
+  `GoogleCalendarProvider` REST detrás del factory, conexión desde Ajustes (se activa con credenciales)
+- ⏳ **Fases 5–6** — Google Tasks/Drive/Docs reales (Calendar ya real) → requieren
   credenciales (ver `PROGRESS.md` → *USER ACTION REQUIRED*)
 - ⏳ **Fase 8–9** — Web Push, offline avanzado, despliegue
 - ⏸️ **Fase 10** — WhatsApp (opcional, no inicia hasta que se solicite)

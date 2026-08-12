@@ -3,7 +3,8 @@
 Estado exhaustivo del desarrollo de NOVA. Permite a otra sesión continuar
 exactamente donde se quedó.
 
-_Última actualización: Fase 1 + 2 + agente demo (Fase 7 en modo mock) completas._
+_Última actualización: Fases 1, 2, 3, 4 + agente demo (Fase 7 en modo mock).
+Fases 3 y 4 construidas end-to-end; se activan al añadir credenciales._
 
 ---
 
@@ -30,17 +31,45 @@ _Última actualización: Fase 1 + 2 + agente demo (Fase 7 en modo mock) completa
   - **Briefing** hablado. Documentos: buscar, resumir (extractivo), crear.
   - **Idempotencia**: crear el mismo evento dos veces no duplica.
 - **API**: `/api/assistant`, `/api/calendar`, `/api/tasks`, `/api/tasks/mutate`,
-  `/api/documents`, `/api/briefing`, `/api/capabilities`. `/setup` operativo.
-- **Calidad**: `lint` ✅, `typecheck` ✅, `test` ✅ (31 tests), `build` ✅.
+  `/api/documents`, `/api/briefing`, `/api/capabilities`, `/api/preferences`,
+  `/api/memory`, `/api/google/{authorize,callback,status,disconnect}`. `/setup` operativo.
+- **Calidad**: `lint` ✅, `typecheck` ✅, `test` ✅ (40 tests), `build` ✅.
 
-## ⚠️ Qué NO funciona todavía (por diseño, faltan credenciales)
+### Fase 3 — Supabase (construida; se activa con credenciales)
+- Migración `supabase/migrations/0001_init.sql`: las 12 tablas con RLS estricto,
+  FKs a `auth.users`, índices, timestamps, triggers `updated_at`. `oauth_credentials`
+  queda sin políticas de cliente → sólo accesible con service_role.
+- Cliente server (`src/lib/supabase/server.ts`), cifrado de tokens AES-256-GCM
+  (`src/lib/crypto/tokens.ts`), resolución de usuario (`src/lib/auth.ts`).
+- `StorageProvider` (Supabase ↔ memoria) para preferencias y **memoria controlada**
+  (`/api/preferences`, `/api/memory`: remember/forget/list). Fallback a local/memoria
+  cuando no hay sesión.
 
-- **Google real** (Calendar/Tasks/Drive/Docs): sólo mock. Falta OAuth + providers.
-- **Supabase**: sin auth ni persistencia en BD; las preferencias se guardan en
-  `localStorage`. El store demo del servidor es en memoria y se reinicia al reiniciar.
-- **Anthropic real**: usa el `MockAssistantProvider` (NLU local). La arquitectura de
-  tool-calling está lista para enchufar `AnthropicAssistantProvider`.
-- **Web Push**: SW preparado (handlers `push`/`notificationclick`) pero sin backend VAPID.
+### Fase 4 — Google Calendar real (construida; se activa con credenciales)
+- OAuth 2.0 oficial en backend: `src/lib/google/oauth.ts` (+ `state.ts` firmado HMAC).
+- Conexión y **refresh token cifrado** en reposo (`src/lib/google/connection.ts`;
+  Supabase para usuarios autenticados, memoria para demo). Refresco automático del
+  access token.
+- `GoogleCalendarProvider` (REST oficial): list/get/create/update/move/delete,
+  freeBusy, conflictos, idempotencia por id determinista, conferencia opcional.
+- Factory `resolveProviders(userId, authed)`: usa Google real cuando está conectado
+  y configurado; si no, mocks (nunca lanza; degrada al mock). El asistente y las
+  rutas ya reciben providers inyectados.
+- UI: sección **Integraciones** en Configuración (Conectar/Desconectar Google).
+
+## ⚠️ Qué falta para producción (faltan credenciales o fases posteriores)
+
+- **Credenciales**: sin `GOOGLE_*` + `TOKEN_ENCRYPTION_KEY` no hay Calendar real;
+  sin `SUPABASE_*` la persistencia es en memoria/local. El código ya está listo:
+  al ponerlas y `DEMO_MODE=false`, `resolveProviders` usa Google real.
+- **Supabase Auth (UI de login)**: falta la pantalla de login (magic link). Hoy
+  `resolveUser` devuelve el usuario demo salvo que llegue un `sb-access-token`
+  válido. Con login, la persistencia por usuario (RLS) se activa sola.
+- **Google Tasks/Drive/Docs reales**: Fases 5/6 (Calendar ya es real). El factory
+  devuelve mocks de tasks/documents aunque Google esté conectado.
+- **Anthropic real**: usa el `MockAssistantProvider` (NLU local); tool-calling listo
+  para enchufar `AnthropicAssistantProvider`.
+- **Web Push**: SW preparado pero sin backend VAPID.
 
 ## 🐛 Bugs conocidos / notas
 
@@ -128,12 +157,14 @@ Mientras tanto, NOVA sigue funcionando con los MockProviders.
 
 ## NEXT SESSION
 
-**Orden exacta para continuar:** «Implementa la Fase 3 (Supabase): crea
-`supabase/migrations` con las 12 tablas y RLS, un `SupabaseStorageProvider`,
-auth por email/OAuth, y persiste `user_preferences` y `memory_items` por usuario;
-mantén el fallback a localStorage/mocks cuando no haya credenciales. Después,
-Fase 4: OAuth 2.0 de Google en backend con refresh token cifrado y
-`GoogleCalendarProvider` real detrás del factory, sin quitar el mock.»
+**Orden exacta para continuar:** «Completa la Fase 5 (Google Tasks real:
+`GoogleTasksProvider` vía Tasks API con estrategia de hora vía notas/Calendar) y
+la Fase 6 (`GoogleDocumentsProvider` con Drive+Docs API: buscar, recientes, leer,
+crear, append, update con confirmación, resumir), enchúfalos en
+`resolveProviders` junto al `GoogleCalendarProvider`. Luego añade la UI de login de
+Supabase (magic link) para que `resolveUser` devuelva el usuario real y active RLS,
+y el `AnthropicAssistantProvider` (tool-calling) sobre los providers inyectados.»
 
-Antes de empezar: `npm install && npm run dev`, abre `/setup` para ver qué
-credenciales hay. Ejecuta `npm run lint && npm run typecheck && npm test` al terminar.
+Antes de empezar: `npm install && npm run dev`, abre `/setup`. Para probar Google:
+rellena `GOOGLE_*` + `TOKEN_ENCRYPTION_KEY`, `DEMO_MODE=false`, y conecta desde
+Configuración → Integraciones. Ejecuta `npm run lint && npm run typecheck && npm test`.

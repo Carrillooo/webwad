@@ -14,7 +14,7 @@ function ctx(): AssistantContext {
   };
 }
 
-const nova = new MockAssistantProvider();
+const nova = new MockAssistantProvider(getProviders());
 const say = (text: string, state?: ConversationState) =>
   nova.respond([{ role: "user", content: text }], ctx(), state);
 

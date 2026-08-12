@@ -23,17 +23,17 @@ Plan por fases para NOVA. El orden prioriza funcionamiento real y seguridad.
 - Estados visuales: listening/transcribing/thinking/executing/speaking/success.
 - No se almacenan grabaciones.
 
-## Fase 3 — Supabase ⏳ (requiere credenciales)
-- Auth, Postgres, RLS, migraciones. Tablas: profiles, user_preferences,
-  integration_connections, oauth_credentials (cifrado), assistant_sessions,
-  assistant_messages, tool_executions, action_receipts, memory_items,
-  notifications, push_subscriptions, audit_logs.
-- Persistir preferencias/memoria/logs por usuario. Nada cross-user.
+## Fase 3 — Supabase ✅ (construida; se activa con credenciales)
+- Migración con las 12 tablas + RLS + FKs + índices + triggers. `oauth_credentials`
+  sólo service_role. Cliente server, cifrado AES-256-GCM, `resolveUser`.
+- `StorageProvider` (Supabase ↔ memoria) para preferencias y memoria controlada.
+- Pendiente: UI de login (magic link) para activar RLS por usuario real.
 
-## Fase 4 — Google Calendar ⏳ (requiere credenciales)
-- OAuth 2.0 (backend), refresh token cifrado.
-- `GoogleCalendarProvider`: list/get/create/update/move/delete, freeBusy,
-  conflictos, undo. Sustituye al mock cuando el usuario conecta.
+## Fase 4 — Google Calendar ✅ (construida; se activa con credenciales)
+- OAuth 2.0 oficial (backend), state firmado, refresh token cifrado + refresco auto.
+- `GoogleCalendarProvider` REST: list/get/create/update/move/delete, freeBusy,
+  conflictos, idempotencia. `resolveProviders` lo usa cuando hay conexión; si no, mock.
+- UI de conexión en Configuración → Integraciones.
 
 ## Fase 5 — Google Tasks ⏳
 - `GoogleTasksProvider` real. Estrategia para horas (Tasks sólo guarda fecha):

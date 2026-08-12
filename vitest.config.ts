@@ -12,6 +12,7 @@ export default defineConfig({
     env: {
       TOKEN_ENCRYPTION_KEY: "unit-test-encryption-key-abc123",
       GOOGLE_CLIENT_SECRET: "unit-test-google-secret",
+      WHATSAPP_VERIFY_TOKEN: "verify-token-test",
     },
   },
   resolve: {

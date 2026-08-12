@@ -32,7 +32,9 @@ mock). Conecta Google, Supabase y Anthropic cuando quieras para activar el modo 
 - ✅ **Fase 8** — **Web Push**: suscripción, envío (VAPID), botón en Ajustes, SW con
   handlers de notificación. Instalación PWA en iPhone documentada.
 - ✅ **Fase 9** — Despliegue: `vercel.json` (región París), `/api/health`, checklist.
-- ⏸️ **Fase 10** — WhatsApp (opcional, solo API oficial; no iniciado por diseño)
+- ✅ **Fase 10** — WhatsApp (**API oficial de Meta**): webhook con verificación de
+  firma, ingesta de mensajes como tareas (UNTRUSTED, nunca envía sin confirmación).
+- ✅ **Login Supabase** (enlace mágico) en Ajustes → activa RLS por usuario real.
 
 Consulta `PROGRESS.md` para el estado exacto y el próximo paso.
 

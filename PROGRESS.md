@@ -3,10 +3,11 @@
 Estado exhaustivo del desarrollo de ZERO. Permite a otra sesión continuar
 exactamente donde se quedó.
 
-_Última actualización: Fases 1–9 construidas (falta solo la 10, WhatsApp opcional).
-Google Calendar/Tasks/Docs/Sheets reales, Supabase con persistencia, asistente
-Anthropic (tool-calling, con fallback al motor local), Web Push y config de deploy.
-Todo se activa con credenciales; el demo funciona sin ellas._
+_Última actualización: **Fases 1–10 completas** + login Supabase (enlace mágico).
+Google Calendar/Tasks/Docs/Sheets reales, Supabase con persistencia + login, asistente
+Anthropic (tool-calling, con fallback al motor local), Web Push, WhatsApp (API oficial
+de Meta) y config de deploy. Todo se activa con credenciales; el demo funciona sin ellas.
+43 tests. MVP completo._
 
 ## Fases 5–9 (resumen)
 - **5 Tasks / 6 Docs+Drive / +Sheets**: providers reales; al conectar Google se

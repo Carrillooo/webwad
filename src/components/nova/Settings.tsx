@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useNova, defaultSettings, type Settings as S } from "@/lib/store";
 import { WebSpeechTTS } from "@/lib/providers/speech/browser";
 import { usePush } from "@/hooks/usePush";
+import { useAuth } from "@/hooks/useAuth";
 
 function rgbToHex(rgb: string): string {
   const [r, g, b] = rgb.split(" ").map(Number);
@@ -92,6 +93,53 @@ function GoogleConnection() {
           Conectar
         </a>
       )}
+    </div>
+  );
+}
+
+function AccountLogin() {
+  const { state, email, sendLink, signOut } = useAuth();
+  const [addr, setAddr] = useState("");
+  if (state === "unconfigured") {
+    return (
+      <div className="glass px-3 py-2.5 text-xs text-dim">
+        Supabase no configurado. ZERO guarda tus datos localmente (modo un-solo-dueño).
+      </div>
+    );
+  }
+  if (state === "signed_in") {
+    return (
+      <div className="glass holo-border px-3 py-2.5 flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <div className="text-sm">Sesión iniciada</div>
+          <div className="text-[11px] text-faint truncate">{email}</div>
+        </div>
+        <button onClick={() => void signOut()} className="px-3 py-1.5 rounded-lg text-xs text-dim">
+          Salir
+        </button>
+      </div>
+    );
+  }
+  if (state === "sent") {
+    return <div className="glass px-3 py-2.5 text-xs text-dim">Te envié un enlace mágico a {addr}. Ábrelo para entrar.</div>;
+  }
+  return (
+    <div className="glass holo-border px-3 py-2.5 flex items-center gap-2">
+      <input
+        type="email"
+        value={addr}
+        onChange={(e) => setAddr(e.target.value)}
+        placeholder="tu@email.com"
+        className="flex-1 bg-transparent text-sm outline-none placeholder:text-faint min-w-0"
+      />
+      <button
+        onClick={() => addr && void sendLink(addr)}
+        disabled={!addr}
+        className="px-3 py-1.5 rounded-lg text-xs disabled:opacity-40"
+        style={{ background: "rgb(var(--nova-accent) / 0.22)" }}
+      >
+        Entrar
+      </button>
     </div>
   );
 }
@@ -224,6 +272,11 @@ export function Settings() {
               <Row label="Zona horaria">
                 <span className="text-sm text-faint">{settings.timezone}</span>
               </Row>
+            </section>
+
+            <section className="mb-4">
+              <h3 className="text-[11px] uppercase tracking-wide text-faint mb-1">Cuenta</h3>
+              <AccountLogin />
             </section>
 
             <section className="mb-4">

@@ -52,6 +52,14 @@ export function isPushConfigured(): boolean {
   return serverConfig.vapid.publicKey.length > 0 && serverConfig.vapid.privateKey.length > 0;
 }
 
+export function isWhatsappConfigured(): boolean {
+  return (
+    serverConfig.whatsapp.accessToken.length > 0 &&
+    serverConfig.whatsapp.phoneNumberId.length > 0 &&
+    serverConfig.whatsapp.verifyToken.length > 0
+  );
+}
+
 export type ServiceStatus = "READY" | "MISSING" | "ERROR";
 
 export interface Capability {

@@ -1,0 +1,186 @@
+@import "tailwindcss";
+
+/* ============================================================
+   NOVA design tokens.
+   All visual identity flows through CSS variables so the Settings
+   panel can retint the whole UI live. Dark is the primary theme;
+   light is a supported variant. Respects prefers-reduced-motion.
+   ============================================================ */
+
+:root {
+  /* user-tunable (Settings writes these) */
+  --nova-primary: 124 92 255;      /* violet */
+  --nova-accent: 56 189 248;       /* cyan */
+  --nova-core: 130 100 255;        /* core sphere */
+  --nova-border: 130 160 255;      /* holo borders */
+  --nova-glow: 0.55;               /* 0..1 glow intensity */
+  --nova-particles: 1;             /* 0..1 particle density multiplier */
+  --nova-motion: 1;                /* 0..1 animation intensity */
+
+  /* dark palette (default) */
+  --bg-0: #05060c;
+  --bg-1: #080b16;
+  --bg-2: #0b1020;
+  --panel: 255 255 255;            /* used as rgb() with low alpha */
+  --panel-alpha: 0.04;
+  --panel-border-alpha: 0.10;
+  --fg: #eef2ff;
+  --fg-dim: #9aa6c8;
+  --fg-faint: #5b6688;
+  --success: 52 211 153;
+  --warning: 251 191 36;
+  --danger: 248 113 113;
+
+  --radius: 20px;
+  --blur: 18px;
+}
+
+:root[data-theme="light"] {
+  --bg-0: #eef1fb;
+  --bg-1: #e6ebf8;
+  --bg-2: #dde4f5;
+  --panel: 20 30 60;
+  --panel-alpha: 0.05;
+  --panel-border-alpha: 0.14;
+  --fg: #0d1330;
+  --fg-dim: #47517a;
+  --fg-faint: #7b84a8;
+}
+
+@theme inline {
+  --color-bg-0: var(--bg-0);
+  --color-fg: var(--fg);
+  --color-primary: rgb(var(--nova-primary));
+  --color-accent: rgb(var(--nova-accent));
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  color: var(--fg);
+  font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
+  background:
+    radial-gradient(1200px 800px at 50% -10%, rgb(var(--nova-primary) / 0.16), transparent 60%),
+    radial-gradient(900px 700px at 90% 20%, rgb(var(--nova-accent) / 0.10), transparent 55%),
+    radial-gradient(800px 900px at 5% 90%, rgb(var(--nova-core) / 0.10), transparent 55%),
+    linear-gradient(180deg, var(--bg-1), var(--bg-0) 60%);
+  background-attachment: fixed;
+  overflow: hidden;
+  overscroll-behavior: none;
+  -webkit-font-smoothing: antialiased;
+  /* iOS safe areas */
+  padding: env(safe-area-inset-top) env(safe-area-inset-right)
+    env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+
+/* Glass panel utility */
+.glass {
+  background: rgb(var(--panel) / var(--panel-alpha));
+  border: 1px solid rgb(var(--nova-border) / var(--panel-border-alpha));
+  backdrop-filter: blur(var(--blur)) saturate(140%);
+  -webkit-backdrop-filter: blur(var(--blur)) saturate(140%);
+  border-radius: var(--radius);
+}
+
+.holo-border {
+  position: relative;
+}
+.holo-border::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    135deg,
+    rgb(var(--nova-primary) / calc(0.6 * var(--nova-glow))),
+    rgb(var(--nova-accent) / calc(0.5 * var(--nova-glow))),
+    transparent 70%
+  );
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+.text-dim {
+  color: var(--fg-dim);
+}
+.text-faint {
+  color: var(--fg-faint);
+}
+
+.glow-text {
+  text-shadow: 0 0 calc(18px * var(--nova-glow)) rgb(var(--nova-primary) / 0.6);
+}
+
+/* Scrollbars */
+.nova-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+.nova-scroll::-webkit-scrollbar-thumb {
+  background: rgb(var(--nova-border) / 0.25);
+  border-radius: 3px;
+}
+
+/* Accessibility: honor reduced motion + the app's reduced-effects toggle */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --nova-motion: 0;
+    --nova-particles: 0.15;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+:root[data-effects="reduced"] {
+  --nova-motion: 0.25;
+  --nova-particles: 0.2;
+  --blur: 8px;
+}
+
+:focus-visible {
+  outline: 2px solid rgb(var(--nova-accent));
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+@keyframes nova-breathe {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.9;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 1;
+  }
+}
+@keyframes nova-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+@keyframes nova-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

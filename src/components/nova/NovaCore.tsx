@@ -32,6 +32,8 @@ interface Props {
   level: number; // 0..1 mic amplitude
   onActivate: () => void;
   disabled?: boolean;
+  /** Hide the caption when the core is parked in its corner. */
+  showHint?: boolean;
 }
 
 /**
@@ -39,7 +41,7 @@ interface Props {
  * Layers: outer aura, orbiting particles, rotating rings, glass nucleus.
  * Reacts to real mic amplitude while listening and pulses per state.
  */
-export function NovaCore({ level, onActivate, onActivateHelp, disabled }: Props & { onActivateHelp?: string }) {
+export function NovaCore({ level, onActivate, onActivateHelp, disabled, showHint = true }: Props & { onActivateHelp?: string }) {
   const state = useNova((s) => s.novaState);
   const tint = STATE_TINT[state];
   const label = STATE_LABEL[state];
@@ -135,7 +137,7 @@ export function NovaCore({ level, onActivate, onActivateHelp, disabled }: Props 
         />
       </button>
 
-      <div className="h-5 text-sm" aria-live="polite">
+      <div className="h-5 text-sm" aria-live="polite" style={{ opacity: showHint ? 1 : 0, transition: "opacity .25s" }}>
         {label ? (
           <span style={{ color: `rgb(${tint})` }} className="glow-text">
             {label}

@@ -154,6 +154,26 @@ export class AnthropicAssistantProvider implements AssistantProvider {
           receipt("task.complete", `Tarea completada · ${t.title}`, true);
           return { data: t, view: "tasks" };
         }
+        case "list_outlook_tasks": {
+          if (!p.outlookTasks) return { data: { error: "Outlook no está conectado (Ajustes → Integraciones)." }, isError: true };
+          return { data: await p.outlookTasks.listTasks(), view: "tasks" };
+        }
+        case "create_outlook_task": {
+          if (!p.outlookTasks) return { data: { error: "Outlook no está conectado (Ajustes → Integraciones)." }, isError: true };
+          const t = await p.outlookTasks.createTask({
+            title: String(input.title),
+            notes: input.notes ? String(input.notes) : undefined,
+            due: input.due ? String(input.due) : undefined,
+          });
+          receipt("outlook.task.create", `Tarea Outlook creada · ${t.title}`, true);
+          return { data: t, view: "tasks" };
+        }
+        case "complete_outlook_task": {
+          if (!p.outlookTasks) return { data: { error: "Outlook no está conectado." }, isError: true };
+          const t = await p.outlookTasks.completeTask(String(input.id));
+          receipt("outlook.task.complete", `Tarea Outlook completada · ${t.title}`, true);
+          return { data: t, view: "tasks" };
+        }
         case "search_documents": {
           const files = await p.documents.searchFiles(String(input.query ?? ""));
           return { data: files, view: "documents" };
@@ -246,6 +266,10 @@ function systemPrompt(ctx: AssistantContext): string {
     `  (Las herramientas lo añaden, pero inclúyelo tú también en el texto.)`,
     `- Confirma brevemente lo que escribiste y dónde.`,
     ``,
+    `OUTLOOK: si el usuario menciona Outlook / Microsoft / To Do, usa las herramientas`,
+    `list_outlook_tasks / create_outlook_task / complete_outlook_task. Si no lo menciona,`,
+    `las tareas van a Google Tasks (list_tasks / create_task).`,
+    ``,
     `Actúa solo mediante las herramientas. Tras actuar, responde en una o dos frases; incluye horas`,
     `en formato 24h. No expliques tu razonamiento interno.`,
   ].join("\n");
@@ -313,6 +337,25 @@ const TOOLS: Anthropic.Tool[] = [
   {
     name: "complete_task",
     description: "Marca una tarea como completada por id.",
+    input_schema: { type: "object", properties: { id: { type: "string" } }, required: ["id"] },
+  },
+  {
+    name: "list_outlook_tasks",
+    description: "Lista las tareas de Outlook (Microsoft To Do). Úsala cuando mencionen Outlook/Microsoft.",
+    input_schema: { type: "object", properties: {} },
+  },
+  {
+    name: "create_outlook_task",
+    description: "Crea una tarea en Outlook (Microsoft To Do). `due` es fecha YYYY-MM-DD.",
+    input_schema: {
+      type: "object",
+      properties: { title: { type: "string" }, notes: { type: "string" }, due: { type: "string" } },
+      required: ["title"],
+    },
+  },
+  {
+    name: "complete_outlook_task",
+    description: "Completa una tarea de Outlook por id.",
     input_schema: { type: "object", properties: { id: { type: "string" } }, required: ["id"] },
   },
   {

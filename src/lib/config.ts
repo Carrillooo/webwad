@@ -6,17 +6,17 @@
  * without any external service configured.
  */
 
-/** Demo mode is ON by default and only disabled by an explicit "false".
- *  This guarantees the app is usable before any credential is configured. */
-function demoDefaultOn(): boolean {
+/** FINAL mode by default: demo only when explicitly requested. Without
+ *  credentials the providers still degrade gracefully to mocks, so the app
+ *  never breaks — but the product defaults to the real thing. */
+function demoExplicitlyOn(): boolean {
   const raw = process.env.DEMO_MODE ?? process.env.NEXT_PUBLIC_DEMO_MODE;
-  if (raw === undefined) return true;
-  return raw !== "false" && raw !== "0";
+  return raw === "true" || raw === "1";
 }
 
 /** Server-side view of the environment. Never expose secrets to the client. */
 export const serverConfig = {
-  demoMode: demoDefaultOn(),
+  demoMode: demoExplicitlyOn(),
   appUrl: process.env.APP_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000",
 
   supabase: {
@@ -29,6 +29,13 @@ export const serverConfig = {
     clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? "",
     redirectUri:
       process.env.GOOGLE_REDIRECT_URI ?? "http://localhost:3000/api/google/callback",
+  },
+  microsoft: {
+    clientId: process.env.MICROSOFT_CLIENT_ID ?? "",
+    clientSecret: process.env.MICROSOFT_CLIENT_SECRET ?? "",
+    tenant: process.env.MICROSOFT_TENANT ?? "common",
+    redirectUri:
+      process.env.MICROSOFT_REDIRECT_URI ?? "http://localhost:3000/api/microsoft/callback",
   },
   tokenEncryptionKey: process.env.TOKEN_ENCRYPTION_KEY ?? "",
   anthropic: {
@@ -56,6 +63,13 @@ export const ZERO_ATTRIBUTION = "(by zerodc)";
 
 export function isPushConfigured(): boolean {
   return serverConfig.vapid.publicKey.length > 0 && serverConfig.vapid.privateKey.length > 0;
+}
+
+export function isMicrosoftConfigured(): boolean {
+  return (
+    serverConfig.microsoft.clientId.trim().length > 0 &&
+    serverConfig.microsoft.clientSecret.trim().length > 0
+  );
 }
 
 export function isWhatsappConfigured(): boolean {
@@ -122,6 +136,15 @@ export function computeCapabilities(): Capability[] {
       detail: googleReady
         ? "Conexión con Google disponible."
         : "Sin credenciales: Calendar/Tasks/Docs en modo demo.",
+      required: false,
+    },
+    {
+      key: "microsoft",
+      label: "Microsoft / Outlook",
+      status: isMicrosoftConfigured() ? "READY" : "MISSING",
+      detail: isMicrosoftConfigured()
+        ? "Conexión con Outlook (Microsoft To Do) disponible."
+        : "Sin MICROSOFT_CLIENT_ID/SECRET: tareas de Outlook desactivadas.",
       required: false,
     },
   ];

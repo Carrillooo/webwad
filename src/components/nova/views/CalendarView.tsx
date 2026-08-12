@@ -2,7 +2,7 @@
 import { motion } from "motion/react";
 import { useNova } from "@/lib/store";
 import { useCalendarData } from "@/hooks/useNovaData";
-import { humanTime, humanDay } from "@/lib/datetime";
+import { humanTime, humanDay, minutesOfDay } from "@/lib/datetime";
 
 const DAY_START = 7; // 07:00
 const DAY_END = 23; // 23:00
@@ -18,8 +18,8 @@ export function CalendarView() {
   const proposalBlocks = pendingProposal?.blocks ?? [];
 
   const pos = (iso: string) => {
-    const d = new Date(iso);
-    const mins = d.getHours() * 60 + d.getMinutes();
+    // Europe/Madrid wall-clock, independent of the viewer's local timezone.
+    const mins = minutesOfDay(new Date(iso));
     return ((mins - DAY_START * 60) / (HOURS * 60)) * 100;
   };
   const height = (s: string, e: string) => {

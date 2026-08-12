@@ -1,5 +1,6 @@
 "use client";
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { AnimatePresence, motion } from "motion/react";
 import { useNova } from "@/lib/store";
 import { useThemeSync } from "@/hooks/useThemeSync";
 import { useAssistant } from "@/hooks/useAssistant";
@@ -10,10 +11,34 @@ import { NovaCore } from "./NovaCore";
 import { Composer } from "./Composer";
 import { Settings } from "./Settings";
 
+/** States where the core takes the stage (center, enlarged). While executing/
+ *  speaking it docks back so the monitor panel is fully visible. */
+const CENTER_STATES = new Set(["listening", "transcribing", "thinking", "planning"]);
+
+/** Core block footprint used for the dock↔center flight math. */
+const CORE_W = 168;
+const CORE_H = 196; // button + hint label
+
+function useViewport() {
+  // SSR-stable initial value (avoids hydration mismatch); real size lands in
+  // the effect right after mount.
+  const [size, setSize] = useState({ w: 390, h: 844 });
+  useEffect(() => {
+    const onResize = () => setSize({ w: window.innerWidth, h: window.innerHeight });
+    onResize();
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+  return size;
+}
+
 export function NovaApp() {
   useThemeSync();
   const { send, stopSpeaking } = useAssistant();
   const novaState = useNova((s) => s.novaState);
+  const panelOpen = useNova((s) => s.panelOpen);
+  const setPanelOpen = useNova((s) => s.setPanelOpen);
+  const { w, h } = useViewport();
 
   const onFinal = useCallback((text: string) => void send(text), [send]);
   const voice = useVoice(onFinal);
@@ -32,9 +57,8 @@ export function NovaApp() {
     if (novaState === "idle" || novaState === "success" || novaState === "warning" || novaState === "error") {
       const r = await voice.start();
       if (r?.noStt) {
-        // No speech recognition: guide user to keyboard.
         useNova.getState().applyTurn(
-          { reply: "El reconocimiento de voz no está disponible en este navegador. Puedes escribirme abajo.", view: useNova.getState().view },
+          { reply: "El reconocimiento de voz no está disponible en este navegador. Pulsa el teclado para escribirme.", view: useNova.getState().view },
           useNova.getState().demoMode,
         );
         voice.stop();
@@ -43,26 +67,74 @@ export function NovaApp() {
     }
   }, [novaState, voice, stopSpeaking]);
 
-  // Reset volatile state on mount (persisted store keeps settings only).
   useEffect(() => {
     useNova.getState().setNovaState("idle");
     useNova.getState().setView("home");
   }, []);
 
+  const centered = CENTER_STATES.has(novaState);
+
+  // Flight targets (px → the spring interpolates smoothly).
+  // Docked: bottom-left, scaled down. Centered: middle of the stage, enlarged.
+  const dock = { x: -26, y: h - CORE_H + 8, scale: 0.52 };
+  const center = { x: w / 2 - CORE_W / 2, y: h / 2 - CORE_H / 2 - 12, scale: 1.08 };
+
   return (
-    <main className="h-[100dvh] w-full flex flex-col max-w-3xl mx-auto">
-      <TopBar />
-      <div className="flex-1 min-h-0 flex flex-col px-4 pt-3 gap-3">
-        <Monitor />
-        <div className="shrink-0 flex justify-center py-1">
-          <NovaCore
-            level={voice.level}
-            onActivate={activate}
-            onActivateHelp="Pulsar para hablar (o Cmd/Ctrl+K para escribir)"
-            disabled={novaState === "thinking"}
-          />
-        </div>
+    <main className="relative h-[100dvh] w-full overflow-hidden">
+      <div className="max-w-3xl mx-auto">
+        <TopBar />
       </div>
+
+      {/* Dimmer behind the centered core */}
+      <AnimatePresence>
+        {centered && (
+          <motion.div
+            key="dim"
+            aria-hidden
+            className="fixed inset-0 z-20"
+            style={{ background: "rgb(0 0 0 / 0.55)", backdropFilter: "blur(3px)", WebkitBackdropFilter: "blur(3px)" }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.25 }}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Holographic monitor — drops from the top when ZERO has something to show */}
+      <AnimatePresence>
+        {panelOpen && (
+          <motion.div
+            key="panel"
+            className="absolute left-3 right-3 z-10 max-w-3xl mx-auto"
+            style={{ top: 86, bottom: 104 }}
+            initial={{ y: "-108%", opacity: 0.3, filter: "blur(12px)" }}
+            animate={{ y: 0, opacity: 1, filter: "blur(0px)" }}
+            exit={{ y: "-108%", opacity: 0, filter: "blur(12px)" }}
+            transition={{ type: "spring", stiffness: 200, damping: 26 }}
+          >
+            <Monitor onClose={() => setPanelOpen(false)} />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* The core: parked bottom-left, flies to center when you call it */}
+      <motion.div
+        className="fixed left-0 top-0 z-30"
+        initial={false}
+        animate={centered ? center : dock}
+        transition={{ type: "spring", stiffness: 230, damping: 26 }}
+        style={{ width: CORE_W }}
+      >
+        <NovaCore
+          level={voice.level}
+          onActivate={activate}
+          onActivateHelp="Pulsar para hablar"
+          showHint={centered}
+          disabled={novaState === "thinking"}
+        />
+      </motion.div>
+
       <Composer onSend={(t) => void send(t)} />
       <Settings />
     </main>

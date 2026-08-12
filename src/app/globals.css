@@ -9,24 +9,26 @@
 
 :root {
   /* user-tunable (Settings writes these) */
-  --nova-primary: 124 92 255;      /* violet */
-  --nova-accent: 56 189 248;       /* cyan */
-  --nova-core: 130 100 255;        /* core sphere */
-  --nova-border: 130 160 255;      /* holo borders */
-  --nova-glow: 0.55;               /* 0..1 glow intensity */
+  --nova-primary: 225 6 0;         /* rosso Ferrari */
+  --nova-accent: 255 59 48;        /* lighter red */
+  --nova-core: 235 25 20;          /* core sphere */
+  --nova-border: 255 255 255;      /* holo borders (white, matches grid) */
+  --nova-glow: 0.6;                /* 0..1 glow intensity */
   --nova-particles: 1;             /* 0..1 particle density multiplier */
   --nova-motion: 1;                /* 0..1 animation intensity */
 
-  /* dark palette (default) */
-  --bg-0: #05060c;
-  --bg-1: #080b16;
-  --bg-2: #0b1020;
+  /* dark palette (default): pure black + white grid */
+  --bg-0: #000000;
+  --bg-1: #050505;
+  --bg-2: #0a0a0a;
+  --grid-line: 255 255 255;
+  --grid-alpha: 0.06;
   --panel: 255 255 255;            /* used as rgb() with low alpha */
-  --panel-alpha: 0.04;
-  --panel-border-alpha: 0.10;
-  --fg: #eef2ff;
-  --fg-dim: #9aa6c8;
-  --fg-faint: #5b6688;
+  --panel-alpha: 0.05;
+  --panel-border-alpha: 0.12;
+  --fg: #f4f4f5;
+  --fg-dim: #a1a1aa;
+  --fg-faint: #63636b;
   --success: 52 211 153;
   --warning: 251 191 36;
   --danger: 248 113 113;
@@ -36,15 +38,17 @@
 }
 
 :root[data-theme="light"] {
-  --bg-0: #eef1fb;
-  --bg-1: #e6ebf8;
-  --bg-2: #dde4f5;
-  --panel: 20 30 60;
+  --bg-0: #f6f6f7;
+  --bg-1: #efeff1;
+  --bg-2: #e8e8ea;
+  --grid-line: 0 0 0;
+  --grid-alpha: 0.08;
+  --panel: 20 20 24;
   --panel-alpha: 0.05;
   --panel-border-alpha: 0.14;
-  --fg: #0d1330;
-  --fg-dim: #47517a;
-  --fg-faint: #7b84a8;
+  --fg: #101014;
+  --fg-dim: #4b4b55;
+  --fg-faint: #7f7f8a;
 }
 
 @theme inline {
@@ -68,11 +72,14 @@ body {
 body {
   color: var(--fg);
   font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
-  background:
-    radial-gradient(1200px 800px at 50% -10%, rgb(var(--nova-primary) / 0.16), transparent 60%),
-    radial-gradient(900px 700px at 90% 20%, rgb(var(--nova-accent) / 0.10), transparent 55%),
-    radial-gradient(800px 900px at 5% 90%, rgb(var(--nova-core) / 0.10), transparent 55%),
-    linear-gradient(180deg, var(--bg-1), var(--bg-0) 60%);
+  /* Black stage with a white grid pattern + a faint red field glow */
+  background-color: var(--bg-0);
+  background-image:
+    radial-gradient(1100px 750px at 50% 118%, rgb(var(--nova-primary) / 0.12), transparent 62%),
+    radial-gradient(750px 520px at 88% -12%, rgb(var(--nova-primary) / 0.06), transparent 55%),
+    linear-gradient(rgb(var(--grid-line) / var(--grid-alpha)) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(var(--grid-line) / var(--grid-alpha)) 1px, transparent 1px);
+  background-size: 100% 100%, 100% 100%, 44px 44px, 44px 44px;
   background-attachment: fixed;
   overflow: hidden;
   overscroll-behavior: none;

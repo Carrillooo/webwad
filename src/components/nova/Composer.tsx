@@ -7,8 +7,13 @@ interface Props {
   onSend: (text: string) => void;
 }
 
-/** Always-available keyboard input + proposal confirm/cancel + Cmd/Ctrl+K. */
+/**
+ * Voice-first composer. The text input stays hidden behind a keyboard toggle
+ * (bottom-right); transcript and proposals float at the bottom-center.
+ * Cmd/Ctrl+K opens the input (accessibility: keyboard is always reachable).
+ */
 export function Composer({ onSend }: Props) {
+  const [open, setOpen] = useState(false);
   const [value, setValue] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
   const transcript = useNova((s) => s.transcript);
@@ -19,12 +24,17 @@ export function Composer({ onSend }: Props) {
     const onKey = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
-        inputRef.current?.focus();
+        setOpen(true);
       }
+      if (e.key === "Escape") setOpen(false);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, []);
+
+  useEffect(() => {
+    if (open) inputRef.current?.focus();
+  }, [open]);
 
   const submit = () => {
     const t = value.trim();
@@ -34,57 +44,92 @@ export function Composer({ onSend }: Props) {
   };
 
   return (
-    <div className="px-4 pb-4 pt-1 space-y-2">
-      <AnimatePresence>
-        {transcript && (novaState === "listening" || novaState === "transcribing") && (
-          <motion.div
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
-            className="text-center text-sm text-dim italic"
-          >
-            “{transcript}”
-          </motion.div>
-        )}
-      </AnimatePresence>
+    <>
+      {/* Floating layer: transcript · proposal · (optional) input */}
+      <div className="fixed inset-x-0 bottom-5 z-40 flex flex-col items-center gap-2 px-4 pointer-events-none">
+        <AnimatePresence>
+          {transcript && (novaState === "listening" || novaState === "transcribing") && (
+            <motion.div
+              key="transcript"
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              className="text-center text-sm text-dim italic max-w-md"
+            >
+              “{transcript}”
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-      <AnimatePresence>
-        {proposal && (
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
-            className="glass holo-border p-3 flex items-center gap-3"
-          >
-            <span className="flex-1 text-sm">{proposal.summary}</span>
-            <button onClick={() => onSend("Sí")} className="px-3 py-1.5 rounded-lg text-sm" style={{ background: "rgb(var(--nova-accent) / 0.22)" }}>
-              {proposal.risk === "high" ? "Confirmar" : "Aplicar"}
-            </button>
-            <button onClick={() => onSend("No, cancela")} className="px-3 py-1.5 rounded-lg text-sm text-dim">
-              Descartar
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
+        <AnimatePresence>
+          {proposal && (
+            <motion.div
+              key="proposal"
+              initial={{ opacity: 0, y: 10, filter: "blur(6px)" }}
+              animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+              exit={{ opacity: 0, y: 10 }}
+              className="glass holo-border p-3 flex items-center gap-3 w-full max-w-md pointer-events-auto"
+            >
+              <span className="flex-1 text-sm">{proposal.summary}</span>
+              <button onClick={() => onSend("Sí")} className="px-3 py-1.5 rounded-lg text-sm" style={{ background: "rgb(var(--nova-accent) / 0.22)" }}>
+                {proposal.risk === "high" ? "Confirmar" : "Aplicar"}
+              </button>
+              <button onClick={() => onSend("No, cancela")} className="px-3 py-1.5 rounded-lg text-sm text-dim">
+                Descartar
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-      <div className="glass holo-border flex items-center gap-2 px-3 py-2">
-        <span className="text-faint text-xs hidden sm:inline">⌘K</span>
-        <input
-          ref={inputRef}
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && submit()}
-          placeholder="Escribe una orden…  p. ej. “mañana entrenamiento 19:30 90 min”"
-          aria-label="Entrada de texto para ZERO"
-          className="flex-1 bg-transparent outline-none text-sm placeholder:text-faint"
-        />
-        <button onClick={submit} aria-label="Enviar" className="text-dim hover:text-fg" disabled={!value.trim()}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
-            <path d="m22 2-7 20-4-9-9-4Z" />
-            <path d="M22 2 11 13" />
+        <AnimatePresence>
+          {open && (
+            <motion.div
+              key="input"
+              initial={{ opacity: 0, y: 14, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 14, scale: 0.98 }}
+              transition={{ type: "spring", stiffness: 320, damping: 28 }}
+              className="glass holo-border flex items-center gap-2 px-3 py-2 w-full max-w-md pointer-events-auto"
+            >
+              <input
+                ref={inputRef}
+                value={value}
+                onChange={(e) => setValue(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && submit()}
+                placeholder="Escribe una orden a ZERO…"
+                aria-label="Entrada de texto para ZERO"
+                className="flex-1 bg-transparent outline-none text-sm placeholder:text-faint min-w-0"
+              />
+              <button onClick={submit} aria-label="Enviar" className="text-dim hover:text-fg disabled:opacity-40" disabled={!value.trim()}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
+                  <path d="m22 2-7 20-4-9-9-4Z" />
+                  <path d="M22 2 11 13" />
+                </svg>
+              </button>
+              <button onClick={() => setOpen(false)} aria-label="Ocultar teclado" className="text-faint hover:text-fg text-lg leading-none">
+                ×
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      {/* Keyboard toggle — bottom-right, mirrors the core bottom-left.
+          NOTE: inline position:fixed because .holo-border sets position:relative. */}
+      {!open && (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          aria-label="Escribir a ZERO"
+          className="glass holo-border w-11 h-11 grid place-items-center text-dim hover:text-fg transition-colors z-40"
+          style={{ position: "fixed", bottom: 20, right: 16 }}
+        >
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <rect x="2" y="6" width="20" height="12" rx="2" />
+            <path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M6 14h.01M18 14h.01M9 14h6" />
           </svg>
         </button>
-      </div>
-    </div>
+      )}
+    </>
   );
 }

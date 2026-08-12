@@ -6,8 +6,6 @@ export const DEFAULT_LOCALE = "es-ES";
 export const WEEK_STARTS_ON = 1; // Monday
 export const TIME_FORMAT_24H = true;
 
+// FINAL mode by default: demo only when explicitly enabled.
 export const DEMO_MODE_PUBLIC =
-  process.env.NEXT_PUBLIC_DEMO_MODE === "true" ||
-  process.env.NEXT_PUBLIC_DEMO_MODE === "1" ||
-  // default to demo when unset on the client
-  process.env.NEXT_PUBLIC_DEMO_MODE === undefined;
+  process.env.NEXT_PUBLIC_DEMO_MODE === "true" || process.env.NEXT_PUBLIC_DEMO_MODE === "1";

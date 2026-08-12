@@ -144,6 +144,60 @@ function AccountLogin() {
   );
 }
 
+function OutlookConnection() {
+  const [state, setState] = useState<{ configured: boolean; connection: { connected: boolean; email?: string } } | null>(null);
+
+  useEffect(() => {
+    fetch("/api/microsoft/status")
+      .then((r) => r.json())
+      .then(setState)
+      .catch(() => setState({ configured: false, connection: { connected: false } }));
+  }, []);
+
+  if (!state) return <p className="text-xs text-faint py-2">Comprobando Outlook…</p>;
+
+  if (!state.configured) {
+    return (
+      <div className="glass px-3 py-2.5 text-xs text-dim">
+        Outlook sin configurar: añade <span className="text-fg">MICROSOFT_CLIENT_ID</span> y{" "}
+        <span className="text-fg">MICROSOFT_CLIENT_SECRET</span> en .env.local (ver /setup).
+      </div>
+    );
+  }
+
+  const connected = state.connection.connected;
+  return (
+    <div className="glass holo-border px-3 py-2.5 flex items-center justify-between gap-3">
+      <div className="min-w-0">
+        <div className="text-sm">Outlook (Microsoft To Do)</div>
+        <div className="text-[11px] text-faint truncate">
+          {connected ? state.connection.email ?? "Conectado" : "Sin conectar"}
+        </div>
+      </div>
+      {connected ? (
+        <button
+          onClick={async () => {
+            await fetch("/api/microsoft/disconnect", { method: "POST" });
+            setState({ ...state, connection: { connected: false } });
+          }}
+          className="px-3 py-1.5 rounded-lg text-xs text-[rgb(248,113,113)]"
+          style={{ background: "rgba(248,113,113,0.14)" }}
+        >
+          Desconectar
+        </button>
+      ) : (
+        <a
+          href="/api/microsoft/authorize"
+          className="px-3 py-1.5 rounded-lg text-xs"
+          style={{ background: "rgb(var(--nova-accent) / 0.22)" }}
+        >
+          Conectar
+        </a>
+      )}
+    </div>
+  );
+}
+
 function NotificationsSetting() {
   const { state, enable, test } = usePush();
   const label: Record<string, string> = {
@@ -281,7 +335,10 @@ export function Settings() {
 
             <section className="mb-4">
               <h3 className="text-[11px] uppercase tracking-wide text-faint mb-1">Integraciones</h3>
-              <GoogleConnection />
+              <div className="space-y-2">
+                <GoogleConnection />
+                <OutlookConnection />
+              </div>
             </section>
 
             <section className="mb-4">

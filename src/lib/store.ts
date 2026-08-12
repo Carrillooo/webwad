@@ -39,11 +39,11 @@ export interface Settings {
 
 export const defaultSettings: Settings = {
   theme: "dark",
-  primary: "124 92 255",
-  accent: "56 189 248",
-  core: "130 100 255",
-  border: "130 160 255",
-  glow: 0.55,
+  primary: "225 6 0",
+  accent: "255 59 48",
+  core: "235 25 20",
+  border: "255 255 255",
+  glow: 0.6,
   particles: 1,
   motion: 1,
   reducedEffects: false,
@@ -61,6 +61,8 @@ export const defaultSettings: Settings = {
 interface NovaStore {
   novaState: NovaState;
   view: MonitorView;
+  /** Whether the holographic monitor is dropped down from the top. */
+  panelOpen: boolean;
   focusDate: string | null;
   messages: AssistantMessage[];
   conversation: ConversationState;
@@ -75,6 +77,7 @@ interface NovaStore {
 
   setNovaState: (s: NovaState) => void;
   setView: (v: MonitorView) => void;
+  setPanelOpen: (o: boolean) => void;
   setTranscript: (t: string) => void;
   setSettingsOpen: (o: boolean) => void;
   setPaletteOpen: (o: boolean) => void;
@@ -90,6 +93,7 @@ export const useNova = create<NovaStore>()(
     (set) => ({
       novaState: "idle",
       view: "home",
+      panelOpen: false,
       focusDate: null,
       messages: [],
       conversation: {},
@@ -104,6 +108,7 @@ export const useNova = create<NovaStore>()(
 
       setNovaState: (s) => set({ novaState: s }),
       setView: (v) => set({ view: v }),
+      setPanelOpen: (o) => set({ panelOpen: o }),
       setTranscript: (t) => set({ transcript: t }),
       setSettingsOpen: (o) => set({ settingsOpen: o }),
       setPaletteOpen: (o) => set({ paletteOpen: o }),
@@ -119,6 +124,8 @@ export const useNova = create<NovaStore>()(
           conversation: turn.state ?? st.conversation,
           pendingProposal: turn.proposal ?? null,
           view: turn.view ?? st.view,
+          // JARVIS behaviour: a view result drops the monitor down from the top.
+          panelOpen: turn.view && turn.view !== "home" ? true : st.panelOpen,
           focusDate: turn.focusDate ?? st.focusDate,
           lastReply: turn.reply,
           receipts: turn.receipts ? [...turn.receipts, ...st.receipts].slice(0, 100) : st.receipts,
@@ -128,9 +135,26 @@ export const useNova = create<NovaStore>()(
     }),
     {
       name: "nova-store",
+      version: 2,
       storage: createJSONStorage(() => localStorage),
       // Only persist settings + history; conversation resets each session.
       partialize: (st) => ({ settings: st.settings, receipts: st.receipts }),
+      // v2: rebrand to the Ferrari-red identity — override stale persisted colors.
+      migrate: (persisted) => {
+        const p = (persisted ?? {}) as { settings?: Partial<Settings>; receipts?: ActionReceipt[] };
+        return {
+          ...p,
+          settings: {
+            ...defaultSettings,
+            ...(p.settings ?? {}),
+            primary: defaultSettings.primary,
+            accent: defaultSettings.accent,
+            core: defaultSettings.core,
+            border: defaultSettings.border,
+            glow: defaultSettings.glow,
+          },
+        };
+      },
     },
   ),
 );

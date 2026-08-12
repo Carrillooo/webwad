@@ -12,8 +12,11 @@ import { GoogleTasksProvider } from "./tasks/google";
 import { GoogleDocumentsProvider } from "./documents/google";
 import { GoogleSheetsProvider } from "./sheets/google";
 import { SheetsProvider } from "./sheets/types";
+import { MicrosoftTasksProvider } from "./tasks/microsoft";
 import { isGoogleConfigured } from "../google/oauth";
 import { getAccessToken } from "../google/connection";
+import { isMicrosoftConfigured } from "../microsoft/oauth";
+import { getMsAccessToken } from "../microsoft/connection";
 
 export interface Providers {
   calendar: CalendarProvider;
@@ -21,6 +24,8 @@ export interface Providers {
   documents: DocumentsProvider;
   /** Present only when Google is connected (no mock equivalent). */
   sheets?: SheetsProvider;
+  /** Present only when Outlook (Microsoft To Do) is connected. */
+  outlookTasks?: TasksProvider;
   demoMode: boolean;
 }
 
@@ -44,18 +49,34 @@ export function getProviders(): Providers {
  * Never throws — any failure degrades to the mock so the app stays usable.
  */
 export async function resolveProviders(userId: string, authed: boolean): Promise<Providers> {
-  if (serverConfig.demoMode || !isGoogleConfigured()) return mocks();
-  try {
-    const token = await getAccessToken(userId, authed);
-    if (!token) return mocks();
-    return {
-      calendar: new GoogleCalendarProvider(token),
-      tasks: new GoogleTasksProvider(token),
-      documents: new GoogleDocumentsProvider(token),
-      sheets: new GoogleSheetsProvider(token),
-      demoMode: false,
-    };
-  } catch {
-    return mocks();
+  let providers: Providers = mocks();
+
+  if (!serverConfig.demoMode && isGoogleConfigured()) {
+    try {
+      const token = await getAccessToken(userId, authed);
+      if (token) {
+        providers = {
+          calendar: new GoogleCalendarProvider(token),
+          tasks: new GoogleTasksProvider(token),
+          documents: new GoogleDocumentsProvider(token),
+          sheets: new GoogleSheetsProvider(token),
+          demoMode: false,
+        };
+      }
+    } catch {
+      /* keep mocks */
+    }
   }
+
+  // Outlook attaches independently of Google (tasks may live only there).
+  if (!serverConfig.demoMode && isMicrosoftConfigured()) {
+    try {
+      const msToken = await getMsAccessToken(userId, authed);
+      if (msToken) providers.outlookTasks = new MicrosoftTasksProvider(msToken);
+    } catch {
+      /* leave outlook off */
+    }
+  }
+
+  return providers;
 }

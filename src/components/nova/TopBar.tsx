@@ -8,6 +8,8 @@ export function TopBar() {
   const [now, setNow] = useState<Date | null>(null);
   const demoMode = useNova((s) => s.demoMode);
   const setSettingsOpen = useNova((s) => s.setSettingsOpen);
+  const panelOpen = useNova((s) => s.panelOpen);
+  const setPanelOpen = useNova((s) => s.setPanelOpen);
   const novaState = useNova((s) => s.novaState);
 
   useEffect(() => {
@@ -58,6 +60,18 @@ export function TopBar() {
           />
           Sincronizado
         </span>
+        <button
+          type="button"
+          aria-label={panelOpen ? "Cerrar monitor" : "Abrir monitor"}
+          aria-pressed={panelOpen}
+          onClick={() => setPanelOpen(!panelOpen)}
+          className="glass holo-border w-9 h-9 grid place-items-center text-dim hover:text-fg transition-colors"
+        >
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
+            <rect x="3" y="4" width="18" height="13" rx="2" />
+            <path d="M8 21h8M12 17v4" />
+          </svg>
+        </button>
         <button
           type="button"
           aria-label="Configuración"

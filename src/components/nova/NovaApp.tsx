@@ -74,8 +74,8 @@ export function NovaApp() {
   const centered = CENTER_STATES.has(novaState);
   const dockScale = w < 520 ? 0.56 : 0.62;
   const centerScale = w < 520 ? 0.94 : 1.08;
-  const dock = { x: 4, y: h - CORE_H * dockScale - 38, scale: dockScale };
-  const center = { x: w / 2 - CORE_W / 2, y: h / 2 - CORE_H / 2 - 44, scale: centerScale };
+  const dock = { x: 4, y: h - CORE_H * dockScale - 66, scale: dockScale };
+  const center = { x: w / 2 - CORE_W / 2, y: h / 2 - CORE_H / 2 - 68, scale: centerScale };
 
   return (
     <main className="relative h-[100dvh] w-full overflow-hidden">

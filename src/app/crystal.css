@@ -1,0 +1,103 @@
+/* ============================================================
+   Reactive obsidian crystal — ZERO's voice button.
+   The shell stays dark and glassy; state energy reveals the inner red light.
+   ============================================================ */
+.crystal-button {
+  --crystal-energy: .08;
+  --crystal-level: 0;
+  position: relative;
+  width: 220px;
+  height: 210px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+  isolation: isolate;
+  filter: drop-shadow(0 18px 22px rgb(0 0 0 / .65));
+}
+.crystal-button::before {
+  content: "";
+  position: absolute;
+  inset: 16% 20% 10%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgb(var(--nova-accent) / calc(.12 + var(--crystal-energy) * .42)), transparent 68%);
+  filter: blur(calc(18px + var(--crystal-energy) * 20px));
+  transform: scale(calc(.84 + var(--crystal-energy) * .22));
+  opacity: calc(.18 + var(--crystal-energy) * .8);
+  transition: opacity .16s ease, transform .16s ease, filter .16s ease;
+  z-index: -2;
+}
+.crystal-aura {
+  position: absolute;
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgb(var(--nova-accent) / calc(.12 + var(--crystal-energy) * .36)), transparent 67%);
+  filter: blur(18px);
+  opacity: calc(.12 + var(--crystal-energy) * .8);
+  animation: crystal-aura-breathe 3.8s ease-in-out infinite;
+  pointer-events: none;
+}
+.crystal-shadow {
+  position: absolute;
+  bottom: 2px;
+  width: 118px;
+  height: 17px;
+  border-radius: 50%;
+  background: rgb(0 0 0 / .78);
+  filter: blur(7px);
+  transform: scaleX(calc(.88 + var(--crystal-energy) * .18));
+  pointer-events: none;
+}
+.crystal-gem {
+  width: 180px;
+  height: 210px;
+  overflow: visible;
+  transform-origin: 50% 58%;
+  animation: crystal-float 5.4s ease-in-out infinite;
+  will-change: transform, filter;
+}
+.crystal-shell { filter: saturate(.82) contrast(1.08); }
+.crystal-core-light {
+  opacity: calc(.08 + var(--crystal-energy) * .88);
+  transform-origin: center;
+  transform: scale(calc(.72 + var(--crystal-energy) * .34));
+  transition: opacity .11s linear, transform .11s linear;
+}
+.crystal-rim {
+  opacity: calc(.12 + var(--crystal-energy) * .68);
+  filter: drop-shadow(0 0 calc(2px + var(--crystal-energy) * 9px) rgb(var(--nova-accent) / .8));
+  transition: opacity .12s linear;
+}
+.crystal-facets { opacity: .98; }
+.crystal-button:hover .crystal-gem { filter: brightness(1.08); }
+.crystal-button:active .crystal-gem { transform: translateY(2px) scale(.97); }
+.crystal-button[data-state="listening"] .crystal-gem,
+.crystal-button[data-state="transcribing"] .crystal-gem {
+  filter: brightness(calc(1 + var(--crystal-level) * .32));
+}
+.crystal-button[data-state="thinking"] .crystal-aura,
+.crystal-button[data-state="planning"] .crystal-aura,
+.crystal-button[data-state="executing"] .crystal-aura {
+  animation-duration: 1.15s;
+}
+.crystal-button[data-state="speaking"] .crystal-gem {
+  animation: crystal-float 4.8s ease-in-out infinite, crystal-talk .42s ease-in-out infinite alternate;
+}
+.crystal-button[data-state="error"]::before,
+.crystal-button[data-state="warning"]::before { opacity: .78; }
+
+@keyframes crystal-float {
+  0%, 100% { transform: translateY(3px) rotate(-.45deg); }
+  50% { transform: translateY(-5px) rotate(.55deg); }
+}
+@keyframes crystal-aura-breathe {
+  0%, 100% { transform: scale(.9); opacity: calc(.1 + var(--crystal-energy) * .62); }
+  50% { transform: scale(1.08); opacity: calc(.18 + var(--crystal-energy) * .82); }
+}
+@keyframes crystal-talk {
+  from { filter: brightness(1) drop-shadow(0 0 2px rgb(var(--nova-accent) / .18)); }
+  to { filter: brightness(1.13) drop-shadow(0 0 12px rgb(var(--nova-accent) / .34)); }
+}

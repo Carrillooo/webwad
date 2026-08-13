@@ -3,6 +3,7 @@ import { exchangeCode, fetchUserEmail } from "@/lib/google/oauth";
 import { verifyState } from "@/lib/google/state";
 import { saveConnection } from "@/lib/google/connection";
 import { appHome, oauthRedirectUri } from "@/lib/http/origin";
+import { classifyOAuthError } from "@/lib/http/oauth-error";
 
 /** GET /api/google/callback — OAuth redirect target. Exchanges the code and
  *  stores the encrypted refresh token, then returns to the app. */
@@ -36,8 +37,7 @@ export async function GET(req: NextRequest) {
     home.searchParams.set("google", "connected");
   } catch (e) {
     console.error("google callback error", e);
-    const msg = e instanceof Error ? e.message : "";
-    home.searchParams.set("google", /TOKEN_ENCRYPTION_KEY/.test(msg) ? "sin_cifrado" : "error");
+    home.searchParams.set("google", classifyOAuthError(e));
   }
   return NextResponse.redirect(home);
 }

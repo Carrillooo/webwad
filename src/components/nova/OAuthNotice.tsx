@@ -15,8 +15,22 @@ const MENSAJES: Record<string, { texto: string; ok: boolean }> = {
       "inició sesión bien, pero falta TOKEN_ENCRYPTION_KEY en Vercel: sin ella el token no se puede guardar. Añádela, redespliega y vuelve a conectar.",
     ok: false,
   },
+  sin_refresh: {
+    texto:
+      "no devolvió el permiso permanente. En Azure → Permisos de API, añade los permisos DELEGADOS offline_access y Tasks.ReadWrite, y vuelve a conectar.",
+    ok: false,
+  },
+  token_rechazado: {
+    texto:
+      "rechazó las credenciales. Revisa el CLIENT_ID y el CLIENT_SECRET en Vercel (el secreto es el campo «Value», y caduca).",
+    ok: false,
+  },
+  bd: {
+    texto: "la base de datos no aceptó guardar la conexión. Revisa DATABASE_URL en Vercel.",
+    ok: false,
+  },
   error: {
-    texto: "no se pudo guardar la conexión. Mira el motivo exacto en Ajustes → Estado.",
+    texto: "no se pudo guardar la conexión. El motivo exacto está en Vercel → Deployments → Logs.",
     ok: false,
   },
   invalid: { texto: "la respuesta llegó incompleta. Vuelve a intentarlo.", ok: false },

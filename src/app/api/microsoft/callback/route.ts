@@ -3,6 +3,7 @@ import { exchangeMsCode, fetchMsEmail } from "@/lib/microsoft/oauth";
 import { verifyState } from "@/lib/google/state";
 import { saveMsConnection } from "@/lib/microsoft/connection";
 import { appHome, oauthRedirectUri } from "@/lib/http/origin";
+import { classifyOAuthError } from "@/lib/http/oauth-error";
 
 /** GET /api/microsoft/callback — OAuth redirect target. */
 export async function GET(req: NextRequest) {
@@ -29,10 +30,7 @@ export async function GET(req: NextRequest) {
     home.searchParams.set("microsoft", "connected");
   } catch (e) {
     console.error("microsoft callback error", e);
-    // Distinguir la causa más habitual: sin clave de cifrado el token no se
-    // puede guardar, y el usuario solo veía "Sin conectar" sin explicación.
-    const msg = e instanceof Error ? e.message : "";
-    home.searchParams.set("microsoft", /TOKEN_ENCRYPTION_KEY/.test(msg) ? "sin_cifrado" : "error");
+    home.searchParams.set("microsoft", classifyOAuthError(e));
   }
   return NextResponse.redirect(home);
 }

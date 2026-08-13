@@ -5,6 +5,7 @@ import { useNova } from "@/lib/store";
 import { useThemeSync } from "@/hooks/useThemeSync";
 import { useAssistant } from "@/hooks/useAssistant";
 import { useVoice } from "@/hooks/useVoice";
+import { useClapDetection } from "@/hooks/useClapDetection";
 import { TopBar } from "./TopBar";
 import { Monitor } from "./Monitor";
 import { NovaCore } from "./NovaCore";
@@ -15,9 +16,9 @@ import { Settings } from "./Settings";
  *  speaking it docks back so the monitor panel is fully visible. */
 const CENTER_STATES = new Set(["listening", "transcribing", "thinking", "planning"]);
 
-/** Core block footprint used for the dock↔center flight math. */
-const CORE_W = 168;
-const CORE_H = 196; // button + hint label
+/** Scanner block footprint used for the dock↔center flight math. */
+const CORE_W = 240;
+const CORE_H = 96; // bar + hint label
 
 function useViewport() {
   // SSR-stable initial value (avoids hydration mismatch); real size lands in
@@ -72,12 +73,16 @@ export function NovaApp() {
     useNova.getState().setView("home");
   }, []);
 
+  // Double-clap activation (only while idle so it never fights the STT mic).
+  const clapEnabled = useNova((s) => s.settings.clapEnabled);
+  useClapDetection(clapEnabled && novaState === "idle", activate);
+
   const centered = CENTER_STATES.has(novaState);
 
   // Flight targets (px → the spring interpolates smoothly).
   // Docked: bottom-left, scaled down. Centered: middle of the stage, enlarged.
-  const dock = { x: -26, y: h - CORE_H + 8, scale: 0.52 };
-  const center = { x: w / 2 - CORE_W / 2, y: h / 2 - CORE_H / 2 - 12, scale: 1.08 };
+  const dock = { x: 10, y: h - CORE_H - 8, scale: 0.72 };
+  const center = { x: w / 2 - CORE_W / 2, y: h / 2 - CORE_H / 2 - 12, scale: 1.12 };
 
   return (
     <main className="relative h-[100dvh] w-full overflow-hidden">
@@ -129,7 +134,7 @@ export function NovaApp() {
         <NovaCore
           level={voice.level}
           onActivate={activate}
-          onActivateHelp="Pulsar para hablar"
+          onActivateHelp={clapEnabled ? "Pulsa o da dos palmadas" : "Pulsar para hablar"}
           showHint={centered}
           disabled={novaState === "thinking"}
         />

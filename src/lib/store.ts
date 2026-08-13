@@ -31,6 +31,8 @@ export interface Settings {
   voiceRate: number; // 0.5..2
   voiceVolume: number; // 0..1
   voiceName: string | null;
+  /** Double-clap ("estilo JARVIS") activation. Keeps the mic open while idle. */
+  clapEnabled: boolean;
   language: string;
   timezone: string;
   defaultCalendarId: string;
@@ -52,6 +54,7 @@ export const defaultSettings: Settings = {
   voiceRate: 1,
   voiceVolume: 1,
   voiceName: null,
+  clapEnabled: false,
   language: "es-ES",
   timezone: "Europe/Madrid",
   defaultCalendarId: "primary",

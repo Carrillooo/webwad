@@ -52,7 +52,35 @@ export class WebSpeechSTT implements SpeechToTextProvider {
   }
 }
 
-/** Browser SpeechSynthesis TTS. */
+/** Strip things that make TTS sound robotic (emojis, markdown, list bullets). */
+function cleanForSpeech(text: string): string {
+  return text
+    .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}]/gu, "") // emojis
+    .replace(/[*_`#>~[\]]/g, "")
+    .replace(/^\s*[-•]\s*/gm, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
+/** Score voices so the most natural Spanish voice wins by default.
+ *  Edge ships free neural voices ("... Online (Natural)") — best of the bunch;
+ *  Chrome's "Google español" is decent; plain OS voices come last. */
+function scoreVoice(v: SpeechSynthesisVoice): number {
+  let s = 0;
+  const name = v.name.toLowerCase();
+  const lang = (v.lang || "").toLowerCase();
+  if (lang === "es-es") s += 6;
+  else if (lang.startsWith("es")) s += 3;
+  else return -1;
+  if (name.includes("natural") || name.includes("neural")) s += 6;
+  if (name.includes("online")) s += 3;
+  if (name.includes("google")) s += 3;
+  if (/elvira|alvaro|álvaro|abril|dario|darío|mónica|monica|helena|laura|pablo|triana|vera/.test(name)) s += 2;
+  if (name.includes("espeak")) s -= 3;
+  return s;
+}
+
+/** Browser SpeechSynthesis TTS with human-leaning voice selection. */
 export class WebSpeechTTS implements TextToSpeechProvider {
   readonly kind = "web-speech";
   get available() {
@@ -69,16 +97,15 @@ export class WebSpeechTTS implements TextToSpeechProvider {
       return;
     }
     window.speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(text);
+    const u = new SpeechSynthesisUtterance(cleanForSpeech(text));
     u.lang = opts.lang;
-    u.rate = opts.rate;
+    u.rate = Math.min(2, opts.rate * 1.04); // slight pace-up reads less robotic
+    u.pitch = 1.02;
     u.volume = opts.volume;
     const voices = window.speechSynthesis.getVoices();
-    const chosen =
-      (opts.voiceName && voices.find((v) => v.name === opts.voiceName)) ||
-      voices.find((v) => v.lang?.startsWith("es")) ||
-      null;
-    if (chosen) u.voice = chosen;
+    const manual = opts.voiceName ? voices.find((v) => v.name === opts.voiceName) : undefined;
+    const best = manual ?? [...voices].sort((a, b) => scoreVoice(b) - scoreVoice(a))[0];
+    if (best && scoreVoice(best) >= 0) u.voice = best;
     u.onstart = () => opts.onStart?.();
     u.onend = () => opts.onEnd?.();
     u.onerror = () => opts.onEnd?.();

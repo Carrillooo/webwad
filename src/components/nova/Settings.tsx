@@ -302,6 +302,9 @@ export function Settings() {
               <Row label="Voz activada">
                 <input type="checkbox" checked={settings.voiceEnabled} onChange={(e) => set("voiceEnabled", e.target.checked)} className="w-4 h-4 accent-[rgb(var(--nova-primary))]" />
               </Row>
+              <Row label="Activar con 2 palmadas 👏">
+                <input type="checkbox" checked={settings.clapEnabled} onChange={(e) => set("clapEnabled", e.target.checked)} className="w-4 h-4 accent-[rgb(var(--nova-primary))]" />
+              </Row>
               <Row label="Voz (TTS)">
                 <select value={settings.voiceName ?? ""} onChange={(e) => set("voiceName", e.target.value || null)} className="glass px-2 py-1 text-sm bg-transparent max-w-[9rem]">
                   <option value="">Automática</option>

@@ -5,9 +5,9 @@ import { addDays, format, startOfDay, startOfWeek } from "date-fns";
 import { es } from "date-fns/locale";
 import { toZonedTime } from "date-fns-tz";
 import { useNova } from "@/lib/store";
-import { useCalendarData } from "@/hooks/useNovaData";
+import { useCalendarData, useTasksData } from "@/hooks/useNovaData";
 import { humanTime, humanDay, minutesOfDay, makeZonedInstant, zonedToUtc, TZ } from "@/lib/datetime";
-import type { CalendarEvent } from "@/lib/providers/types";
+import type { CalendarEvent, TaskItem } from "@/lib/providers/types";
 
 const DAY_START = 7; // 07:00
 const DAY_END = 23; // 23:00
@@ -43,6 +43,9 @@ export function CalendarView() {
   }, [focusDate]);
 
   const { events, loading } = useCalendarData(cursor, mode);
+  // Tasks with a due date show up in week/month so nothing gets lost.
+  const { tasks } = useTasksData();
+  const pendingTasks = useMemo(() => tasks.filter((t) => t.status === "needsAction" && t.due), [tasks]);
   const zCursor = zoned(cursor);
   const todayKey = dayKey(zoned(new Date()));
 
@@ -97,8 +100,12 @@ export function CalendarView() {
       </div>
 
       {mode === "day" && <DayTimeline events={events} proposal={pendingProposal?.blocks ?? []} />}
-      {mode === "week" && <WeekGrid zCursor={zCursor} events={events} todayKey={todayKey} onOpenDay={openDay} />}
-      {mode === "month" && <MonthGrid zCursor={zCursor} events={events} todayKey={todayKey} onOpenDay={openDay} />}
+      {mode === "week" && (
+        <WeekGrid zCursor={zCursor} events={events} tasks={pendingTasks} todayKey={todayKey} onOpenDay={openDay} />
+      )}
+      {mode === "month" && (
+        <MonthGrid zCursor={zCursor} events={events} tasks={pendingTasks} todayKey={todayKey} onOpenDay={openDay} />
+      )}
 
       {loading && <p className="text-xs text-faint mt-2 shrink-0">Cargando agenda…</p>}
     </div>
@@ -189,11 +196,13 @@ function DayTimeline({
 function WeekGrid({
   zCursor,
   events,
+  tasks,
   todayKey,
   onOpenDay,
 }: {
   zCursor: Date;
   events: CalendarEvent[];
+  tasks: TaskItem[];
   todayKey: string;
   onOpenDay: (z: Date) => void;
 }) {
@@ -207,6 +216,14 @@ function WeekGrid({
     }
     return map;
   }, [events]);
+  const tasksByDay = useMemo(() => {
+    const map = new Map<string, TaskItem[]>();
+    for (const t of tasks) {
+      if (!t.due) continue;
+      map.set(t.due, [...(map.get(t.due) ?? []), t]);
+    }
+    return map;
+  }, [tasks]);
 
   const pos = (iso: string) => Math.min(96, Math.max(0, ((minutesOfDay(new Date(iso)) - DAY_START * 60) / (HOURS * 60)) * 100));
   const height = (s: string, e: string) =>
@@ -217,6 +234,7 @@ function WeekGrid({
       {days.map((d, i) => {
         const k = dayKey(d);
         const dayEvents = (byDay.get(k) ?? []).sort((a, b) => a.start.localeCompare(b.start));
+        const dayTasks = tasksByDay.get(k) ?? [];
         const isToday = k === todayKey;
         return (
           <motion.button
@@ -239,6 +257,22 @@ function WeekGrid({
                 {format(d, "d")}
               </div>
             </div>
+            {/* Due tasks pinned at the top of the column */}
+            {dayTasks.length > 0 && (
+              <div className="shrink-0 mx-0.5 mb-0.5 space-y-0.5">
+                {dayTasks.slice(0, 2).map((t) => (
+                  <div
+                    key={t.id}
+                    title={t.title}
+                    className="rounded-[4px] px-0.5"
+                    style={{ border: "1px dashed rgb(var(--nova-accent) / 0.55)", background: "rgb(var(--nova-accent) / 0.10)" }}
+                  >
+                    <span className="text-[8px] leading-tight block truncate">☐ {t.title}</span>
+                  </div>
+                ))}
+                {dayTasks.length > 2 && <div className="text-[8px] text-faint text-center">+{dayTasks.length - 2}</div>}
+              </div>
+            )}
             <div className="relative flex-1 min-h-0 mx-0.5 mb-0.5">
               {dayEvents.map((e) => (
                 <div
@@ -268,11 +302,13 @@ function WeekGrid({
 function MonthGrid({
   zCursor,
   events,
+  tasks,
   todayKey,
   onOpenDay,
 }: {
   zCursor: Date;
   events: CalendarEvent[];
+  tasks: TaskItem[];
   todayKey: string;
   onOpenDay: (z: Date) => void;
 }) {
@@ -280,14 +316,21 @@ function MonthGrid({
   const first = new Date(zCursor.getFullYear(), monthIdx, 1);
   const gridStart = startOfWeek(first, { weekStartsOn: 1 });
   const cells = useMemo(() => Array.from({ length: 42 }, (_, i) => addDays(gridStart, i)), [gridStart]);
-  const countByDay = useMemo(() => {
-    const map = new Map<string, number>();
-    for (const e of events) {
+
+  // Titled chips per day: events (solid red) + due tasks (dashed accent).
+  const itemsByDay = useMemo(() => {
+    const map = new Map<string, { label: string; kind: "event" | "task" }[]>();
+    const sorted = [...events].sort((a, b) => a.start.localeCompare(b.start));
+    for (const e of sorted) {
       const k = dayKey(zoned(e.start));
-      map.set(k, (map.get(k) ?? 0) + 1);
+      map.set(k, [...(map.get(k) ?? []), { label: e.title, kind: "event" }]);
+    }
+    for (const t of tasks) {
+      if (!t.due) continue;
+      map.set(t.due, [...(map.get(t.due) ?? []), { label: t.title, kind: "task" }]);
     }
     return map;
-  }, [events]);
+  }, [events, tasks]);
 
   return (
     <div className="flex-1 min-h-0 flex flex-col">
@@ -299,7 +342,7 @@ function MonthGrid({
       <div className="grid grid-cols-7 grid-rows-6 gap-1 flex-1 min-h-0">
         {cells.map((d, i) => {
           const k = dayKey(d);
-          const count = countByDay.get(k) ?? 0;
+          const items = itemsByDay.get(k) ?? [];
           const inMonth = d.getMonth() === monthIdx;
           const isToday = k === todayKey;
           return (
@@ -310,7 +353,7 @@ function MonthGrid({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: Math.min(i * 0.008, 0.3) }}
-              className="rounded-lg flex flex-col items-center justify-start pt-1 gap-0.5 min-h-0"
+              className="rounded-lg flex flex-col items-stretch justify-start pt-0.5 px-0.5 gap-[2px] min-h-0 overflow-hidden text-left"
               style={{
                 background: "rgb(var(--panel) / 0.04)",
                 border: isToday ? "1px solid rgb(var(--nova-primary) / 0.6)" : "1px solid rgb(var(--nova-border) / 0.08)",
@@ -319,19 +362,26 @@ function MonthGrid({
               aria-label={`Abrir ${format(d, "d LLLL", { locale: es })}`}
             >
               <span
-                className={`text-[11px] tabular-nums ${isToday ? "font-semibold glow-text" : ""}`}
+                className={`text-[11px] tabular-nums text-center ${isToday ? "font-semibold glow-text" : ""}`}
                 style={isToday ? { color: "rgb(var(--nova-primary))" } : undefined}
               >
                 {format(d, "d")}
               </span>
-              {count > 0 && (
-                <span className="flex items-center gap-[2px]">
-                  {Array.from({ length: Math.min(count, 3) }).map((_, j) => (
-                    <span key={j} className="w-1 h-1 rounded-full" style={{ background: "rgb(var(--nova-primary))", boxShadow: "0 0 4px rgb(var(--nova-primary))" }} />
-                  ))}
-                  {count > 3 && <span className="text-[8px] text-dim">+{count - 3}</span>}
+              {items.slice(0, 2).map((it, j) => (
+                <span
+                  key={j}
+                  title={it.label}
+                  className="text-[8px] leading-[1.25] block truncate rounded-[4px] px-0.5"
+                  style={
+                    it.kind === "event"
+                      ? { background: "rgb(var(--nova-primary) / 0.32)", boxShadow: "0 0 5px rgb(var(--nova-primary) / 0.3)" }
+                      : { border: "1px dashed rgb(var(--nova-accent) / 0.55)", background: "rgb(var(--nova-accent) / 0.10)" }
+                  }
+                >
+                  {it.kind === "task" ? "☐ " : ""}{it.label}
                 </span>
-              )}
+              ))}
+              {items.length > 2 && <span className="text-[8px] text-faint text-center leading-none">+{items.length - 2}</span>}
             </motion.button>
           );
         })}

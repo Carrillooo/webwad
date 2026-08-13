@@ -1,23 +1,9 @@
 'use client';
 
-import { Canvas, extend, useFrame } from '@react-three/fiber';
+import { Canvas, useFrame } from '@react-three/fiber';
 import { useAspect, useTexture } from '@react-three/drei';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import * as THREE from 'three/webgpu';
-import {
-  abs,
-  blendScreen,
-  float,
-  mod,
-  mx_cell_noise_float,
-  oneMinus,
-  smoothstep,
-  texture,
-  uniform,
-  uv,
-  vec2,
-  vec3,
-} from 'three/tsl';
+import * as THREE from 'three';
 
 import type { NovaState } from '@/lib/store';
 
@@ -25,8 +11,6 @@ const TEXTUREMAP = 'https://i.postimg.cc/XYwvXN8D/img-4.png';
 const DEPTHMAP = 'https://i.postimg.cc/2SHKQh2q/raw-4.webp';
 const WIDTH = 300;
 const HEIGHT = 300;
-
-extend(THREE as never);
 
 type Props = {
   state: NovaState;
@@ -36,45 +20,78 @@ type Props = {
   title?: string;
 };
 
+const vertexShader = `
+  varying vec2 vUv;
+  void main() {
+    vUv = uv;
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+  }
+`;
+
+const fragmentShader = `
+  varying vec2 vUv;
+  uniform sampler2D uMap;
+  uniform sampler2D uDepth;
+  uniform vec2 uPointer;
+  uniform float uProgress;
+  uniform float uEnergy;
+  uniform float uOpacity;
+
+  float hash(vec2 p) {
+    return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
+  }
+
+  void main() {
+    float depth = texture2D(uDepth, vUv).r;
+    vec2 displacedUv = vUv + (depth - 0.5) * uPointer * 0.018;
+    vec4 base = texture2D(uMap, displacedUv);
+
+    vec2 gridUv = vUv * 120.0;
+    vec2 cell = fract(gridUv) - 0.5;
+    float dotMask = 1.0 - smoothstep(0.18, 0.29, length(cell));
+    float noise = 0.35 + 0.65 * hash(floor(gridUv));
+    float flow = 1.0 - smoothstep(0.0, 0.035, abs(depth - uProgress));
+
+    vec3 redGlow = vec3(1.0, 0.035, 0.015) * dotMask * noise * flow * (0.45 + uEnergy * 1.15);
+    vec3 color = 1.0 - (1.0 - base.rgb) * (1.0 - redGlow);
+
+    float edge = smoothstep(0.0, 0.12, vUv.x) * smoothstep(0.0, 0.12, 1.0 - vUv.x)
+               * smoothstep(0.0, 0.12, vUv.y) * smoothstep(0.0, 0.12, 1.0 - vUv.y);
+
+    gl_FragColor = vec4(color, base.a * edge * uOpacity);
+  }
+`;
+
 function ReactiveStone({ state, level }: Pick<Props, 'state' | 'level'>) {
   const [rawMap, depthMap] = useTexture([TEXTUREMAP, DEPTHMAP]);
   const meshRef = useRef<THREE.Mesh | null>(null);
+  const smoothEnergy = useRef(0.18);
   const [visible, setVisible] = useState(false);
-  const smoothLevel = useRef(0);
 
   useEffect(() => {
     if (rawMap && depthMap) setVisible(true);
   }, [rawMap, depthMap]);
 
-  const { material, uniforms } = useMemo(() => {
-    const uPointer = uniform(new THREE.Vector2(0));
-    const uProgress = uniform(0.5);
-    const uEnergy = uniform(0.2);
+  const material = useMemo(
+    () =>
+      new THREE.ShaderMaterial({
+        uniforms: {
+          uMap: { value: rawMap },
+          uDepth: { value: depthMap },
+          uPointer: { value: new THREE.Vector2(0, 0) },
+          uProgress: { value: 0.5 },
+          uEnergy: { value: 0.18 },
+          uOpacity: { value: 0 },
+        },
+        vertexShader,
+        fragmentShader,
+        transparent: true,
+        depthWrite: false,
+      }),
+    [rawMap, depthMap],
+  );
 
-    const depth = texture(depthMap);
-    const displaced = texture(rawMap, uv().add(depth.r.mul(uPointer).mul(0.012)));
-
-    const aspect = float(WIDTH).div(HEIGHT);
-    const tUv = vec2(uv().x.mul(aspect), uv().y);
-    const tiling = vec2(120.0);
-    const tiledUv = mod(tUv.mul(tiling), 2.0).sub(1.0);
-    const brightness = mx_cell_noise_float(tUv.mul(tiling).div(2));
-    const dist = float(tiledUv.length());
-    const dots = float(smoothstep(0.5, 0.49, dist)).mul(brightness);
-    const flow = oneMinus(smoothstep(0, 0.025, abs(depth.sub(uProgress))));
-
-    // Keep the original red holographic identity, but let voice energy drive it.
-    const mask = dots.mul(flow).mul(vec3(10, 0.15, 0.08)).mul(uEnergy.add(0.35));
-    const final = blendScreen(displaced, mask);
-
-    const nodeMaterial = new THREE.MeshBasicNodeMaterial({
-      colorNode: final,
-      transparent: true,
-      opacity: 0,
-    });
-
-    return { material: nodeMaterial, uniforms: { uPointer, uProgress, uEnergy } };
-  }, [rawMap, depthMap]);
+  useEffect(() => () => material.dispose(), [material]);
 
   const [w, h] = useAspect(WIDTH, HEIGHT);
 
@@ -88,41 +105,47 @@ function ReactiveStone({ state, level }: Pick<Props, 'state' | 'level'>) {
     if (listening) targetEnergy = 0.3 + Math.min(1, level) * 0.95;
     if (thinking) targetEnergy = 0.58 + Math.sin(t * 4.2) * 0.12;
     if (speaking) {
-      // SpeechSynthesis does not expose its output stream to Web Audio, so this
-      // follows the actual speaking state with layered speech-like pulses.
       targetEnergy = 0.58 + Math.abs(Math.sin(t * 8.5)) * 0.28 + Math.abs(Math.sin(t * 13.2)) * 0.12;
     }
 
-    smoothLevel.current = THREE.MathUtils.damp(smoothLevel.current, targetEnergy, 8, delta);
-    uniforms.uEnergy.value = smoothLevel.current;
+    smoothEnergy.current = THREE.MathUtils.damp(smoothEnergy.current, targetEnergy, 8, delta);
+    material.uniforms.uEnergy.value = smoothEnergy.current;
+    material.uniforms.uPointer.value.set(pointer.x, pointer.y);
+    material.uniforms.uOpacity.value = THREE.MathUtils.damp(
+      material.uniforms.uOpacity.value,
+      visible ? 1 : 0,
+      7,
+      delta,
+    );
 
     if (listening) {
-      uniforms.uProgress.value = THREE.MathUtils.clamp(0.5 + (level - 0.25) * 0.5, 0.08, 0.92);
+      material.uniforms.uProgress.value = THREE.MathUtils.clamp(0.5 + (level - 0.25) * 0.5, 0.08, 0.92);
     } else if (thinking) {
-      uniforms.uProgress.value = Math.sin(t * 1.9) * 0.5 + 0.5;
+      material.uniforms.uProgress.value = Math.sin(t * 1.9) * 0.5 + 0.5;
     } else if (speaking) {
-      uniforms.uProgress.value = Math.sin(t * 1.15 + Math.sin(t * 5) * 0.18) * 0.5 + 0.5;
+      material.uniforms.uProgress.value = Math.sin(t * 1.15 + Math.sin(t * 5) * 0.18) * 0.5 + 0.5;
     } else {
-      uniforms.uProgress.value = Math.sin(t * 0.42) * 0.5 + 0.5;
+      material.uniforms.uProgress.value = Math.sin(t * 0.42) * 0.5 + 0.5;
     }
 
-    uniforms.uPointer.value = pointer;
-
     if (meshRef.current) {
-      const targetScale = 1 + smoothLevel.current * (speaking || listening ? 0.07 : 0.025);
+      const targetScale = 1 + smoothEnergy.current * (speaking || listening ? 0.07 : 0.025);
       const baseX = w * 0.42;
       const baseY = h * 0.42;
       meshRef.current.scale.x = THREE.MathUtils.damp(meshRef.current.scale.x, baseX * targetScale, 8, delta);
       meshRef.current.scale.y = THREE.MathUtils.damp(meshRef.current.scale.y, baseY * targetScale, 8, delta);
-
-      const mat = meshRef.current.material as THREE.MeshBasicNodeMaterial;
-      mat.opacity = THREE.MathUtils.damp(mat.opacity, visible ? 1 : 0, 7, delta);
+      meshRef.current.rotation.z = THREE.MathUtils.damp(
+        meshRef.current.rotation.z,
+        pointer.x * 0.025,
+        5,
+        delta,
+      );
     }
   });
 
   return (
     <mesh ref={meshRef} scale={[w * 0.42, h * 0.42, 1]} material={material}>
-      <planeGeometry />
+      <planeGeometry args={[1, 1, 1, 1]} />
     </mesh>
   );
 }
@@ -149,12 +172,8 @@ export function FuturisticVoiceCore({ state, level, onActivate, disabled, title 
         <Canvas
           flat
           camera={{ position: [0, 0, 5], fov: 45 }}
-          gl={async (props) => {
-            const renderer = new THREE.WebGPURenderer(props as never);
-            await renderer.init();
-            renderer.setClearColor(0x000000, 0);
-            return renderer;
-          }}
+          gl={{ alpha: true, antialias: true }}
+          onCreated={({ gl }) => gl.setClearColor(0x000000, 0)}
         >
           <ReactiveStone state={state} level={level} />
         </Canvas>

@@ -25,6 +25,38 @@ export interface AssistantExtras {
   };
 }
 
+type Effort = NonNullable<Anthropic.OutputConfig["effort"]>;
+const EFFORT_LEVELS: Effort[] = ["low", "medium", "high", "xhigh", "max"];
+/** ANTHROPIC_EFFORT, validado (un valor inventado degradaría a un 400). */
+const EFFORT: Effort = EFFORT_LEVELS.includes(serverConfig.anthropic.effort as Effort)
+  ? (serverConfig.anthropic.effort as Effort)
+  : "low";
+
+/** Personal memory changes rarely; re-reading it from Postgres before every
+ *  reply adds a round trip to the critical path. 20 s of cache is invisible to
+ *  the user (a fact saved this turn is already in the prompt of the next one,
+ *  because remember_fact returns before the reply is written). */
+const MEMORY_TTL_MS = 20_000;
+const memCache = globalThis as unknown as {
+  __zeroMem?: { at: number; items: MemoryItem[] };
+};
+async function cachedMemories(list: () => Promise<MemoryItem[]>): Promise<MemoryItem[]> {
+  const hit = memCache.__zeroMem;
+  if (hit && Date.now() - hit.at < MEMORY_TTL_MS) return hit.items;
+  try {
+    const items = await list();
+    memCache.__zeroMem = { at: Date.now(), items };
+    return items;
+  } catch {
+    return hit?.items ?? []; // memory unavailable → continue without it
+  }
+}
+
+/** Drop the memory cache so a just-saved fact shows up immediately. */
+function invalidateMemories() {
+  memCache.__zeroMem = undefined;
+}
+
 /** Ensure at least one non-empty cell carries the "(by zerodc)" marker. */
 function withAttribution(values: string[]): string[] {
   if (values.some((v) => v.includes(ZERO_ATTRIBUTION))) return values;
@@ -61,22 +93,32 @@ export class AnthropicAssistantProvider implements AssistantProvider {
     let focusDate: string | undefined;
 
     // Personal memory is injected into the prompt so ZERO "knows" Daniel
-    // without needing a tool call on every turn.
-    let memories: MemoryItem[] = [];
-    if (this.extras.memory) {
-      try {
-        memories = await this.extras.memory.list();
-      } catch {
-        /* memory unavailable → continue without it */
-      }
-    }
+    // without needing a tool call on every turn. Cached in-process for a few
+    // seconds: a DB round trip before every reply costs latency for data that
+    // barely ever changes.
+    const memories = this.extras.memory ? await cachedMemories(this.extras.memory.list) : [];
+
+    // Prompt caching: the stable half of the prompt (rules + tools) is cached,
+    // so from the second turn on ZERO only pays for the volatile tail. That is
+    // the single biggest latency win on a long system prompt.
+    const system: Anthropic.TextBlockParam[] = [
+      { type: "text", text: stablePrompt(ctx), cache_control: { type: "ephemeral" } },
+      { type: "text", text: volatilePrompt(ctx, memories) },
+    ];
 
     let final = "";
-    for (let hop = 0; hop < 8; hop++) {
+    for (let hop = 0; hop < 6; hop++) {
       const res = await this.client.messages.create({
         model: serverConfig.anthropic.model,
-        max_tokens: 1024,
-        system: systemPrompt(ctx, memories),
+        // Brevity comes from the prompt, not from a tight cap: max_tokens only
+        // costs time when it is actually generated, and a low cap would truncate
+        // a long turn (adaptive thinking shares this budget).
+        max_tokens: 1500,
+        // Low effort keeps ZERO snappy and scoped to what was asked; adaptive
+        // thinking still kicks in when a request genuinely needs reasoning.
+        thinking: { type: "adaptive" },
+        output_config: { effort: EFFORT },
+        system,
         tools: TOOLS,
         messages,
       });
@@ -303,6 +345,7 @@ export class AnthropicAssistantProvider implements AssistantProvider {
             String(input.value),
             input.kind ? String(input.kind) : "fact",
           );
+          invalidateMemories();
           receipt("memory.add", `Memoria guardada · ${item.value.slice(0, 40)}`, true);
           return { data: item };
         }
@@ -313,6 +356,7 @@ export class AnthropicAssistantProvider implements AssistantProvider {
         case "forget_memory": {
           if (!this.extras.memory) return { data: { error: "La memoria no está disponible." }, isError: true };
           const ok = await this.extras.memory.forget(String(input.id));
+          invalidateMemories();
           receipt("memory.delete", ok ? "Memoria olvidada" : "Memoria no encontrada", ok);
           return { data: { ok }, isError: !ok };
         }
@@ -326,20 +370,44 @@ export class AnthropicAssistantProvider implements AssistantProvider {
   }
 }
 
-function systemPrompt(ctx: AssistantContext, memories: MemoryItem[] = []): string {
-  const memoryBlock = memories.length
-    ? [
-        ``,
-        `MEMORIA PERSONAL (cosas que Daniel te ha pedido recordar; úsalas con naturalidad):`,
-        ...memories.map((m) => `- [${m.id}] ${m.value}`),
-      ]
-    : [];
+/**
+ * The volatile tail of the prompt: the Madrid wall-clock instant (changes every
+ * request) and the personal memory. It lives AFTER the cache breakpoint so it
+ * never invalidates the cached prefix.
+ */
+function volatilePrompt(ctx: AssistantContext, memories: MemoryItem[] = []): string {
+  const lines = [
+    `AHORA MISMO en Madrid es ${humanDay(new Date(ctx.nowIso))}, ${humanTime(new Date(ctx.nowIso))}`,
+    `(instante exacto: ${ctx.nowIso}). "Hoy"/"mañana"/"el viernes" se calculan SIEMPRE sobre esta`,
+    `fecha de Madrid — cuidado de madrugada: la fecha UTC puede ir un día atrás.`,
+  ];
+  if (memories.length) {
+    lines.push(
+      ``,
+      `MEMORIA PERSONAL (cosas que Daniel te ha pedido recordar; úsalas con naturalidad):`,
+      ...memories.map((m) => `- [${m.id}] ${m.value}`),
+    );
+  }
+  return lines.join("\n");
+}
+
+/**
+ * The stable half of the prompt — identical on every request, so it sits behind
+ * a cache_control breakpoint and is billed at ~10% from the second turn on
+ * (and, more importantly here, is processed much faster).
+ */
+function stablePrompt(ctx: AssistantContext): string {
   return [
     `Eres ZERO, el asistente personal de ${ctx.ownerName}. Respondes en español de España,`,
     `de forma breve, precisa y natural. Zona horaria Europe/Madrid, formato 24h, semana desde lunes.`,
-    `AHORA MISMO en Madrid es ${humanDay(new Date(ctx.nowIso))}, ${humanTime(new Date(ctx.nowIso))}`,
-    `(instante exacto: ${ctx.nowIso}). "Hoy"/"mañana"/"el viernes" se calculan SIEMPRE sobre la`,
-    `fecha de Madrid que acabo de darte — cuidado de madrugada: la fecha UTC puede ir un día atrás.`,
+    ``,
+    `VELOCIDAD (te escuchan por voz, no te leen):`,
+    `- Responde en 1-2 frases salvo que te pidan detalle. Nada de listas, encabezados ni`,
+    `  recapitulaciones. Ve al grano: primero el resultado, luego lo demás si hace falta.`,
+    `- Actúa ya. Si tienes lo necesario, llama a la herramienta en el primer turno; no`,
+    `  anuncies lo que vas a hacer ni pidas permiso para lo que te acaban de pedir.`,
+    `- Agrupa las herramientas: si necesitas varias a la vez, pídelas en el mismo turno.`,
+    `  No consultes el calendario "por si acaso" cuando la orden ya es clara.`,
     ``,
     `PERSONALIDAD Y CONVERSACIÓN:`,
     `- NO eres solo un gestor de calendario: eres un asistente completo. Daniel puede`,
@@ -426,7 +494,10 @@ function systemPrompt(ctx: AssistantContext, memories: MemoryItem[] = []): strin
     `"odio madrugar", "el NIF de la empresa es...") o te pida "recuerda que...", guárdalo con`,
     `remember_fact (frases cortas y autocontenidas). Usa forget_memory si pide olvidar algo.`,
     `No guardes trivialidades ni datos de un solo uso.`,
-    ...memoryBlock,
+    ``,
+    `CONVERSACIÓN SEGUIDA: cuando necesites un dato para continuar, termina tu respuesta con`,
+    `UNA pregunta concreta y corta acabada en "?". El micrófono se reabre solo y Daniel te`,
+    `contesta de viva voz, así que no le pidas que pulse nada. Una pregunta cada vez.`,
     ``,
     `Actúa solo mediante las herramientas. Tras actuar, responde en una o dos frases; incluye horas`,
     `en formato 24h. No expliques tu razonamiento interno.`,

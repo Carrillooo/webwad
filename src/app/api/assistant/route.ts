@@ -66,9 +66,14 @@ export async function POST(req: NextRequest) {
     timezone: DEFAULT_TIMEZONE,
     demoMode: providers.demoMode,
   };
+  const startedAt = Date.now();
   try {
     const turn = await assistant.respond(parsed.data.messages, ctx, parsed.data.state ?? {});
-    return NextResponse.json({ turn, demoMode: providers.demoMode });
+    const ms = Date.now() - startedAt;
+    // Visible en la terminal: si ZERO va lento, aquí se ve exactamente cuánto
+    // tarda el modelo (el resto de la app son milisegundos).
+    console.log(`[zero] respuesta en ${ms} ms (${assistant.kind})`);
+    return NextResponse.json({ turn, demoMode: providers.demoMode, ms });
   } catch (err) {
     // If Anthropic fails (billing, rate limit, outage), degrade to the local
     // NLU engine so ZERO keeps working instead of erroring out.

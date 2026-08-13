@@ -41,7 +41,13 @@ export const serverConfig = {
   tokenEncryptionKey: process.env.TOKEN_ENCRYPTION_KEY ?? "",
   anthropic: {
     apiKey: process.env.ANTHROPIC_API_KEY ?? "",
-    model: process.env.ANTHROPIC_MODEL ?? "claude-opus-4-8",
+    /** Sonnet 5: la mejor combinación de velocidad e inteligencia. ZERO es un
+     *  asistente de voz — cada segundo cuenta — y Sonnet 5 responde en la mitad
+     *  de tiempo que Opus manteniendo la calidad en llamadas a herramientas. */
+    model: process.env.ANTHROPIC_MODEL ?? "claude-sonnet-5",
+    /** low = respuestas rápidas y ajustadas a lo pedido (ideal para voz).
+     *  Sube a "medium"/"high" si alguna vez razona poco. */
+    effort: process.env.ANTHROPIC_EFFORT ?? "low",
   },
   whatsapp: {
     accessToken: process.env.WHATSAPP_ACCESS_TOKEN ?? "",
@@ -58,6 +64,9 @@ export const serverConfig = {
     apiKey: process.env.ELEVENLABS_API_KEY ?? "",
     // "Daniel" — deep, calm prebuilt voice; multilingual model speaks Spanish.
     voiceId: process.env.ELEVENLABS_VOICE_ID ?? "onwK4e9ZLuTAKqWW03F9",
+    /** flash v2.5: ~75 ms de latencia y multilingüe. Cambia a
+     *  eleven_multilingual_v2 si prefieres calidad sobre velocidad. */
+    model: process.env.ELEVENLABS_MODEL ?? "eleven_flash_v2_5",
   },
   smtp: {
     host: process.env.SMTP_HOST ?? "",

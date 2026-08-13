@@ -1,8 +1,20 @@
 "use client";
-import { useCallback, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useNova } from "@/lib/store";
 import { WebSpeechTTS, cleanForSpeech } from "@/lib/providers/speech/browser";
 import type { AssistantMessage } from "@/lib/providers/types";
+
+/** Fired when ZERO finishes talking. `detail.awaitingAnswer` is true when the
+ *  reply ended in a question, so the shell can re-open the mic by itself. */
+export const SPEECH_END_EVENT = "nova:speech-end";
+
+/** Does this reply expect Daniel to answer? (Ends in a question, or ZERO is
+ *  waiting for a confirmation.) Accent-safe: `?` and `¿` are unambiguous. */
+export function wantsAnswer(reply: string, hasProposal: boolean): boolean {
+  if (hasProposal) return true;
+  const t = reply.trim();
+  return t.endsWith("?") || t.endsWith("?»") || t.endsWith('?"');
+}
 
 /**
  * Makes the crystal react to ElevenLabs audio the same way it reacts to the
@@ -55,20 +67,43 @@ function attachVoicePulses(audio: HTMLAudioElement): () => void {
 }
 
 /** Orchestrates a full assistant turn: states → API → apply → speak.
- *  Voice output tries ElevenLabs (ultra-realistic, via /api/tts) first and
- *  falls back to the browser's SpeechSynthesis when it isn't configured. */
+ *  Voice output streams from ElevenLabs (via /api/tts) so it starts sounding
+ *  while it is still being synthesised, and falls back to the browser voice. */
 export function useAssistant() {
   const tts = useMemo(() => (typeof window !== "undefined" ? new WebSpeechTTS() : null), []);
   const busy = useRef(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  // null = unknown (probe on first use); then cached for the session.
+  // null = unknown; probed once at mount so the first reply doesn't pay for it.
   const elevenReady = useRef<boolean | null>(null);
+  const awaitingAnswer = useRef(false);
+
+  useEffect(() => {
+    let alive = true;
+    fetch("/api/tts")
+      .then((r) => (r.ok ? r.json() : { configured: false }))
+      .then((d) => {
+        if (alive) elevenReady.current = d.configured === true;
+      })
+      .catch(() => {
+        if (alive) elevenReady.current = false;
+      });
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  const finishSpeaking = useCallback(() => {
+    if (useNova.getState().novaState === "speaking") useNova.getState().setNovaState("idle");
+    const detail = { awaitingAnswer: awaitingAnswer.current };
+    awaitingAnswer.current = false;
+    window.dispatchEvent(new CustomEvent(SPEECH_END_EVENT, { detail }));
+  }, []);
 
   const speakWithBrowser = useCallback(
     (text: string) => {
       const st = useNova.getState();
       if (!tts?.available) {
-        if (st.novaState === "speaking") st.setNovaState("idle");
+        finishSpeaking();
         return;
       }
       tts.speak(text, {
@@ -77,66 +112,79 @@ export function useAssistant() {
         volume: st.settings.voiceVolume,
         voiceName: st.settings.voiceName,
         onBoundary: () => window.dispatchEvent(new CustomEvent("nova:voice-pulse")),
-        onEnd: () => {
-          if (useNova.getState().novaState === "speaking") useNova.getState().setNovaState("idle");
-        },
+        onEnd: finishSpeaking,
       });
     },
-    [tts],
+    [tts, finishSpeaking],
   );
 
   const speak = useCallback(
     async (text: string) => {
       const st = useNova.getState();
-      if (!st.settings.voiceEnabled) return;
       const clean = cleanForSpeech(text);
-      if (!clean) return;
-      st.setNovaState("speaking");
-
-      if (elevenReady.current === null) {
-        try {
-          const r = await fetch("/api/tts");
-          elevenReady.current = r.ok && (await r.json()).configured === true;
-        } catch {
-          elevenReady.current = false;
-        }
+      if (!st.settings.voiceEnabled || !clean) {
+        finishSpeaking();
+        return;
       }
+      st.setNovaState("speaking");
 
       if (elevenReady.current) {
         try {
-          const res = await fetch("/api/tts", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ text: clean.slice(0, 2500) }),
-          });
-          if (res.ok && res.headers.get("content-type")?.includes("audio")) {
-            const url = URL.createObjectURL(await res.blob());
-            const audio = new Audio(url);
-            audio.volume = useNova.getState().settings.voiceVolume;
-            audioRef.current = audio;
-            const stopPulses = attachVoicePulses(audio);
-            const done = () => {
-              stopPulses();
-              URL.revokeObjectURL(url);
-              if (audioRef.current === audio) audioRef.current = null;
-              if (useNova.getState().novaState === "speaking")
-                useNova.getState().setNovaState("idle");
-            };
-            audio.onended = done;
-            audio.onerror = done;
-            await audio.play();
-            return;
+          // A short reply rides in the query string, so the browser starts
+          // playing the stream as it arrives instead of waiting for the whole
+          // mp3. Long replies fall back to POST + blob.
+          const q = encodeURIComponent(clean.slice(0, 2400));
+          let src: string;
+          let revoke: (() => void) | undefined;
+          if (q.length < 1500) {
+            src = `/api/tts?text=${q}`;
+          } else {
+            const res = await fetch("/api/tts", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ text: clean.slice(0, 2400) }),
+            });
+            if (!res.ok || !res.headers.get("content-type")?.includes("audio")) {
+              throw new Error("tts");
+            }
+            const blobUrl = URL.createObjectURL(await res.blob());
+            src = blobUrl;
+            revoke = () => URL.revokeObjectURL(blobUrl);
           }
-          // Upstream refused (bad key, quota, network): stop trying this
-          // session so every later reply goes straight to the browser voice.
-          elevenReady.current = false;
+
+          const audio = new Audio(src);
+          audio.volume = useNova.getState().settings.voiceVolume;
+          audioRef.current = audio;
+          const stopPulses = attachVoicePulses(audio);
+          let settled = false;
+          const done = () => {
+            if (settled) return;
+            settled = true;
+            stopPulses();
+            revoke?.();
+            if (audioRef.current === audio) audioRef.current = null;
+            finishSpeaking();
+          };
+          audio.onended = done;
+          // A failed stream (bad key, quota) surfaces here: fall back once and
+          // stop using ElevenLabs for the rest of the session.
+          audio.onerror = () => {
+            if (settled) return;
+            settled = true;
+            stopPulses();
+            revoke?.();
+            elevenReady.current = false;
+            speakWithBrowser(clean);
+          };
+          await audio.play();
+          return;
         } catch {
           elevenReady.current = false;
         }
       }
       speakWithBrowser(clean);
     },
-    [speakWithBrowser],
+    [speakWithBrowser, finishSpeaking],
   );
 
   const send = useCallback(
@@ -167,9 +215,9 @@ export function useAssistant() {
 
         useNova.getState().applyTurn(turn, data.demoMode);
 
-        await new Promise((r) => setTimeout(r, 260));
         const anyFail = turn.receipts?.some((r: { ok: boolean }) => !r.ok);
         useNova.getState().setNovaState(anyFail ? "warning" : "success");
+        awaitingAnswer.current = wantsAnswer(turn.reply ?? "", Boolean(turn.proposal));
         void speak(turn.reply);
         setTimeout(() => {
           const cur = useNova.getState().novaState;
@@ -195,6 +243,7 @@ export function useAssistant() {
       audioRef.current = null;
     }
     tts?.cancel();
+    awaitingAnswer.current = false;
     if (useNova.getState().novaState === "speaking") useNova.getState().setNovaState("idle");
   }, [tts]);
 

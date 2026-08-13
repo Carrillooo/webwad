@@ -33,6 +33,9 @@ export interface Settings {
   voiceName: string | null;
   /** Double-clap ("estilo JARVIS") activation. Keeps the mic open while idle. */
   clapEnabled: boolean;
+  /** Conversación seguida: si ZERO te hace una pregunta, el micro se reabre
+   *  solo al terminar de hablar, sin tocar nada. */
+  autoListen: boolean;
   language: string;
   timezone: string;
   defaultCalendarId: string;
@@ -55,6 +58,7 @@ export const defaultSettings: Settings = {
   voiceVolume: 1,
   voiceName: null,
   clapEnabled: false,
+  autoListen: true,
   language: "es-ES",
   timezone: "Europe/Madrid",
   defaultCalendarId: "primary",
@@ -142,6 +146,16 @@ export const useNova = create<NovaStore>()(
       storage: createJSONStorage(() => localStorage),
       // Only persist settings + history; conversation resets each session.
       partialize: (st) => ({ settings: st.settings, receipts: st.receipts }),
+      // Deep-merge settings so a NEW option added in a later release still gets
+      // its default for people who already have a persisted store.
+      merge: (persisted, current) => {
+        const p = (persisted ?? {}) as { settings?: Partial<Settings>; receipts?: ActionReceipt[] };
+        return {
+          ...current,
+          ...p,
+          settings: { ...defaultSettings, ...(p.settings ?? {}) },
+        } as NovaStore;
+      },
       // v2: rebrand to the Ferrari-red identity — override stale persisted colors.
       migrate: (persisted) => {
         const p = (persisted ?? {}) as { settings?: Partial<Settings>; receipts?: ActionReceipt[] };

@@ -7,6 +7,7 @@ import { useAssistant } from "@/hooks/useAssistant";
 import { useVoice } from "@/hooks/useVoice";
 import { useClapDetection } from "@/hooks/useClapDetection";
 import { usePushToTalkKey } from "@/hooks/usePushToTalkKey";
+import { useAutoListen } from "@/hooks/useAutoListen";
 import { playActivationBeep } from "@/lib/sound";
 import { TopBar } from "./TopBar";
 import { Monitor } from "./Monitor";
@@ -76,6 +77,10 @@ export function NovaApp() {
 
   // Space bar = push-to-talk on desktop.
   usePushToTalkKey(activate);
+
+  // Conversación seguida: si ZERO acaba con una pregunta, reabre el micro solo.
+  const autoListen = useNova((s) => s.settings.autoListen);
+  useAutoListen(autoListen, activate);
 
   const centered = CENTER_STATES.has(novaState);
   const dockScale = w < 520 ? 0.56 : 0.62;

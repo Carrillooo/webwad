@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { exchangeMsCode, fetchMsEmail } from "@/lib/microsoft/oauth";
 import { verifyState } from "@/lib/google/state";
 import { saveMsConnection } from "@/lib/microsoft/connection";
-import { appHome } from "@/lib/http/origin";
+import { appHome, oauthRedirectUri } from "@/lib/http/origin";
 
 /** GET /api/microsoft/callback — OAuth redirect target. */
 export async function GET(req: NextRequest) {
@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(home);
   }
   try {
-    const tokens = await exchangeMsCode(code);
+    const tokens = await exchangeMsCode(code, oauthRedirectUri(req, "microsoft"));
     const email = await fetchMsEmail(tokens.accessToken);
     await saveMsConnection(parsed.uid, parsed.authed, tokens, email);
     home.searchParams.set("microsoft", "connected");

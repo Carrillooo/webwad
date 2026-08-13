@@ -26,3 +26,20 @@ export function requestOrigin(req: NextRequest): string {
 export function appHome(req: NextRequest): URL {
   return new URL("/", requestOrigin(req));
 }
+
+/**
+ * El redirect_uri de OAuth, calculado desde la propia petición.
+ *
+ * OAuth exige que el redirect_uri del "authorize" y el del intercambio del
+ * código sean IDÉNTICOS. Sacarlos de una variable de entorno es frágil: si
+ * GOOGLE_REDIRECT_URI / MICROSOFT_REDIRECT_URI no están puestas en Vercel, el
+ * valor por defecto es localhost y el login acaba en "Safari no puede
+ * conectarse al servidor" — aunque el usuario haya entrado desde su web.
+ *
+ * Derivándolo del origen real, los dos coinciden siempre y funciona igual en
+ * local y en producción sin configurar nada. Eso sí: la URL resultante tiene
+ * que estar dada de alta en Google Cloud / Azure.
+ */
+export function oauthRedirectUri(req: NextRequest, provider: "google" | "microsoft"): string {
+  return `${requestOrigin(req)}/api/${provider}/callback`;
+}

@@ -18,11 +18,11 @@ export function isMicrosoftConfigured(): boolean {
   );
 }
 
-export function buildMsAuthUrl(state: string): string {
+export function buildMsAuthUrl(state: string, redirectUri?: string): string {
   const p = new URLSearchParams({
     client_id: serverConfig.microsoft.clientId,
     response_type: "code",
-    redirect_uri: serverConfig.microsoft.redirectUri,
+    redirect_uri: redirectUri ?? serverConfig.microsoft.redirectUri,
     response_mode: "query",
     scope: MS_SCOPES.join(" "),
     prompt: "select_account",
@@ -55,12 +55,12 @@ async function tokenRequest(body: Record<string, string>): Promise<MsTokens> {
   };
 }
 
-export function exchangeMsCode(code: string): Promise<MsTokens> {
+export function exchangeMsCode(code: string, redirectUri?: string): Promise<MsTokens> {
   return tokenRequest({
     client_id: serverConfig.microsoft.clientId,
     client_secret: serverConfig.microsoft.clientSecret,
     code,
-    redirect_uri: serverConfig.microsoft.redirectUri,
+    redirect_uri: redirectUri ?? serverConfig.microsoft.redirectUri,
     grant_type: "authorization_code",
     scope: MS_SCOPES.join(" "),
   });

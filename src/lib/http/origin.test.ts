@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import type { NextRequest } from "next/server";
-import { requestOrigin, appHome } from "./origin";
+import { requestOrigin, appHome, oauthRedirectUri } from "./origin";
 
 /** NextRequest mínimo: solo lo que lee requestOrigin. */
 function req(headers: Record<string, string>, nextUrlOrigin?: string): NextRequest {
@@ -47,5 +47,33 @@ describe("requestOrigin", () => {
     const home = appHome(req({ "x-forwarded-host": "webwad-6t4y.vercel.app", "x-forwarded-proto": "https" }));
     home.searchParams.set("google", "connected");
     expect(home.toString()).toBe("https://webwad-6t4y.vercel.app/?google=connected");
+  });
+});
+
+describe("oauthRedirectUri", () => {
+  it("apunta al callback del mismo origen (Vercel)", () => {
+    const r = req({ "x-forwarded-host": "webwad-6t4y.vercel.app", "x-forwarded-proto": "https" });
+    expect(oauthRedirectUri(r, "google")).toBe("https://webwad-6t4y.vercel.app/api/google/callback");
+    expect(oauthRedirectUri(r, "microsoft")).toBe(
+      "https://webwad-6t4y.vercel.app/api/microsoft/callback",
+    );
+  });
+
+  it("en local apunta a localhost con su puerto", () => {
+    expect(oauthRedirectUri(req({ host: "localhost:3000" }), "microsoft")).toBe(
+      "http://localhost:3000/api/microsoft/callback",
+    );
+  });
+
+  it("authorize y callback usan EXACTAMENTE el mismo valor (OAuth lo exige)", () => {
+    const desdeAuthorize = oauthRedirectUri(
+      req({ "x-forwarded-host": "mi.app", "x-forwarded-proto": "https" }),
+      "microsoft",
+    );
+    const desdeCallback = oauthRedirectUri(
+      req({ "x-forwarded-host": "mi.app", "x-forwarded-proto": "https" }),
+      "microsoft",
+    );
+    expect(desdeAuthorize).toBe(desdeCallback);
   });
 });

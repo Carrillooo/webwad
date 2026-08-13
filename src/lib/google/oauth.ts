@@ -22,10 +22,10 @@ export function isGoogleConfigured(): boolean {
   );
 }
 
-export function buildAuthUrl(state: string): string {
+export function buildAuthUrl(state: string, redirectUri?: string): string {
   const p = new URLSearchParams({
     client_id: serverConfig.google.clientId,
-    redirect_uri: serverConfig.google.redirectUri,
+    redirect_uri: redirectUri ?? serverConfig.google.redirectUri,
     response_type: "code",
     scope: GOOGLE_SCOPES.join(" "),
     access_type: "offline",
@@ -67,12 +67,12 @@ async function tokenRequest(body: Record<string, string>): Promise<GoogleTokens>
   };
 }
 
-export function exchangeCode(code: string): Promise<GoogleTokens> {
+export function exchangeCode(code: string, redirectUri?: string): Promise<GoogleTokens> {
   return tokenRequest({
     code,
     client_id: serverConfig.google.clientId,
     client_secret: serverConfig.google.clientSecret,
-    redirect_uri: serverConfig.google.redirectUri,
+    redirect_uri: redirectUri ?? serverConfig.google.redirectUri,
     grant_type: "authorization_code",
   });
 }

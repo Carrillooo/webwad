@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { buildMsAuthUrl, isMicrosoftConfigured } from "@/lib/microsoft/oauth";
 import { signState } from "@/lib/google/state";
 import { resolveUser } from "@/lib/auth";
+import { oauthRedirectUri } from "@/lib/http/origin";
 
 /** GET /api/microsoft/authorize — starts the Outlook OAuth flow. */
 export async function GET(req: NextRequest) {
@@ -12,5 +13,8 @@ export async function GET(req: NextRequest) {
     );
   }
   const { userId, authed } = await resolveUser(req);
-  return NextResponse.redirect(buildMsAuthUrl(signState({ uid: userId, authed })));
+  // El redirect se calcula desde la petición para que coincida con el del
+  // callback pase lo que pase con las variables de entorno.
+  const redirectUri = oauthRedirectUri(req, "microsoft");
+  return NextResponse.redirect(buildMsAuthUrl(signState({ uid: userId, authed }), redirectUri));
 }

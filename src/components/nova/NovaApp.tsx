@@ -16,13 +16,11 @@ import { Settings } from "./Settings";
  *  speaking it docks back so the monitor panel is fully visible. */
 const CENTER_STATES = new Set(["listening", "transcribing", "thinking", "planning"]);
 
-/** Scanner block footprint used for the dock↔center flight math. */
+/** Voice-core footprint used for the dock↔center flight math. */
 const CORE_W = 240;
-const CORE_H = 96; // bar + hint label
+const CORE_H = 198;
 
 function useViewport() {
-  // SSR-stable initial value (avoids hydration mismatch); real size lands in
-  // the effect right after mount.
   const [size, setSize] = useState({ w: 390, h: 844 });
   useEffect(() => {
     const onResize = () => setSize({ w: window.innerWidth, h: window.innerHeight });
@@ -44,7 +42,6 @@ export function NovaApp() {
   const onFinal = useCallback((text: string) => void send(text), [send]);
   const voice = useVoice(onFinal);
 
-  // Push-to-talk toggle on the core.
   const activate = useCallback(async () => {
     if (novaState === "speaking") {
       stopSpeaking();
@@ -73,14 +70,10 @@ export function NovaApp() {
     useNova.getState().setView("home");
   }, []);
 
-  // Double-clap activation (only while idle so it never fights the STT mic).
   const clapEnabled = useNova((s) => s.settings.clapEnabled);
   useClapDetection(clapEnabled && novaState === "idle", activate);
 
   const centered = CENTER_STATES.has(novaState);
-
-  // Flight targets (px → the spring interpolates smoothly).
-  // Docked: bottom-left, scaled down. Centered: middle of the stage, enlarged.
   const dock = { x: 10, y: h - CORE_H - 8, scale: 0.72 };
   const center = { x: w / 2 - CORE_W / 2, y: h / 2 - CORE_H / 2 - 12, scale: 1.12 };
 
@@ -90,7 +83,6 @@ export function NovaApp() {
         <TopBar />
       </div>
 
-      {/* Dimmer behind the centered core */}
       <AnimatePresence>
         {centered && (
           <motion.div
@@ -106,7 +98,6 @@ export function NovaApp() {
         )}
       </AnimatePresence>
 
-      {/* Holographic monitor — drops from the top when ZERO has something to show */}
       <AnimatePresence>
         {panelOpen && (
           <motion.div
@@ -123,7 +114,6 @@ export function NovaApp() {
         )}
       </AnimatePresence>
 
-      {/* The core: parked bottom-left, flies to center when you call it */}
       <motion.div
         className="fixed left-0 top-0 z-30"
         initial={false}

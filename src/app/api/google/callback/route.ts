@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { exchangeCode, fetchUserEmail } from "@/lib/google/oauth";
 import { verifyState } from "@/lib/google/state";
 import { saveConnection } from "@/lib/google/connection";
-import { serverConfig } from "@/lib/config";
+import { appHome } from "@/lib/http/origin";
 
 /** GET /api/google/callback — OAuth redirect target. Exchanges the code and
  *  stores the encrypted refresh token, then returns to the app. */
@@ -11,7 +11,9 @@ export async function GET(req: NextRequest) {
   const err = searchParams.get("error");
   const code = searchParams.get("code");
   const state = searchParams.get("state");
-  const home = new URL("/", serverConfig.appUrl);
+  // Vuelve SIEMPRE a la web desde la que se pulsó "Conectar", no a APP_URL:
+  // si esa variable no está puesta en Vercel, acabarías en localhost.
+  const home = appHome(req);
 
   if (err) {
     home.searchParams.set("google", "error");

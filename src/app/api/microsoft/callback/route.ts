@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { exchangeMsCode, fetchMsEmail } from "@/lib/microsoft/oauth";
 import { verifyState } from "@/lib/google/state";
 import { saveMsConnection } from "@/lib/microsoft/connection";
-import { serverConfig } from "@/lib/config";
+import { appHome } from "@/lib/http/origin";
 
 /** GET /api/microsoft/callback — OAuth redirect target. */
 export async function GET(req: NextRequest) {
@@ -10,7 +10,8 @@ export async function GET(req: NextRequest) {
   const err = searchParams.get("error");
   const code = searchParams.get("code");
   const state = searchParams.get("state");
-  const home = new URL("/", serverConfig.appUrl);
+  // Igual que en Google: volver al origen real de la petición, no a APP_URL.
+  const home = appHome(req);
 
   if (err || !code || !state) {
     home.searchParams.set("microsoft", err ? "error" : "invalid");

@@ -4,6 +4,8 @@ import { getAssistant } from "@/lib/providers/assistant";
 import { MockAssistantProvider } from "@/lib/providers/assistant/mock";
 import { resolveProviders } from "@/lib/providers";
 import { resolveUser } from "@/lib/auth";
+import { getStorage } from "@/lib/providers/storage";
+import type { MemoryItem } from "@/lib/providers/storage/types";
 import { OWNER_NAME, DEFAULT_TIMEZONE } from "@/lib/constants";
 
 const BodySchema = z.object({
@@ -45,7 +47,19 @@ export async function POST(req: NextRequest) {
 
   const { userId, authed } = await resolveUser(req);
   const providers = await resolveProviders(userId, authed);
-  const assistant = getAssistant(providers);
+  const storage = getStorage(authed);
+  const asKind = (k?: string): MemoryItem["kind"] =>
+    k === "preference" || k === "note" ? k : "fact";
+  const assistant = getAssistant(providers, {
+    memory: {
+      list: () => storage.listMemories(userId),
+      remember: (value, kind) => storage.addMemory(userId, { kind: asKind(kind), value }),
+      forget: async (id) => {
+        await storage.removeMemory(userId, id);
+        return true;
+      },
+    },
+  });
   const ctx = {
     ownerName: OWNER_NAME,
     nowIso: new Date().toISOString(),

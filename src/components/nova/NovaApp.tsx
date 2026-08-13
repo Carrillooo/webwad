@@ -6,6 +6,8 @@ import { useThemeSync } from "@/hooks/useThemeSync";
 import { useAssistant } from "@/hooks/useAssistant";
 import { useVoice } from "@/hooks/useVoice";
 import { useClapDetection } from "@/hooks/useClapDetection";
+import { usePushToTalkKey } from "@/hooks/usePushToTalkKey";
+import { playActivationBeep } from "@/lib/sound";
 import { TopBar } from "./TopBar";
 import { Monitor } from "./Monitor";
 import { NovaCore } from "./NovaCore";
@@ -56,6 +58,7 @@ export function NovaApp() {
       return;
     }
     if (novaState === "idle" || novaState === "success" || novaState === "warning" || novaState === "error") {
+      playActivationBeep();
       const r = await voice.start();
       if (r?.noStt) {
         useNova.getState().applyTurn(
@@ -76,6 +79,9 @@ export function NovaApp() {
   // Double-clap activation (only while idle so it never fights the STT mic).
   const clapEnabled = useNova((s) => s.settings.clapEnabled);
   useClapDetection(clapEnabled && novaState === "idle", activate);
+
+  // Space bar = push-to-talk on desktop.
+  usePushToTalkKey(activate);
 
   const centered = CENTER_STATES.has(novaState);
 

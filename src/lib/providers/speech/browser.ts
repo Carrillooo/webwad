@@ -53,7 +53,7 @@ export class WebSpeechSTT implements SpeechToTextProvider {
 }
 
 /** Strip things that make TTS sound robotic (emojis, markdown, list bullets). */
-function cleanForSpeech(text: string): string {
+export function cleanForSpeech(text: string): string {
   return text
     .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}]/gu, "") // emojis
     .replace(/[*_`#>~[\]]/g, "")

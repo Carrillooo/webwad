@@ -20,6 +20,38 @@ de Meta) y config de deploy. Todo se activa con credenciales; el demo funciona s
 
 ---
 
+## 🆕 Última sesión — asistente "todo terreno" (voz real, email, memoria, avisos)
+
+Verificado con `lint` ✅ · `typecheck` ✅ · `test` ✅ (67) · `build` ✅ · captura sin
+errores de consola. Lo que **no** se pudo probar en vivo aquí: ElevenLabs,
+Open-Meteo, Google y SMTP están **bloqueados por la red del sandbox** (se validan
+con `fetch` simulado en tests y en la máquina de Daniel).
+
+1. **Voz ultra-realista (ElevenLabs)** — `/api/tts` hace de proxy (la key nunca
+   sale del servidor), modelo `eleven_multilingual_v2`. `useAssistant.speak()`
+   la usa primero y **cae a la voz del navegador** si no está configurada o falla
+   (y deja de reintentar durante la sesión).
+2. **Enviar emails** — herramienta `send_email` + `src/lib/mail/send.ts`
+   (nodemailer). ALTO RIESGO: el modelo enseña el borrador y **exige un "sí"**.
+   Nunca finge: el recibo sólo es OK si el SMTP aceptó el destinatario.
+3. **Memoria personal persistente** — `remember_fact` / `list_memories` /
+   `forget_memory` sobre `memory_items` (Supabase) y **se inyecta en el prompt**,
+   así ZERO recuerda a Daniel entre conversaciones.
+4. **El tiempo** — `get_weather` vía Open-Meteo (sin API key), Madrid, 7 días.
+5. **Briefing matinal automático** — `/api/cron/briefing` (cron Vercel 08:00
+   Madrid) manda push con agenda + tareas + tiempo.
+6. **Avisos 30 min antes** — `/api/cron/reminders` (cada 15 min) con ventana
+   [+30, +45) para no repetir aviso.
+7. **Barra espaciadora = hablar** (`usePushToTalkKey`) además de las 2 palmadas.
+8. **Beep de activación** (`src/lib/sound.ts`), respeta Ajustes → sonidos.
+9. **"Deshacer"** y más ejemplos coloquiales en el prompt del calendario.
+10. **Hoja de tareas de los trabajadores por defecto**
+    (`1ZVRJ1FLYXJ7lphgXS7ipI3ptuGouN5T4tKteEsNgYMA`): la IA la escanea antes de
+    escribir, edita **en su sitio** y firma `(by zerodc)`.
+
+También: el motor local ahora dice claramente que está en **«modo básico»** en vez
+de «no le he entendido», para distinguir un fallo de IA de un fallo de comprensión.
+
 ## ✅ Qué funciona (verificado)
 
 - **Arranque en demo sin credenciales.** `DEMO_MODE` está ON por defecto (sólo se
@@ -182,6 +214,28 @@ de Meta) y config de deploy. Todo se activa con credenciales; el demo funciona s
 Mientras tanto, ZERO sigue funcionando con los MockProviders.
 
 ---
+
+### USER ACTION REQUIRED — SMTP para enviar correo desde daniel@rolmovil.com
+- **QUÉ NECESITO:** servidor SMTP, puerto, usuario y contraseña del buzón.
+- **DÓNDE:** el panel del proveedor del dominio `rolmovil.com` (Ionos, Hostinger,
+  Google Workspace, Microsoft 365…). Si es Gmail/Workspace hay que crear una
+  **contraseña de aplicación**, no vale la contraseña normal.
+- **VARIABLES .ENV:**
+  ```
+  SMTP_HOST=
+  SMTP_PORT=587
+  SMTP_USER=daniel@rolmovil.com
+  SMTP_PASS=
+  MAIL_FROM=daniel@rolmovil.com
+  ```
+- **CÓMO COMPROBAR:** pídele a ZERO «manda un correo a X» → enseña borrador →
+  dices «sí» → responde con el id del mensaje sólo si el SMTP lo aceptó.
+
+### USER ACTION REQUIRED — ElevenLabs (voz humana)
+- **VARIABLES .ENV:** `ELEVENLABS_API_KEY=` (y `ELEVENLABS_VOICE_ID=` si quieres
+  otra voz; por defecto "Daniel").
+- **CÓMO COMPROBAR:** `GET /api/tts` → `{"configured":true}`. Si falla la síntesis,
+  ZERO sigue hablando con la voz del navegador (nunca se queda mudo).
 
 ## NEXT SESSION
 

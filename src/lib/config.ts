@@ -53,9 +53,24 @@ export const serverConfig = {
     privateKey: process.env.VAPID_PRIVATE_KEY ?? "",
     subject: process.env.VAPID_SUBJECT ?? "mailto:danielrolmovil@gmail.com",
   },
-  /** The spreadsheet ZERO uses for tasks-by-person (set after converting the
-   *  Excel to a Google Sheet). The assistant reads its structure before writing. */
-  tasksSpreadsheetId: process.env.TASKS_SPREADSHEET_ID ?? "",
+  elevenlabs: {
+    apiKey: process.env.ELEVENLABS_API_KEY ?? "",
+    // "Daniel" — deep, calm prebuilt voice; multilingual model speaks Spanish.
+    voiceId: process.env.ELEVENLABS_VOICE_ID ?? "onwK4e9ZLuTAKqWW03F9",
+  },
+  smtp: {
+    host: process.env.SMTP_HOST ?? "",
+    port: Number(process.env.SMTP_PORT ?? 587),
+    user: process.env.SMTP_USER ?? "",
+    pass: process.env.SMTP_PASS ?? "",
+    from: process.env.MAIL_FROM ?? "daniel@rolmovil.com",
+  },
+  /** Hoja de tareas por persona que ZERO edita EN SU SITIO (mismo enlace, lo
+   *  que ven los trabajadores). El id no es un secreto — sin la conexión de
+   *  Google no se puede leer ni escribir — así que va como valor por defecto
+   *  para que funcione sin tocar el .env. TASKS_SPREADSHEET_ID lo sobrescribe. */
+  tasksSpreadsheetId:
+    process.env.TASKS_SPREADSHEET_ID ?? "1ZVRJ1FLYXJ7lphgXS7ipI3ptuGouN5T4tKteEsNgYMA",
 } as const;
 
 /** Marker appended to anything ZERO writes into the tasks spreadsheet. */
@@ -70,6 +85,15 @@ export function isMicrosoftConfigured(): boolean {
     serverConfig.microsoft.clientId.trim().length > 0 &&
     serverConfig.microsoft.clientSecret.trim().length > 0
   );
+}
+
+export function isElevenLabsConfigured(): boolean {
+  return serverConfig.elevenlabs.apiKey.trim().length > 0;
+}
+
+export function isSmtpConfigured(): boolean {
+  const s = serverConfig.smtp;
+  return s.host.trim().length > 0 && s.user.trim().length > 0 && s.pass.trim().length > 0;
 }
 
 export function isWhatsappConfigured(): boolean {

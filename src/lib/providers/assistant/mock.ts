@@ -244,7 +244,7 @@ export class MockAssistantProvider implements AssistantProvider {
       default:
         return {
           reply:
-            "No estoy seguro de haberle entendido. Puedo consultar su agenda, crear eventos y tareas, buscar documentos o darle su briefing.",
+            "Ahora mismo estoy en modo básico (la IA completa no responde: revisa la ANTHROPIC_API_KEY o la conexión). Aun así puedo consultar tu agenda, crear eventos y tareas, o darte el briefing.",
           view: "home",
           state,
         };

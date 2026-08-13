@@ -10,8 +10,20 @@ import {
 
 type MonitorView = NonNullable<AssistantTurn["view"]>;
 import { Providers } from "../index";
-import { serverConfig, ZERO_ATTRIBUTION } from "../../config";
+import { serverConfig, ZERO_ATTRIBUTION, isSmtpConfigured } from "../../config";
 import { humanDay, humanTime } from "../../datetime";
+import { sendMail } from "../../mail/send";
+import { getForecast } from "../../weather";
+import type { MemoryItem } from "../storage/types";
+
+/** Extra capabilities injected per-request (memory persistence, etc.). */
+export interface AssistantExtras {
+  memory?: {
+    list: () => Promise<MemoryItem[]>;
+    remember: (value: string, kind?: string) => Promise<MemoryItem>;
+    forget: (id: string) => Promise<boolean>;
+  };
+}
 
 /** Ensure at least one non-empty cell carries the "(by zerodc)" marker. */
 function withAttribution(values: string[]): string[] {
@@ -32,7 +44,10 @@ function withAttribution(values: string[]): string[] {
 export class AnthropicAssistantProvider implements AssistantProvider {
   readonly kind = "anthropic" as const;
   private client: Anthropic;
-  constructor(private providers: Providers) {
+  constructor(
+    private providers: Providers,
+    private extras: AssistantExtras = {},
+  ) {
     this.client = new Anthropic({ apiKey: serverConfig.anthropic.apiKey });
   }
 
@@ -45,12 +60,23 @@ export class AnthropicAssistantProvider implements AssistantProvider {
     let view: MonitorView | undefined;
     let focusDate: string | undefined;
 
+    // Personal memory is injected into the prompt so ZERO "knows" Daniel
+    // without needing a tool call on every turn.
+    let memories: MemoryItem[] = [];
+    if (this.extras.memory) {
+      try {
+        memories = await this.extras.memory.list();
+      } catch {
+        /* memory unavailable → continue without it */
+      }
+    }
+
     let final = "";
-    for (let hop = 0; hop < 6; hop++) {
+    for (let hop = 0; hop < 8; hop++) {
       const res = await this.client.messages.create({
         model: serverConfig.anthropic.model,
         max_tokens: 1024,
-        system: systemPrompt(ctx),
+        system: systemPrompt(ctx, memories),
         tools: TOOLS,
         messages,
       });
@@ -255,6 +281,41 @@ export class AnthropicAssistantProvider implements AssistantProvider {
           receipt("sheet.update", `Celda actualizada ${ZERO_ATTRIBUTION}`, true);
           return { data: { ok: true, wrote: withMark } };
         }
+        case "send_email": {
+          // HIGH RISK — the model must have shown the draft and received an
+          // explicit "sí" before calling this (enforced in the system prompt).
+          const result = await sendMail({
+            to: String(input.to),
+            subject: String(input.subject),
+            body: String(input.body),
+          });
+          receipt("email.send", result.ok ? `Email enviado a ${input.to}` : "Email NO enviado", result.ok);
+          return { data: result, isError: !result.ok };
+        }
+        case "get_weather": {
+          const fc = await getForecast();
+          if (!fc.ok) return { data: { error: `No pude consultar el tiempo: ${fc.error}` }, isError: true };
+          return { data: { location: "Madrid", days: fc.days } };
+        }
+        case "remember_fact": {
+          if (!this.extras.memory) return { data: { error: "La memoria no está disponible." }, isError: true };
+          const item = await this.extras.memory.remember(
+            String(input.value),
+            input.kind ? String(input.kind) : "fact",
+          );
+          receipt("memory.add", `Memoria guardada · ${item.value.slice(0, 40)}`, true);
+          return { data: item };
+        }
+        case "list_memories": {
+          if (!this.extras.memory) return { data: { error: "La memoria no está disponible." }, isError: true };
+          return { data: await this.extras.memory.list() };
+        }
+        case "forget_memory": {
+          if (!this.extras.memory) return { data: { error: "La memoria no está disponible." }, isError: true };
+          const ok = await this.extras.memory.forget(String(input.id));
+          receipt("memory.delete", ok ? "Memoria olvidada" : "Memoria no encontrada", ok);
+          return { data: { ok }, isError: !ok };
+        }
         default:
           return { data: { error: `herramienta desconocida: ${name}` }, isError: true };
       }
@@ -265,7 +326,14 @@ export class AnthropicAssistantProvider implements AssistantProvider {
   }
 }
 
-function systemPrompt(ctx: AssistantContext): string {
+function systemPrompt(ctx: AssistantContext, memories: MemoryItem[] = []): string {
+  const memoryBlock = memories.length
+    ? [
+        ``,
+        `MEMORIA PERSONAL (cosas que Daniel te ha pedido recordar; úsalas con naturalidad):`,
+        ...memories.map((m) => `- [${m.id}] ${m.value}`),
+      ]
+    : [];
   return [
     `Eres ZERO, el asistente personal de ${ctx.ownerName}. Respondes en español de España,`,
     `de forma breve, precisa y natural. Zona horaria Europe/Madrid, formato 24h, semana desde lunes.`,
@@ -286,6 +354,15 @@ function systemPrompt(ctx: AssistantContext): string {
     `- Entiende lenguaje suelto y coloquial: "gimnasio 1 tarde" = evento "Gimnasio" a las`,
     `  13:00; "cena con Marta el viernes 9 noche" = viernes 21:00; "médico pasado mañana`,
     `  por la mañana" = 9:00-10:00 aprox (pregunta solo si es crítico).`,
+    `- Más ejemplos coloquiales: "reunión con los del banco el lunes a primera hora" =`,
+    `  lunes 9:00; "recogida niños cole 4 y media" = 16:30; "llamar a Paco en un rato" =`,
+    `  tarea, no evento; "curro de 8 a 3" = evento 8:00-15:00; "peluquería sábado sobre`,
+    `  las 12" = sábado 12:00; "quedada finde" = pregunta si sábado o domingo.`,
+    `- Si dice "qué tengo hoy/mañana/esta semana", lista los eventos Y las tareas con hora,`,
+    `  en orden, de forma legible y hablada (nada de tablas).`,
+    `- DESHACER: si dice "deshaz", "quita eso", "no, bórralo" justo después de crear algo,`,
+    `  elimina ESE elemento recién creado (usa el id devuelto por la herramienta) sin pedir`,
+    `  más confirmación.`,
     `- TÍTULOS LIMPIOS: extrae un título corto y natural con mayúscula inicial ("Gimnasio",`,
     `  "Cena con Marta", "Médico"). NUNCA metas en el título palabras de la orden ("añade",`,
     `  "que tengo", "al calendario", horas o días) ni pongas marcadores tipo "Nombre del`,
@@ -311,15 +388,19 @@ function systemPrompt(ctx: AssistantContext): string {
     ``,
     `HOJA DE TAREAS POR PERSONA (Google Sheets o Excel .xlsx en Drive):`,
     serverConfig.tasksSpreadsheetId
-      ? `- Su hoja de tareas tiene el id "${serverConfig.tasksSpreadsheetId}". Úsala cuando le pidan`
-      : `- Si le piden apuntar una tarea "a X persona" en su hoja/Excel, primero encuéntrala con find_spreadsheet.`,
-    `  apuntar una tarea a una persona/categoría (p. ej. "ponle a Abdu que...").`,
-    `- La hoja puede ser un Excel (.xlsx) compartido en vivo con más personas: se edita`,
-    `  EN SU SITIO (mismo archivo/enlace), así que tus compañeros ven el cambio. No la dupliques.`,
+      ? `- LA hoja de tareas de los trabajadores tiene el id "${serverConfig.tasksSpreadsheetId}".`
+      : `- Si no sabes cuál es la hoja de tareas, búscala con find_spreadsheet antes de nada.`,
+    `  Úsala siempre que te pidan apuntar/quitar trabajo a una persona o categoría`,
+    `  (p. ej. "ponle a Abdu que revise la furgoneta", "añade a Juan el montaje del lunes").`,
+    `  No hace falta que te den el enlace: ya lo tienes.`,
+    `- Está compartida en vivo con los trabajadores: se edita EN SU SITIO (mismo archivo/enlace),`,
+    `  así que ellos ven el cambio al momento. No la dupliques ni la conviertas.`,
     `- ANTES de escribir, ESCANEA la estructura: usa list_spreadsheet_tabs y read_spreadsheet para`,
-    `  entender qué columnas/filas representan personas, días y categorías. No asumas el formato.`,
+    `  entender qué pestaña toca y qué columnas/filas son personas, días y categorías.`,
+    `  No asumas el formato ni escribas "a ciegas".`,
     `- Luego escribe en el sitio correcto: update_spreadsheet_cell para una celda concreta`,
-    `  (persona × día) o append_spreadsheet_row si es una lista.`,
+    `  (persona × día) o append_spreadsheet_row si es una lista. Si la celda ya tiene texto,`,
+    `  léela primero y añade lo nuevo detrás en vez de borrar el trabajo de otro.`,
     `- OBLIGATORIO: todo lo que escribas en la hoja debe terminar con "${ZERO_ATTRIBUTION}".`,
     `  (Las herramientas lo añaden, pero inclúyelo tú también en el texto.)`,
     `- Confirma brevemente lo que escribiste y dónde.`,
@@ -327,6 +408,25 @@ function systemPrompt(ctx: AssistantContext): string {
     `OUTLOOK: si el usuario menciona Outlook / Microsoft / To Do, usa las herramientas`,
     `list_outlook_tasks / create_outlook_task / complete_outlook_task. Si no lo menciona,`,
     `las tareas van a Google Tasks (list_tasks / create_task).`,
+    ``,
+    `EMAIL (send_email — envía desde ${serverConfig.smtp.from}):`,
+    isSmtpConfigured()
+      ? `- Disponible. Flujo OBLIGATORIO: 1) redacta el borrador (Para / Asunto / Cuerpo) y`
+      : `- AÚN NO CONFIGURADO (faltan credenciales SMTP): si pide enviar un email, redacta el`,
+    isSmtpConfigured()
+      ? `  muéstraselo; 2) espera un "sí"/"envíalo" EXPLÍCITO; 3) solo entonces llama a send_email.`
+      : `  borrador igualmente y avisa de que falta configurar el correo en Ajustes/.env.local.`,
+    `- Redacta en español, tono profesional cercano, firma "Daniel". Nunca envíes sin`,
+    `  destinatario claro ni sin confirmación. Nunca inventes direcciones de correo.`,
+    ``,
+    `TIEMPO: get_weather da la previsión de 7 días en Madrid (Open-Meteo). Úsala si pregunta`,
+    `por el tiempo, o para avisar proactivamente si un evento es al aire libre y va a llover.`,
+    ``,
+    `MEMORIA PERSONAL: cuando Daniel te cuente algo estable sobre él ("mi mujer se llama...",`,
+    `"odio madrugar", "el NIF de la empresa es...") o te pida "recuerda que...", guárdalo con`,
+    `remember_fact (frases cortas y autocontenidas). Usa forget_memory si pide olvidar algo.`,
+    `No guardes trivialidades ni datos de un solo uso.`,
+    ...memoryBlock,
     ``,
     `Actúa solo mediante las herramientas. Tras actuar, responde en una o dos frases; incluye horas`,
     `en formato 24h. No expliques tu razonamiento interno.`,
@@ -482,6 +582,45 @@ const TOOLS: Anthropic.Tool[] = [
       },
       required: ["spreadsheetId", "values"],
     },
+  },
+  {
+    name: "send_email",
+    description:
+      "Envía un email desde la cuenta de Daniel. ALTO RIESGO: muestra antes el borrador (para/asunto/cuerpo) y pide confirmación explícita; llama solo tras un 'sí'.",
+    input_schema: {
+      type: "object",
+      properties: {
+        to: { type: "string", description: "destinatario, email válido" },
+        subject: { type: "string" },
+        body: { type: "string", description: "cuerpo en texto plano, firmado 'Daniel'" },
+      },
+      required: ["to", "subject", "body"],
+    },
+  },
+  {
+    name: "get_weather",
+    description: "Previsión meteorológica de los próximos 7 días en Madrid (min/max, lluvia, resumen).",
+    input_schema: { type: "object", properties: {} },
+  },
+  {
+    name: "remember_fact",
+    description:
+      "Guarda un dato estable sobre Daniel en la memoria persistente (frase corta y autocontenida). kind: preference|fact|note.",
+    input_schema: {
+      type: "object",
+      properties: { value: { type: "string" }, kind: { type: "string" } },
+      required: ["value"],
+    },
+  },
+  {
+    name: "list_memories",
+    description: "Lista la memoria personal guardada (con ids).",
+    input_schema: { type: "object", properties: {} },
+  },
+  {
+    name: "forget_memory",
+    description: "Borra un elemento de la memoria por id (los ids salen en el prompt o en list_memories).",
+    input_schema: { type: "object", properties: { id: { type: "string" } }, required: ["id"] },
   },
   {
     name: "update_spreadsheet_cell",

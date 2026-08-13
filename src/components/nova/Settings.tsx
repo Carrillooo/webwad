@@ -96,6 +96,64 @@ function GoogleConnection() {
   );
 }
 
+/** Enlace iCal para suscribir la agenda de ZERO desde Apple, Google u Outlook. */
+function CalendarFeed() {
+  const [feed, setFeed] = useState<{ configured: boolean; url?: string; webcal?: string } | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/calendar/feed-url")
+      .then((r) => r.json())
+      .then(setFeed)
+      .catch(() => setFeed({ configured: false }));
+  }, []);
+
+  if (!feed) return <p className="text-xs text-faint py-2">Comprobando…</p>;
+
+  if (!feed.configured || !feed.url) {
+    return (
+      <div className="glass px-3 py-2.5 text-xs text-dim">
+        Falta <span className="text-fg">CALENDAR_FEED_SECRET</span> (o{" "}
+        <span className="text-fg">TOKEN_ENCRYPTION_KEY</span>) para firmar el enlace de suscripción.
+      </div>
+    );
+  }
+
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(feed.url!);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    } catch {
+      /* sin portapapeles: el enlace se puede seleccionar a mano */
+    }
+  };
+
+  return (
+    <div className="glass holo-border px-3 py-2.5 space-y-2">
+      <p className="text-[11px] text-faint leading-snug">
+        Suscríbete desde iPhone, Mac, Google Calendar u Outlook y verás aquí todo lo que ZERO
+        apunte. Es de solo lectura: quien tenga el enlace ve la agenda, pero no puede tocarla.
+      </p>
+      <div className="text-[10px] text-dim break-all font-mono leading-tight">{feed.url}</div>
+      <div className="flex gap-2">
+        <button
+          onClick={copy}
+          className="px-3 py-1.5 rounded-lg text-xs"
+          style={{ background: "rgb(var(--nova-accent) / 0.22)" }}
+        >
+          {copied ? "Copiado ✓" : "Copiar enlace"}
+        </button>
+        {feed.webcal && (
+          <a href={feed.webcal} className="px-3 py-1.5 rounded-lg text-xs glass holo-border">
+            Añadir a Apple
+          </a>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function DatabaseStatus() {
   const [ready, setReady] = useState<boolean | null>(null);
 
@@ -328,6 +386,11 @@ export function Settings() {
                 <GoogleConnection />
                 <OutlookConnection />
               </div>
+            </section>
+
+            <section className="mb-4">
+              <h3 className="text-[11px] uppercase tracking-wide text-faint mb-1">Suscribir el calendario</h3>
+              <CalendarFeed />
             </section>
 
             <section className="mb-4">

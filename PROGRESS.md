@@ -43,6 +43,31 @@ Las claves nuevas van **sólo** en `.env.local` (local) y en Vercel →
 Settings → Environment Variables (producción). Nunca en el repositorio.
 Recomendado además: poner el repositorio en **privado**.
 
+## 📅 Calendario suscribible (iCal)
+
+`GET /api/calendar/feed.ics?token=…` publica la agenda que ve ZERO en formato
+iCalendar (RFC 5545) para suscribirse desde iPhone/Mac, Google Calendar u
+Outlook. Ventana: 90 días atrás y 365 por delante.
+
+- **Solo lectura.** Quien tenga el enlace ve la agenda; no puede modificarla.
+- **El token va en la URL** porque los clientes de calendario piden el enlace
+  sin cabeceras de autenticación. Se deriva por HMAC de `CALENDAR_FEED_SECRET`
+  (o `TOKEN_ENCRYPTION_KEY`), así que no hace falta tabla y se revocan todos
+  los enlaces cambiando ese secreto.
+- **El enlace está en Ajustes → Suscribir el calendario**, con botón de copiar
+  y un `webcal://` que abre el diálogo de suscripción en Apple.
+- Horas en UTC (cada cliente las pasa a su zona) y `VALUE=DATE` en los eventos
+  de todo el día, calculado en Madrid — en UTC salían un día antes.
+- `UID` estable por evento: al refrescar se actualiza en vez de duplicarse.
+- Verificado con `ical.js` (el parser de Thunderbird): 4 eventos leídos con la
+  hora correcta de Madrid.
+
+**Cuánto tarda en aparecer un evento nuevo:** lo decide el cliente, no ZERO.
+Apple deja elegir (hasta cada 5 min), Outlook ~1 h, y **Google Calendar
+refresca las suscripciones cada 8-24 h** — es un límite suyo. Para que en
+Google aparezca al instante, lo correcto es conectar Google en ZERO: entonces
+escribe directamente en su calendario real.
+
 ## 🆕 Última sesión — asistente "todo terreno" (voz real, email, memoria, avisos)
 
 Verificado con `lint` ✅ · `typecheck` ✅ · `test` ✅ (67) · `build` ✅ · captura sin

@@ -43,6 +43,39 @@ Las claves nuevas van **sólo** en `.env.local` (local) y en Vercel →
 Settings → Environment Variables (producción). Nunca en el repositorio.
 Recomendado además: poner el repositorio en **privado**.
 
+## 🔗 Google preconfigurado (sin botón de "Conectar")
+
+ZERO lo usa una sola persona, así que la cuenta de Google puede quedar fija:
+se autoriza **una vez** y a partir de ahí entra solo, también tras reiniciar,
+redesplegar o quedarse sin base de datos.
+
+```bash
+npm run google:token     # abre el navegador, autorizas y te imprime el token
+```
+
+Pega lo que imprime en `.env.local` y en Vercel:
+
+```
+GOOGLE_ACCOUNT_EMAIL=danielrolmovil@gmail.com
+GOOGLE_REFRESH_TOKEN=1//...
+```
+
+- El script escucha en el redirect que ya está dado de alta
+  (`http://localhost:3000/api/google/callback`), así que **no hay que tocar
+  Google Cloud** — pero cierra antes `npm run dev`, que ocupa ese puerto.
+- Con `GOOGLE_REFRESH_TOKEN` puesto, Ajustes → Integraciones muestra
+  «Siempre enlazado» y desaparece el botón de conectar/desconectar.
+- Una conexión hecha a mano (el flujo de siempre) tiene prioridad sobre la
+  preconfigurada, así que ambas conviven.
+- El access token se cachea en el proceso con 60 s de margen: una llamada a
+  Google menos por petición.
+- Si el token se revoca, ZERO **no se cae**: degrada a los mocks y deja el
+  motivo en la terminal.
+- ⚠️ **Pantalla de consentimiento en «Testing» = el token caduca a los 7 días.**
+  Google Cloud → APIs y servicios → Pantalla de consentimiento → **Publicar**.
+- Ya no hace falta `TOKEN_ENCRYPTION_KEY` para Google (no se guarda nada);
+  sigue haciendo falta para Outlook y para el enlace del calendario.
+
 ## 📅 Calendario suscribible (iCal)
 
 `GET /api/calendar/feed.ics?token=…` publica la agenda que ve ZERO en formato

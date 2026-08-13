@@ -44,7 +44,10 @@ function Slider({ value, min, max, step, onChange }: { value: number; min: numbe
 }
 
 function GoogleConnection() {
-  const [state, setState] = useState<{ configured: boolean; connection: { connected: boolean; email?: string } } | null>(null);
+  const [state, setState] = useState<{
+    configured: boolean;
+    connection: { connected: boolean; email?: string; preconfigured?: boolean };
+  } | null>(null);
 
   useEffect(() => {
     fetch("/api/google/status")
@@ -64,6 +67,8 @@ function GoogleConnection() {
   }
 
   const connected = state.connection.connected;
+  // Cuenta fija (GOOGLE_REFRESH_TOKEN): no hay nada que enlazar ni desenlazar.
+  const preconfigured = Boolean(state.connection.preconfigured);
   return (
     <div className="glass holo-border px-3 py-2.5 flex items-center justify-between gap-3">
       <div className="min-w-0">
@@ -72,7 +77,14 @@ function GoogleConnection() {
           {connected ? state.connection.email ?? "Conectado" : "Sin conectar"}
         </div>
       </div>
-      {connected ? (
+      {preconfigured ? (
+        <span
+          className="px-3 py-1.5 rounded-lg text-[11px] text-dim shrink-0"
+          style={{ background: "rgb(var(--nova-accent) / 0.14)" }}
+        >
+          Siempre enlazado
+        </span>
+      ) : connected ? (
         <button
           onClick={async () => {
             await fetch("/api/google/disconnect", { method: "POST" });

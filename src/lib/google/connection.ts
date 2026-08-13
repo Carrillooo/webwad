@@ -1,4 +1,5 @@
 import { database, isDatabaseConfigured } from "../db/server";
+import { serverConfig } from "../config";
 import { encryptToken, decryptToken, isEncryptionConfigured } from "../crypto/tokens";
 import { GoogleTokens, refreshAccessToken } from "./oauth";
 
@@ -6,6 +7,8 @@ export interface GoogleConnection {
   connected: boolean;
   email?: string;
   connectedAt?: string;
+  /** true cuando la cuenta viene de GOOGLE_REFRESH_TOKEN (no se desconecta). */
+  preconfigured?: boolean;
 }
 
 interface Stored {
@@ -104,10 +107,46 @@ async function load(userId: string, authed: boolean): Promise<Stored | null> {
   return mem().get(userId) ?? null;
 }
 
+/**
+ * Cuenta preconfigurada. ZERO lo usa una sola persona: en vez de pulsar
+ * "Conectar" (y volver a pulsarlo cada vez que se pierde el almacenamiento),
+ * se autoriza UNA vez con `npm run google:token` y el refresh token se guarda
+ * en GOOGLE_REFRESH_TOKEN. Desde entonces Google está siempre enlazado.
+ */
+export function isGooglePreconfigured(): boolean {
+  return serverConfig.google.refreshToken.trim().length > 0;
+}
+
+/** Access token en memoria del proceso (evita un viaje a Google por petición). */
+const envToken = globalThis as unknown as { __zeroGoogleEnvTok?: { token: string; exp: number } };
+
+async function preconfiguredAccessToken(): Promise<string | null> {
+  const cached = envToken.__zeroGoogleEnvTok;
+  // 60 s de margen para no usar uno que caduque a mitad de la petición.
+  if (cached && cached.exp - 60_000 > Date.now()) return cached.token;
+  try {
+    const fresh = await refreshAccessToken(serverConfig.google.refreshToken.trim());
+    envToken.__zeroGoogleEnvTok = { token: fresh.accessToken, exp: fresh.expiresAt };
+    return fresh.accessToken;
+  } catch (e) {
+    // Un refresh token revocado o caducado (app en "Testing" = 7 días) no debe
+    // tumbar la app: se degrada a los mocks y se ve el motivo en la terminal.
+    console.error("google preconfigurado: refresh falló", e);
+    return null;
+  }
+}
+
 export async function getConnection(userId: string, authed: boolean): Promise<GoogleConnection> {
   const s = await load(userId, authed);
-  if (!s) return { connected: false };
-  return { connected: true, email: s.email, connectedAt: s.connectedAt };
+  if (s) return { connected: true, email: s.email, connectedAt: s.connectedAt };
+  if (isGooglePreconfigured()) {
+    return {
+      connected: true,
+      email: serverConfig.google.accountEmail || "Cuenta preconfigurada",
+      preconfigured: true,
+    };
+  }
+  return { connected: false };
 }
 
 export async function disconnect(userId: string, authed: boolean): Promise<void> {
@@ -121,9 +160,13 @@ export async function disconnect(userId: string, authed: boolean): Promise<void>
 }
 
 export async function getAccessToken(userId: string, authed: boolean): Promise<string | null> {
-  if (!isEncryptionConfigured()) return null;
-  const s = await load(userId, authed);
-  if (!s) return null;
+  // Una conexión hecha a mano manda sobre la preconfigurada; si no hay ninguna
+  // y existe GOOGLE_REFRESH_TOKEN, Google está enlazado sin tocar nada.
+  const stored = isEncryptionConfigured() ? await load(userId, authed) : null;
+  if (!stored) {
+    return isGooglePreconfigured() ? preconfiguredAccessToken() : null;
+  }
+  const s = stored;
 
   if (s.accessTokenEnc && s.accessTokenExpiry && s.accessTokenExpiry > Date.now()) {
     return decryptToken(s.accessTokenEnc);

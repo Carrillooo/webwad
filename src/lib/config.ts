@@ -30,6 +30,11 @@ export const serverConfig = {
     clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? "",
     redirectUri:
       process.env.GOOGLE_REDIRECT_URI ?? "http://localhost:3000/api/google/callback",
+    /** Cuenta preconfigurada: ZERO lo usa una sola persona, así que en vez de
+     *  pulsar "Conectar" cada vez se autoriza UNA vez (npm run google:token) y
+     *  el refresh token vive aquí. Si está puesto, no hay que enlazar nada. */
+    refreshToken: process.env.GOOGLE_REFRESH_TOKEN ?? "",
+    accountEmail: process.env.GOOGLE_ACCOUNT_EMAIL ?? "",
   },
   microsoft: {
     clientId: process.env.MICROSOFT_CLIENT_ID ?? "",
@@ -128,8 +133,13 @@ export function computeCapabilities(): Capability[] {
   const has = (v: string) => v.trim().length > 0;
 
   const databaseReady = has(c.database.url);
+  // Con cuenta preconfigurada no hace falta TOKEN_ENCRYPTION_KEY: no se guarda
+  // ningún token, se usa el de GOOGLE_REFRESH_TOKEN.
+  const googlePreset = has(c.google.refreshToken);
   const googleReady =
-    has(c.google.clientId) && has(c.google.clientSecret) && has(c.tokenEncryptionKey);
+    has(c.google.clientId) &&
+    has(c.google.clientSecret) &&
+    (googlePreset || has(c.tokenEncryptionKey));
   const anthropicReady = has(c.anthropic.apiKey);
 
   return [
@@ -164,9 +174,11 @@ export function computeCapabilities(): Capability[] {
       key: "google",
       label: "Google OAuth",
       status: googleReady ? "READY" : "MISSING",
-      detail: googleReady
-        ? "Conexión con Google disponible."
-        : "Sin credenciales: Calendar/Tasks/Docs en modo demo.",
+      detail: !googleReady
+        ? "Sin credenciales: Calendar/Tasks/Docs en modo demo."
+        : googlePreset
+          ? "Cuenta preconfigurada: Google siempre enlazado, sin pulsar nada."
+          : "Conexión con Google disponible (hay que enlazar la cuenta).",
       required: false,
     },
     {

@@ -1,12 +1,44 @@
 import { NextRequest, NextResponse } from "next/server";
 import { resolveUser } from "@/lib/auth";
-import { getConnection } from "@/lib/google/connection";
+import { getConnection, getAccessToken, isGooglePreconfigured } from "@/lib/google/connection";
 import { isGoogleConfigured } from "@/lib/google/oauth";
+import { isEncryptionConfigured } from "@/lib/crypto/tokens";
+import { serverConfig } from "@/lib/config";
 
-/** GET /api/google/status — connection state for the current user. */
+/**
+ * Motivos por los que Google puede figurar conectado y aun así no usarse.
+ * Sin esto el usuario solo ve "modo demo" y no hay forma de saber por qué.
+ */
+export type GoogleReason =
+  | "ok"
+  | "sin_credenciales" // faltan GOOGLE_CLIENT_ID/SECRET
+  | "demo_mode" // DEMO_MODE=true fuerza los datos simulados
+  | "sin_cifrado" // falta TOKEN_ENCRYPTION_KEY: el token guardado no se puede leer
+  | "sin_conexion" // nadie ha pulsado "Conectar" (o se perdió al no haber base de datos)
+  | "token_rechazado"; // Google ya no acepta el token: revocado o caducado
+
+/** GET /api/google/status — estado de la conexión y, si no vale, por qué. */
 export async function GET(req: NextRequest) {
   const { userId, authed } = await resolveUser(req);
   const configured = isGoogleConfigured();
   const connection = configured ? await getConnection(userId, authed) : { connected: false };
-  return NextResponse.json({ configured, connection });
+
+  let usable = false;
+  let reason: GoogleReason = "ok";
+
+  if (!configured) reason = "sin_credenciales";
+  else if (serverConfig.demoMode) reason = "demo_mode";
+  else if (!isEncryptionConfigured() && !isGooglePreconfigured()) reason = "sin_cifrado";
+  else {
+    try {
+      usable = Boolean(await getAccessToken(userId, authed));
+      // Con cuenta preconfigurada siempre se intenta refrescar, así que un null
+      // no es "falta conectar": es que Google no aceptó el token.
+      if (!usable) reason = isGooglePreconfigured() ? "token_rechazado" : "sin_conexion";
+    } catch {
+      reason = "token_rechazado";
+    }
+  }
+
+  return NextResponse.json({ configured, connection, usable, reason });
 }

@@ -167,17 +167,29 @@ function CalendarFeed() {
 }
 
 /** Qué falta para que ZERO deje de ir en demo. Sin adivinar: lo dice /api/health. */
+/** Qué hacer ante cada motivo, en cristiano. */
+const MOTIVO: Record<string, string> = {
+  sin_credenciales: "Faltan GOOGLE_CLIENT_ID y GOOGLE_CLIENT_SECRET en Vercel.",
+  demo_mode:
+    "Tienes DEMO_MODE=true en Vercel. Ponla a false (o bórrala) y redespliega: eso obliga a los datos simulados aunque todo lo demás esté bien.",
+  sin_cifrado:
+    "Falta TOKEN_ENCRYPTION_KEY en Vercel. Es la que descifra el token de Google guardado; sin ella no se puede usar aunque figure conectado.",
+  sin_conexion: "Pulsa Conectar en Google, aquí abajo.",
+  token_rechazado:
+    "Google ha rechazado el acceso: el permiso se revocó o caducó (pasa a los 7 días si la pantalla de consentimiento sigue en «Testing»). Desconecta y vuelve a conectar.",
+};
+
 function Diagnostico() {
   const demoMode = useNova((s) => s.demoMode);
   const [h, setH] = useState<Record<string, boolean> | null>(null);
-  const [google, setGoogle] = useState<boolean | null>(null);
+  const [google, setGoogle] = useState<{ usable: boolean; reason: string } | null>(null);
 
   useEffect(() => {
     fetch("/api/health").then((r) => r.json()).then(setH).catch(() => setH({}));
     fetch("/api/google/status")
       .then((r) => r.json())
-      .then((d) => setGoogle(Boolean(d?.connection?.connected)))
-      .catch(() => setGoogle(false));
+      .then((d) => setGoogle({ usable: Boolean(d?.usable), reason: String(d?.reason ?? "") }))
+      .catch(() => setGoogle({ usable: false, reason: "" }));
   }, []);
 
   if (!h) return null;
@@ -185,10 +197,9 @@ function Diagnostico() {
   const faltan: string[] = [];
   if (!h.anthropic) faltan.push("ANTHROPIC_API_KEY — la IA de verdad");
   if (!h.database) faltan.push("DATABASE_URL — la base de datos de Vercel");
-  // Sin base de datos la conexión de Google vive en la memoria de UN servidor,
-  // y Vercel usa varios: por eso puede figurar conectada aquí y perdida allá.
-  // No pidas "conectar Google" en ese caso: el problema real es la base.
-  else if (!google) faltan.push("Conectar Google — calendario, tareas y Drive reales");
+  // Google: en vez de "conéctalo" (que puede estar ya conectado y aun así no
+  // servir), decimos el motivo concreto que devuelve el servidor.
+  if (google && !google.usable && MOTIVO[google.reason]) faltan.push(MOTIVO[google.reason]);
 
   if (!demoMode && faltan.length === 0) {
     return (
@@ -224,9 +235,9 @@ function Diagnostico() {
         </>
       ) : (
         <p className="text-dim">
-          Google figura conectado pero las peticiones siguen cayendo en datos simulados.
-          Suele ser que la conexión se guardó solo en memoria: pon <span className="text-fg">DATABASE_URL</span>{" "}
-          o, mejor, <span className="text-fg">GOOGLE_REFRESH_TOKEN</span>.
+          Todo parece en su sitio pero las peticiones siguen cayendo en datos simulados. Recarga
+          la página; si sigue igual, mira la terminal de Vercel (Deployments → Functions) para ver
+          el error exacto.
         </p>
       )}
     </div>

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { resolveProviders } from "@/lib/providers";
-import { ensureOwnerUser } from "@/lib/supabase/owner";
+import { ensureOwnerUser } from "@/lib/db/owner";
 import { DEMO_USER_ID } from "@/lib/auth";
 import { pushToUser } from "@/lib/push/send";
 import { isPushConfigured } from "@/lib/config";

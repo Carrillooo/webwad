@@ -9,7 +9,7 @@ export interface MemoryItem {
 }
 
 export interface StorageProvider {
-  readonly kind: "supabase" | "memory";
+  readonly kind: "postgres" | "memory";
   getPreferences(userId: string): Promise<Record<string, unknown> | null>;
   setPreferences(userId: string, prefs: Record<string, unknown>): Promise<void>;
   listMemories(userId: string): Promise<MemoryItem[]>;

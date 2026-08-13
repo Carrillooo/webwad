@@ -1,12 +1,7 @@
-import { serviceClient, isSupabaseConfigured } from "../supabase/server";
+import { database, isDatabaseConfigured } from "../db/server";
 import { encryptToken, decryptToken, isEncryptionConfigured } from "../crypto/tokens";
 import { GoogleTokens, refreshAccessToken } from "./oauth";
 
-/**
- * Stores the Google connection + encrypted tokens. Authenticated users →
- * Supabase (oauth_credentials, RLS-protected, service-role only). Demo users →
- * in-memory (globalThis), so the OAuth flow is testable without a database.
- */
 export interface GoogleConnection {
   connected: boolean;
   email?: string;
@@ -28,7 +23,13 @@ function mem() {
 }
 
 function shouldUseDb(authed: boolean) {
-  return authed && isSupabaseConfigured();
+  return authed && isDatabaseConfigured();
+}
+
+function millis(value: unknown): number | undefined {
+  if (!value) return undefined;
+  const n = new Date(value instanceof Date ? value : String(value)).getTime();
+  return Number.isFinite(n) ? n : undefined;
 }
 
 export async function saveConnection(
@@ -43,22 +44,25 @@ export async function saveConnection(
   const connectedAt = new Date().toISOString();
 
   if (shouldUseDb(authed)) {
-    const db = serviceClient();
-    await db.from("oauth_credentials").upsert(
-      {
-        user_id: userId,
-        provider: "google",
-        refresh_token_enc: refreshTokenEnc,
-        access_token_enc: accessTokenEnc,
-        access_token_expiry: new Date(tokens.expiresAt).toISOString(),
-        updated_at: connectedAt,
-      },
-      { onConflict: "user_id,provider" },
-    );
-    await db.from("integration_connections").upsert(
-      { user_id: userId, provider: "google", status: "connected", account_email: email, connected_at: connectedAt },
-      { onConflict: "user_id,provider" },
-    );
+    const sql = await database();
+    await sql`
+      insert into oauth_credentials
+        (user_id, provider, refresh_token_enc, access_token_enc, access_token_expiry, updated_at)
+      values
+        (${userId}, 'google', ${refreshTokenEnc}, ${accessTokenEnc}, ${new Date(tokens.expiresAt)}, ${connectedAt})
+      on conflict (user_id, provider) do update set
+        refresh_token_enc = excluded.refresh_token_enc,
+        access_token_enc = excluded.access_token_enc,
+        access_token_expiry = excluded.access_token_expiry,
+        updated_at = excluded.updated_at
+    `;
+    await sql`
+      insert into integration_connections
+        (user_id, provider, status, account_email, connected_at)
+      values (${userId}, 'google', 'connected', ${email ?? null}, ${connectedAt})
+      on conflict (user_id, provider) do update set
+        status = 'connected', account_email = excluded.account_email, connected_at = excluded.connected_at
+    `;
     return;
   }
 
@@ -73,25 +77,28 @@ export async function saveConnection(
 
 async function load(userId: string, authed: boolean): Promise<Stored | null> {
   if (shouldUseDb(authed)) {
-    const { data } = await serviceClient()
-      .from("oauth_credentials")
-      .select("refresh_token_enc, access_token_enc, access_token_expiry")
-      .eq("user_id", userId)
-      .eq("provider", "google")
-      .maybeSingle();
+    const sql = await database();
+    const creds = await sql`
+      select refresh_token_enc, access_token_enc, access_token_expiry
+      from oauth_credentials
+      where user_id = ${userId} and provider = 'google'
+      limit 1
+    `;
+    const data = creds[0] as Record<string, unknown> | undefined;
     if (!data) return null;
-    const { data: conn } = await serviceClient()
-      .from("integration_connections")
-      .select("account_email, connected_at")
-      .eq("user_id", userId)
-      .eq("provider", "google")
-      .maybeSingle();
+    const connections = await sql`
+      select account_email, connected_at
+      from integration_connections
+      where user_id = ${userId} and provider = 'google'
+      limit 1
+    `;
+    const conn = connections[0] as Record<string, unknown> | undefined;
     return {
-      refreshTokenEnc: data.refresh_token_enc as string,
-      accessTokenEnc: (data.access_token_enc as string | null) ?? undefined,
-      accessTokenExpiry: data.access_token_expiry ? new Date(data.access_token_expiry as string).getTime() : undefined,
-      email: (conn?.account_email as string | null) ?? undefined,
-      connectedAt: (conn?.connected_at as string | null) ?? new Date().toISOString(),
+      refreshTokenEnc: String(data.refresh_token_enc),
+      accessTokenEnc: data.access_token_enc == null ? undefined : String(data.access_token_enc),
+      accessTokenExpiry: millis(data.access_token_expiry),
+      email: conn?.account_email == null ? undefined : String(conn.account_email),
+      connectedAt: conn?.connected_at ? new Date(conn.connected_at as string | Date).toISOString() : new Date().toISOString(),
     };
   }
   return mem().get(userId) ?? null;
@@ -105,14 +112,14 @@ export async function getConnection(userId: string, authed: boolean): Promise<Go
 
 export async function disconnect(userId: string, authed: boolean): Promise<void> {
   if (shouldUseDb(authed)) {
-    await serviceClient().from("oauth_credentials").delete().eq("user_id", userId).eq("provider", "google");
-    await serviceClient().from("integration_connections").delete().eq("user_id", userId).eq("provider", "google");
+    const sql = await database();
+    await sql`delete from oauth_credentials where user_id = ${userId} and provider = 'google'`;
+    await sql`delete from integration_connections where user_id = ${userId} and provider = 'google'`;
     return;
   }
   mem().delete(userId);
 }
 
-/** Returns a valid access token, refreshing (and re-persisting) when expired. */
 export async function getAccessToken(userId: string, authed: boolean): Promise<string | null> {
   if (!isEncryptionConfigured()) return null;
   const s = await load(userId, authed);
@@ -121,17 +128,17 @@ export async function getAccessToken(userId: string, authed: boolean): Promise<s
   if (s.accessTokenEnc && s.accessTokenExpiry && s.accessTokenExpiry > Date.now()) {
     return decryptToken(s.accessTokenEnc);
   }
-  // Refresh.
-  const refreshToken = decryptToken(s.refreshTokenEnc);
-  const fresh = await refreshAccessToken(refreshToken);
+
+  const fresh = await refreshAccessToken(decryptToken(s.refreshTokenEnc));
   const accessTokenEnc = encryptToken(fresh.accessToken);
 
   if (shouldUseDb(authed)) {
-    await serviceClient()
-      .from("oauth_credentials")
-      .update({ access_token_enc: accessTokenEnc, access_token_expiry: new Date(fresh.expiresAt).toISOString() })
-      .eq("user_id", userId)
-      .eq("provider", "google");
+    const sql = await database();
+    await sql`
+      update oauth_credentials
+      set access_token_enc = ${accessTokenEnc}, access_token_expiry = ${new Date(fresh.expiresAt)}, updated_at = now()
+      where user_id = ${userId} and provider = 'google'
+    `;
   } else {
     mem().set(userId, { ...s, accessTokenEnc, accessTokenExpiry: fresh.expiresAt });
   }

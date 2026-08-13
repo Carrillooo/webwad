@@ -20,6 +20,29 @@ de Meta) y config de deploy. Todo se activa con credenciales; el demo funciona s
 
 ---
 
+## 🚨 URGENTE — credenciales filtradas en GitHub (rotar YA)
+
+El repositorio `Carrillooo/webwad` es **público** y en `main` se subió el fichero
+`.env.local` con secretos reales (commit `79f07c1 Add .env.local file`). Ya se ha
+quitado del repositorio y `.gitignore` vuelve a cubrirlo, **pero sigue en el
+historial de git**, así que todo lo que había ahí debe considerarse comprometido.
+
+Consecuencia ya observada: la `ANTHROPIC_API_KEY` devuelve **401 «API key is
+invalid»** (Anthropic revoca automáticamente las claves que detecta en GitHub).
+Eso es exactamente lo que hacía que ZERO respondiera en modo básico.
+
+**Hay que rotar, en este orden:**
+1. `ANTHROPIC_API_KEY` — console.anthropic.com → API Keys → borrar la vieja y crear otra.
+2. `GOOGLE_CLIENT_SECRET` — Google Cloud → Credenciales → restablecer secreto.
+3. `SUPABASE_SERVICE_ROLE_KEY` (si el proyecto sigue vivo) y cualquier clave de BD.
+4. `TOKEN_ENCRYPTION_KEY` — `openssl rand -base64 32` (al cambiarla hay que volver
+   a conectar Google/Outlook: los refresh tokens guardados dejan de descifrarse).
+5. `VAPID_PRIVATE_KEY` — `npx web-push generate-vapid-keys` (hay que resuscribir el push).
+
+Las claves nuevas van **sólo** en `.env.local` (local) y en Vercel →
+Settings → Environment Variables (producción). Nunca en el repositorio.
+Recomendado además: poner el repositorio en **privado**.
+
 ## 🆕 Última sesión — asistente "todo terreno" (voz real, email, memoria, avisos)
 
 Verificado con `lint` ✅ · `typecheck` ✅ · `test` ✅ (67) · `build` ✅ · captura sin

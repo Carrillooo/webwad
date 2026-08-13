@@ -6,9 +6,6 @@
  * without any external service configured.
  */
 
-/** FINAL mode by default: demo only when explicitly requested. Without
- *  credentials the providers still degrade gracefully to mocks, so the app
- *  never breaks — but the product defaults to the real thing. */
 function demoExplicitlyOn(): boolean {
   const raw = process.env.DEMO_MODE ?? process.env.NEXT_PUBLIC_DEMO_MODE;
   return raw === "true" || raw === "1";
@@ -19,10 +16,14 @@ export const serverConfig = {
   demoMode: demoExplicitlyOn(),
   appUrl: process.env.APP_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000",
 
-  supabase: {
-    url: process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
-    anonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "",
-    serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY ?? "",
+  /** PostgreSQL provisioned/attached through Vercel Marketplace (Neon, etc.). */
+  database: {
+    url:
+      process.env.DATABASE_URL ??
+      process.env.POSTGRES_URL ??
+      process.env.POSTGRES_PRISMA_URL ??
+      process.env.POSTGRES_URL_NON_POOLING ??
+      "",
   },
   google: {
     clientId: process.env.GOOGLE_CLIENT_ID ?? "",
@@ -73,7 +74,6 @@ export const serverConfig = {
     process.env.TASKS_SPREADSHEET_ID ?? "1ZVRJ1FLYXJ7lphgXS7ipI3ptuGouN5T4tKteEsNgYMA",
 } as const;
 
-/** Marker appended to anything ZERO writes into the tasks spreadsheet. */
 export const ZERO_ATTRIBUTION = "(by zerodc)";
 
 export function isPushConfigured(): boolean {
@@ -111,16 +111,14 @@ export interface Capability {
   label: string;
   status: ServiceStatus;
   detail: string;
-  /** Whether this capability is required for the MVP. */
   required: boolean;
 }
 
-/** Computes which integrations are configured. Used by /setup and the API. */
 export function computeCapabilities(): Capability[] {
   const c = serverConfig;
   const has = (v: string) => v.trim().length > 0;
 
-  const supabaseReady = has(c.supabase.url) && has(c.supabase.anonKey);
+  const databaseReady = has(c.database.url);
   const googleReady =
     has(c.google.clientId) && has(c.google.clientSecret) && has(c.tokenEncryptionKey);
   const anthropicReady = has(c.anthropic.apiKey);
@@ -145,12 +143,12 @@ export function computeCapabilities(): Capability[] {
       required: false,
     },
     {
-      key: "supabase",
-      label: "Supabase",
-      status: supabaseReady ? "READY" : "MISSING",
-      detail: supabaseReady
-        ? "Auth y base de datos configuradas."
-        : "Sin credenciales: preferencias en almacenamiento local.",
+      key: "database",
+      label: "Vercel Postgres",
+      status: databaseReady ? "READY" : "MISSING",
+      detail: databaseReady
+        ? "Persistencia PostgreSQL conectada."
+        : "Sin DATABASE_URL: preferencias y memoria usan almacenamiento temporal.",
       required: false,
     },
     {

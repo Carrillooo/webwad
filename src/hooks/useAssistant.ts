@@ -4,6 +4,56 @@ import { useNova } from "@/lib/store";
 import { WebSpeechTTS, cleanForSpeech } from "@/lib/providers/speech/browser";
 import type { AssistantMessage } from "@/lib/providers/types";
 
+/**
+ * Makes the crystal react to ElevenLabs audio the same way it reacts to the
+ * browser voice: an analyser measures the real amplitude and emits
+ * "nova:voice-pulse" on each syllable-sized peak. Returns a cleanup function;
+ * if Web Audio is unavailable the audio still plays untouched.
+ */
+function attachVoicePulses(audio: HTMLAudioElement): () => void {
+  try {
+    const AC =
+      window.AudioContext ||
+      (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    const ctx = new AC();
+    const src = ctx.createMediaElementSource(audio);
+    const analyser = ctx.createAnalyser();
+    analyser.fftSize = 512;
+    src.connect(analyser);
+    analyser.connect(ctx.destination); // keep the sound audible
+    const data = new Uint8Array(analyser.frequencyBinCount);
+
+    let raf = 0;
+    let alive = true;
+    let last = 0;
+    const loop = () => {
+      if (!alive) return;
+      analyser.getByteTimeDomainData(data);
+      let sum = 0;
+      for (let i = 0; i < data.length; i++) {
+        const v = (data[i] - 128) / 128;
+        sum += v * v;
+      }
+      const rms = Math.sqrt(sum / data.length);
+      const now = performance.now();
+      if (rms > 0.06 && now - last > 90) {
+        last = now;
+        window.dispatchEvent(new CustomEvent("nova:voice-pulse"));
+      }
+      raf = requestAnimationFrame(loop);
+    };
+    loop();
+
+    return () => {
+      alive = false;
+      cancelAnimationFrame(raf);
+      void ctx.close().catch(() => {});
+    };
+  } catch {
+    return () => {};
+  }
+}
+
 /** Orchestrates a full assistant turn: states → API → apply → speak.
  *  Voice output tries ElevenLabs (ultra-realistic, via /api/tts) first and
  *  falls back to the browser's SpeechSynthesis when it isn't configured. */
@@ -26,6 +76,7 @@ export function useAssistant() {
         rate: st.settings.voiceRate,
         volume: st.settings.voiceVolume,
         voiceName: st.settings.voiceName,
+        onBoundary: () => window.dispatchEvent(new CustomEvent("nova:voice-pulse")),
         onEnd: () => {
           if (useNova.getState().novaState === "speaking") useNova.getState().setNovaState("idle");
         },
@@ -63,7 +114,9 @@ export function useAssistant() {
             const audio = new Audio(url);
             audio.volume = useNova.getState().settings.voiceVolume;
             audioRef.current = audio;
+            const stopPulses = attachVoicePulses(audio);
             const done = () => {
+              stopPulses();
               URL.revokeObjectURL(url);
               if (audioRef.current === audio) audioRef.current = null;
               if (useNova.getState().novaState === "speaking")

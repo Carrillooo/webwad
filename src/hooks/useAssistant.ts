@@ -19,6 +19,7 @@ export function useAssistant() {
         rate: st.settings.voiceRate,
         volume: st.settings.voiceVolume,
         voiceName: st.settings.voiceName,
+        onBoundary: () => window.dispatchEvent(new CustomEvent("nova:voice-pulse")),
         onEnd: () => {
           if (useNova.getState().novaState === "speaking") useNova.getState().setNovaState("idle");
         },

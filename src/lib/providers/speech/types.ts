@@ -23,6 +23,8 @@ export interface TtsOptions {
   volume: number;
   voiceName?: string | null;
   onStart?: () => void;
+  /** Fires at browser-reported word/sentence boundaries when supported. */
+  onBoundary?: () => void;
   onEnd?: () => void;
 }
 

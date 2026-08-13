@@ -55,16 +55,13 @@ export class WebSpeechSTT implements SpeechToTextProvider {
 /** Strip things that make TTS sound robotic (emojis, markdown, list bullets). */
 function cleanForSpeech(text: string): string {
   return text
-    .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}]/gu, "") // emojis
+    .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}]/gu, "")
     .replace(/[*_`#>~[\]]/g, "")
     .replace(/^\s*[-•]\s*/gm, "")
     .replace(/\s{2,}/g, " ")
     .trim();
 }
 
-/** Score voices so the most natural Spanish voice wins by default.
- *  Edge ships free neural voices ("... Online (Natural)") — best of the bunch;
- *  Chrome's "Google español" is decent; plain OS voices come last. */
 function scoreVoice(v: SpeechSynthesisVoice): number {
   let s = 0;
   const name = v.name.toLowerCase();
@@ -99,7 +96,7 @@ export class WebSpeechTTS implements TextToSpeechProvider {
     window.speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(cleanForSpeech(text));
     u.lang = opts.lang;
-    u.rate = Math.min(2, opts.rate * 1.04); // slight pace-up reads less robotic
+    u.rate = Math.min(2, opts.rate * 1.04);
     u.pitch = 1.02;
     u.volume = opts.volume;
     const voices = window.speechSynthesis.getVoices();
@@ -107,6 +104,7 @@ export class WebSpeechTTS implements TextToSpeechProvider {
     const best = manual ?? [...voices].sort((a, b) => scoreVoice(b) - scoreVoice(a))[0];
     if (best && scoreVoice(best) >= 0) u.voice = best;
     u.onstart = () => opts.onStart?.();
+    u.onboundary = () => opts.onBoundary?.();
     u.onend = () => opts.onEnd?.();
     u.onerror = () => opts.onEnd?.();
     window.speechSynthesis.speak(u);

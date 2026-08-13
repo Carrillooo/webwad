@@ -1,10 +1,10 @@
 import { StorageProvider } from "./types";
 import { MemoryStorageProvider } from "./memory";
-import { SupabaseStorageProvider } from "./supabase";
-import { isSupabaseConfigured } from "../../supabase/server";
+import { PostgresStorageProvider } from "./postgres";
+import { isDatabaseConfigured } from "../../db/server";
 
-/** Supabase storage only for authenticated users; else in-memory (demo). */
+/** Vercel Postgres for persistent owner data; memory only as a safe fallback. */
 export function getStorage(authed: boolean): StorageProvider {
-  if (authed && isSupabaseConfigured()) return new SupabaseStorageProvider();
+  if (authed && isDatabaseConfigured()) return new PostgresStorageProvider();
   return new MemoryStorageProvider();
 }

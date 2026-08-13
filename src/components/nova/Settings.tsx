@@ -184,8 +184,11 @@ function Diagnostico() {
 
   const faltan: string[] = [];
   if (!h.anthropic) faltan.push("ANTHROPIC_API_KEY — la IA de verdad");
-  if (!google) faltan.push("Conectar Google — calendario, tareas y Drive reales");
-  if (!h.database) faltan.push("DATABASE_URL — para que no se olvide de nada");
+  if (!h.database) faltan.push("DATABASE_URL — la base de datos de Vercel");
+  // Sin base de datos la conexión de Google vive en la memoria de UN servidor,
+  // y Vercel usa varios: por eso puede figurar conectada aquí y perdida allá.
+  // No pidas "conectar Google" en ese caso: el problema real es la base.
+  else if (!google) faltan.push("Conectar Google — calendario, tareas y Drive reales");
 
   if (!demoMode && faltan.length === 0) {
     return (
@@ -205,11 +208,20 @@ function Diagnostico() {
         {demoMode ? "Modo demo: nada llega a tus cuentas" : "Falta algo por conectar"}
       </div>
       {faltan.length > 0 ? (
-        <ul className="text-dim space-y-1">
-          {faltan.map((f) => (
-            <li key={f}>· {f}</li>
-          ))}
-        </ul>
+        <>
+          <ul className="text-dim space-y-1">
+            {faltan.map((f) => (
+              <li key={f}>· {f}</li>
+            ))}
+          </ul>
+          {!h.database && google !== null && (
+            <p className="text-faint leading-snug pt-1">
+              Aunque Google salga conectado abajo, sin base de datos esa conexión se guarda en
+              la memoria de un solo servidor y Vercel usa varios: unas veces la encuentra y
+              otras no. Créala en Vercel → Storage y redespliega.
+            </p>
+          )}
+        </>
       ) : (
         <p className="text-dim">
           Google figura conectado pero las peticiones siguen cayendo en datos simulados.

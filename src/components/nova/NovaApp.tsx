@@ -14,6 +14,7 @@ import { Monitor } from "./Monitor";
 import { NovaCore } from "./NovaCore";
 import { Composer } from "./Composer";
 import { Settings } from "./Settings";
+import { OAuthNotice } from "./OAuthNotice";
 
 const CENTER_STATES = new Set(["listening", "transcribing", "thinking", "planning"]);
 
@@ -141,6 +142,7 @@ export function NovaApp() {
 
       <Composer onSend={(t) => void send(t)} />
       <Settings />
+      <OAuthNotice />
     </main>
   );
 }

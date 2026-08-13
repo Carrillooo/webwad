@@ -29,7 +29,10 @@ export async function GET(req: NextRequest) {
     home.searchParams.set("microsoft", "connected");
   } catch (e) {
     console.error("microsoft callback error", e);
-    home.searchParams.set("microsoft", "error");
+    // Distinguir la causa más habitual: sin clave de cifrado el token no se
+    // puede guardar, y el usuario solo veía "Sin conectar" sin explicación.
+    const msg = e instanceof Error ? e.message : "";
+    home.searchParams.set("microsoft", /TOKEN_ENCRYPTION_KEY/.test(msg) ? "sin_cifrado" : "error");
   }
   return NextResponse.redirect(home);
 }

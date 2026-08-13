@@ -36,7 +36,8 @@ export async function GET(req: NextRequest) {
     home.searchParams.set("google", "connected");
   } catch (e) {
     console.error("google callback error", e);
-    home.searchParams.set("google", "error");
+    const msg = e instanceof Error ? e.message : "";
+    home.searchParams.set("google", /TOKEN_ENCRYPTION_KEY/.test(msg) ? "sin_cifrado" : "error");
   }
   return NextResponse.redirect(home);
 }

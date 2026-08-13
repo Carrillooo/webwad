@@ -14,8 +14,16 @@ const MAX_TEXT = 2500;
  * <audio> element straight at the GET route so the browser plays the first
  * chunk while the rest is still being synthesised.
  */
-async function synthesize(text: string): Promise<Response> {
-  const { apiKey, voiceId, model } = serverConfig.elevenlabs;
+/** Los ids de ElevenLabs son alfanuméricos; así no se cuela nada en la URL. */
+function safeVoiceId(requested: string | null | undefined): string {
+  const fallback = serverConfig.elevenlabs.voiceId;
+  if (!requested) return fallback;
+  return /^[A-Za-z0-9]{16,40}$/.test(requested) ? requested : fallback;
+}
+
+async function synthesize(text: string, voice?: string | null): Promise<Response> {
+  const { apiKey, model } = serverConfig.elevenlabs;
+  const voiceId = safeVoiceId(voice);
   const res = await fetch(
     `https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(voiceId)}/stream` +
       `?output_format=mp3_22050_32&optimize_streaming_latency=3`,
@@ -48,13 +56,16 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "not_configured" }, { status: 503 });
   }
   try {
-    return await synthesize(text.slice(0, MAX_TEXT));
+    return await synthesize(text.slice(0, MAX_TEXT), req.nextUrl.searchParams.get("voice"));
   } catch {
     return NextResponse.json({ error: "network" }, { status: 502 });
   }
 }
 
-const BodySchema = z.object({ text: z.string().min(1).max(MAX_TEXT) });
+const BodySchema = z.object({
+  text: z.string().min(1).max(MAX_TEXT),
+  voice: z.string().max(40).optional(),
+});
 
 /** POST { text } → same audio stream. Used for texts too long for a URL. */
 export async function POST(req: NextRequest) {
@@ -66,7 +77,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "invalid_body" }, { status: 400 });
   }
   try {
-    return await synthesize(parsed.data.text);
+    return await synthesize(parsed.data.text, parsed.data.voice);
   } catch {
     return NextResponse.json({ error: "network" }, { status: 502 });
   }

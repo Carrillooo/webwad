@@ -31,6 +31,9 @@ export interface Settings {
   voiceRate: number; // 0.5..2
   voiceVolume: number; // 0..1
   voiceName: string | null;
+  /** Voz fija de ElevenLabs (id). null = la del servidor. Al fijarla aquí,
+   *  ZERO suena EXACTAMENTE igual en el móvil, en el Mac y en el PC. */
+  ttsVoiceId: string | null;
   /** Double-clap ("estilo JARVIS") activation. Keeps the mic open while idle. */
   clapEnabled: boolean;
   /** Conversación seguida: si ZERO te hace una pregunta, el micro se reabre
@@ -57,6 +60,7 @@ export const defaultSettings: Settings = {
   voiceRate: 1,
   voiceVolume: 1,
   voiceName: null,
+  ttsVoiceId: null,
   clapEnabled: false,
   autoListen: true,
   language: "es-ES",

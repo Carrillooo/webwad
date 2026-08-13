@@ -134,15 +134,16 @@ export function useAssistant() {
           // playing the stream as it arrives instead of waiting for the whole
           // mp3. Long replies fall back to POST + blob.
           const q = encodeURIComponent(clean.slice(0, 2400));
+          const voice = st.settings.ttsVoiceId;
           let src: string;
           let revoke: (() => void) | undefined;
           if (q.length < 1500) {
-            src = `/api/tts?text=${q}`;
+            src = `/api/tts?text=${q}${voice ? `&voice=${encodeURIComponent(voice)}` : ""}`;
           } else {
             const res = await fetch("/api/tts", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ text: clean.slice(0, 2400) }),
+              body: JSON.stringify({ text: clean.slice(0, 2400), voice: voice ?? undefined }),
             });
             if (!res.ok || !res.headers.get("content-type")?.includes("audio")) {
               throw new Error("tts");

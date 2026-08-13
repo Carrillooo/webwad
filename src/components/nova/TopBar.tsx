@@ -39,13 +39,17 @@ export function TopBar() {
 
       <div className="flex items-center gap-2">
         {demoMode && (
-          <span
+          // Pulsable: el usuario ve "DEMO" y lo primero que quiere saber es por
+          // qué. Lleva directo a Ajustes, donde está el diagnóstico.
+          <button
+            type="button"
+            onClick={() => setSettingsOpen(true)}
             className="text-[10px] font-semibold tracking-wide px-2 py-1 rounded-full"
             style={{ background: "rgba(251,191,36,0.14)", color: "rgb(251 191 36)", border: "1px solid rgba(251,191,36,0.35)" }}
-            title="Datos simulados: no se modifica ninguna cuenta real"
+            title="Datos simulados: nada llega a tu Google. Pulsa para ver qué falta."
           >
-            DEMO
-          </span>
+            DEMO · por qué
+          </button>
         )}
         <span
           className="flex items-center gap-1.5 text-[11px] text-dim glass px-2.5 py-1"

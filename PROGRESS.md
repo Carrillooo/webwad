@@ -43,6 +43,19 @@ Las claves nuevas van **sólo** en `.env.local` (local) y en Vercel →
 Settings → Environment Variables (producción). Nunca en el repositorio.
 Recomendado además: poner el repositorio en **privado**.
 
+## 🔊 Voz fija, de hombre y en español de España
+
+- **ElevenLabs**: la voz se elige en Ajustes → Voz de ZERO (lista sacada de la
+  cuenta con `/api/tts/voices`) y se guarda en `ttsVoiceId`, así suena
+  EXACTAMENTE igual en el móvil, en el Mac y en el PC. `ELEVENLABS_VOICE_ID`
+  sigue siendo el valor por defecto del servidor.
+- **Voz del navegador** (repuesto): la elección ahora es determinista y
+  prefiere hombre en `es-ES`. Antes el navegador elegía por su cuenta y en un
+  Mac salía "Paulina" (mexicana, mujer); ahora sale "Jorge", y en Edge
+  "Álvaro Online (Natural)". A igualdad de puntos gana el nombre menor, así no
+  cambia entre recargas.
+- Cubierto por tests con las voces reales de macOS y de Edge.
+
 ## 🔗 Google preconfigurado (sin botón de "Conectar")
 
 ZERO lo usa una sola persona, así que la cuenta de Google puede quedar fija:

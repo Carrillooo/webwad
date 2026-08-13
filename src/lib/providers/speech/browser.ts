@@ -62,19 +62,40 @@ export function cleanForSpeech(text: string): string {
     .trim();
 }
 
-function scoreVoice(v: SpeechSynthesisVoice): number {
+/** Voces masculinas de español de España que traen los sistemas habituales. */
+const MALE_ES = /jorge|alvaro|álvaro|pablo|dario|darío|enrique|diego|arnau|elias|elías|saul|saúl|nil|teo|liberto|hombre|male/;
+/** Femeninas conocidas: se descartan, no se penalizan a medias. */
+const FEMALE_ES = /paulina|monica|mónica|elvira|helena|laura|marisol|abril|triana|vera|lia|lía|estrella|irene|carmen|sofia|sofía|lucia|lucía|femenina|female/;
+
+/**
+ * Puntúa una voz del sistema. Objetivo: SIEMPRE la misma voz, de hombre y en
+ * español de España, en cualquier ordenador. Sin esto el navegador elige la
+ * que quiere (en un Mac sale "Paulina", mexicana y de mujer) y cambia de un
+ * dispositivo a otro.
+ */
+export function scoreVoice(v: SpeechSynthesisVoice): number {
   let s = 0;
   const name = v.name.toLowerCase();
   const lang = (v.lang || "").toLowerCase();
-  if (lang === "es-es") s += 6;
-  else if (lang.startsWith("es")) s += 3;
+  if (lang === "es-es") s += 10;
+  else if (lang.startsWith("es")) s += 2; // es-MX / es-AR: último recurso
   else return -1;
-  if (name.includes("natural") || name.includes("neural")) s += 6;
-  if (name.includes("online")) s += 3;
-  if (name.includes("google")) s += 3;
-  if (/elvira|alvaro|álvaro|abril|dario|darío|mónica|monica|helena|laura|pablo|triana|vera/.test(name)) s += 2;
-  if (name.includes("espeak")) s -= 3;
+  if (MALE_ES.test(name)) s += 8;
+  else if (FEMALE_ES.test(name)) s -= 8;
+  if (name.includes("natural") || name.includes("neural")) s += 5;
+  if (name.includes("online")) s += 2;
+  if (name.includes("google")) s += 2;
+  if (name.includes("espeak")) s -= 5;
   return s;
+}
+
+/** Mejor voz disponible, de forma DETERMINISTA: a igualdad de puntos gana el
+ *  nombre alfabéticamente menor, así no baila entre recargas. */
+export function pickVoice(voices: SpeechSynthesisVoice[]): SpeechSynthesisVoice | undefined {
+  const best = [...voices]
+    .filter((v) => scoreVoice(v) >= 0)
+    .sort((a, b) => scoreVoice(b) - scoreVoice(a) || a.name.localeCompare(b.name))[0];
+  return best;
 }
 
 /** Browser SpeechSynthesis TTS with human-leaning voice selection. */
@@ -101,8 +122,8 @@ export class WebSpeechTTS implements TextToSpeechProvider {
     u.volume = opts.volume;
     const voices = window.speechSynthesis.getVoices();
     const manual = opts.voiceName ? voices.find((v) => v.name === opts.voiceName) : undefined;
-    const best = manual ?? [...voices].sort((a, b) => scoreVoice(b) - scoreVoice(a))[0];
-    if (best && scoreVoice(best) >= 0) u.voice = best;
+    const best = manual ?? pickVoice(voices);
+    if (best) u.voice = best;
     u.onstart = () => opts.onStart?.();
     u.onboundary = () => opts.onBoundary?.();
     u.onend = () => opts.onEnd?.();

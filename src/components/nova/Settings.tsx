@@ -166,6 +166,61 @@ function CalendarFeed() {
   );
 }
 
+/** Qué falta para que ZERO deje de ir en demo. Sin adivinar: lo dice /api/health. */
+function Diagnostico() {
+  const demoMode = useNova((s) => s.demoMode);
+  const [h, setH] = useState<Record<string, boolean> | null>(null);
+  const [google, setGoogle] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    fetch("/api/health").then((r) => r.json()).then(setH).catch(() => setH({}));
+    fetch("/api/google/status")
+      .then((r) => r.json())
+      .then((d) => setGoogle(Boolean(d?.connection?.connected)))
+      .catch(() => setGoogle(false));
+  }, []);
+
+  if (!h) return null;
+
+  const faltan: string[] = [];
+  if (!h.anthropic) faltan.push("ANTHROPIC_API_KEY — la IA de verdad");
+  if (!google) faltan.push("Conectar Google — calendario, tareas y Drive reales");
+  if (!h.database) faltan.push("DATABASE_URL — para que no se olvide de nada");
+
+  if (!demoMode && faltan.length === 0) {
+    return (
+      <div className="glass holo-border px-3 py-2.5 text-xs">
+        <span className="text-fg">Todo conectado.</span>{" "}
+        <span className="text-faint">ZERO trabaja con tus cuentas de verdad.</span>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="glass px-3 py-2.5 text-xs space-y-1.5"
+      style={{ border: "1px solid rgba(251,191,36,0.35)" }}
+    >
+      <div style={{ color: "rgb(251 191 36)" }} className="font-semibold">
+        {demoMode ? "Modo demo: nada llega a tus cuentas" : "Falta algo por conectar"}
+      </div>
+      {faltan.length > 0 ? (
+        <ul className="text-dim space-y-1">
+          {faltan.map((f) => (
+            <li key={f}>· {f}</li>
+          ))}
+        </ul>
+      ) : (
+        <p className="text-dim">
+          Google figura conectado pero las peticiones siguen cayendo en datos simulados.
+          Suele ser que la conexión se guardó solo en memoria: pon <span className="text-fg">DATABASE_URL</span>{" "}
+          o, mejor, <span className="text-fg">GOOGLE_REFRESH_TOKEN</span>.
+        </p>
+      )}
+    </div>
+  );
+}
+
 function DatabaseStatus() {
   const [ready, setReady] = useState<boolean | null>(null);
 
@@ -292,6 +347,14 @@ export function Settings() {
   const settings = useNova((s) => s.settings);
   const update = useNova((s) => s.updateSettings);
   const [voices, setVoices] = useState<{ name: string; lang: string }[]>([]);
+  const [elevenVoices, setElevenVoices] = useState<{ id: string; name: string; detail: string }[]>([]);
+
+  useEffect(() => {
+    fetch("/api/tts/voices")
+      .then((r) => r.json())
+      .then((d) => setElevenVoices(d.voices ?? []))
+      .catch(() => setElevenVoices([]));
+  }, []);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -361,7 +424,24 @@ export function Settings() {
               <Row label="Conversación seguida 🎙️">
                 <input type="checkbox" checked={settings.autoListen} onChange={(e) => set("autoListen", e.target.checked)} className="w-4 h-4 accent-[rgb(var(--nova-primary))]" />
               </Row>
-              <Row label="Voz (TTS)">
+              {elevenVoices.length > 0 && (
+                <Row label="Voz de ZERO">
+                  <select
+                    value={settings.ttsVoiceId ?? ""}
+                    onChange={(e) => set("ttsVoiceId", e.target.value || null)}
+                    className="glass px-2 py-1 text-sm bg-transparent max-w-[10rem]"
+                  >
+                    <option value="">Por defecto</option>
+                    {elevenVoices.map((v) => (
+                      <option key={v.id} value={v.id}>
+                        {v.name}
+                        {v.detail ? ` · ${v.detail}` : ""}
+                      </option>
+                    ))}
+                  </select>
+                </Row>
+              )}
+              <Row label={elevenVoices.length > 0 ? "Voz de repuesto" : "Voz (TTS)"}>
                 <select value={settings.voiceName ?? ""} onChange={(e) => set("voiceName", e.target.value || null)} className="glass px-2 py-1 text-sm bg-transparent max-w-[9rem]">
                   <option value="">Automática</option>
                   {voices.map((v) => (<option key={v.name} value={v.name}>{v.name}</option>))}
@@ -385,6 +465,11 @@ export function Settings() {
               <Row label="Zona horaria">
                 <span className="text-sm text-faint">{settings.timezone}</span>
               </Row>
+            </section>
+
+            <section className="mb-4">
+              <h3 className="text-[11px] uppercase tracking-wide text-faint mb-1">Estado</h3>
+              <Diagnostico />
             </section>
 
             <section className="mb-4">

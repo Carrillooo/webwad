@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { verifyWebhook, verifySignature, parseIncoming } from "@/lib/providers/messaging/whatsapp";
 import { isWhatsappConfigured } from "@/lib/config";
 import { resolveProviders } from "@/lib/providers";
-import { ensureOwnerUser } from "@/lib/supabase/owner";
+import { ensureOwnerUser } from "@/lib/db/owner";
 import { DEMO_USER_ID } from "@/lib/auth";
 import { parseDay } from "@/lib/nlu/spanish-datetime";
 import { toZonedIso } from "@/lib/datetime";

@@ -370,17 +370,39 @@ export class AnthropicAssistantProvider implements AssistantProvider {
   }
 }
 
+/** Las dos mitades del prompt: la fija (cacheada) y la que cambia. Exportado
+ *  para poder comprobar en tests que nada volátil se cuela en la cacheada. */
+export function buildSystemPrompt(
+  ctx: AssistantContext,
+  memories: MemoryItem[] = [],
+): { stable: string; volatile: string } {
+  return { stable: stablePrompt(ctx), volatile: volatilePrompt(ctx, memories) };
+}
+
 /**
  * The volatile tail of the prompt: the Madrid wall-clock instant (changes every
  * request) and the personal memory. It lives AFTER the cache breakpoint so it
  * never invalidates the cached prefix.
  */
 function volatilePrompt(ctx: AssistantContext, memories: MemoryItem[] = []): string {
-  const lines = [
+  const lines: string[] = [];
+  if (ctx.demoMode) {
+    // Nunca fingir éxito: en demo nada sale de la máquina, y el usuario tiene
+    // que saberlo EN LA RESPUESTA, no solo por la insignia de la pantalla.
+    lines.push(
+      `⚠️ MODO DEMO: NO estás conectado a Google. Todo lo que crees, muevas o borres`,
+      `se queda en datos simulados: no aparecerá en su Calendar, su Drive ni sus Tareas.`,
+      `Sigue haciendo lo que te pidan, pero AVÍSALO en la respuesta, con estas palabras o`,
+      `parecidas: "ojo, estoy en modo demo y esto no ha llegado a tu Google de verdad".`,
+      `Nunca digas que algo está en su cuenta si estás en modo demo.`,
+      ``,
+    );
+  }
+  lines.push(
     `AHORA MISMO en Madrid es ${humanDay(new Date(ctx.nowIso))}, ${humanTime(new Date(ctx.nowIso))}`,
     `(instante exacto: ${ctx.nowIso}). "Hoy"/"mañana"/"el viernes" se calculan SIEMPRE sobre esta`,
     `fecha de Madrid — cuidado de madrugada: la fecha UTC puede ir un día atrás.`,
-  ];
+  );
   if (memories.length) {
     lines.push(
       ``,

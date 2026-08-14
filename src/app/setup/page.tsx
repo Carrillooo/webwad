@@ -71,9 +71,9 @@ const GUIDES: Record<string, Guide> = {
 
 function Badge({ status }: { status: string }) {
   const map: Record<string, { bg: string; fg: string }> = {
-    READY: { bg: "rgba(52,211,153,0.15)", fg: "rgb(52 211 153)" },
-    MISSING: { bg: "rgba(251,191,36,0.15)", fg: "rgb(251 191 36)" },
-    ERROR: { bg: "rgba(248,113,113,0.15)", fg: "rgb(248 113 113)" },
+    READY: { bg: "rgba(52,211,153,0.15)", fg: "rgb(5 150 105)" },
+    MISSING: { bg: "rgba(251,191,36,0.15)", fg: "rgb(180 83 9)" },
+    ERROR: { bg: "rgba(248,113,113,0.15)", fg: "rgb(220 38 38)" },
   };
   const s = map[status] ?? map.MISSING;
   return (

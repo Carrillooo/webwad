@@ -8,47 +8,35 @@
    ============================================================ */
 
 :root {
-  /* user-tunable (Settings writes these) */
+  /* Marca (fija: la interfaz ya no es personalizable) */
   --nova-primary: 225 6 0;         /* rosso Ferrari */
-  --nova-accent: 255 59 48;        /* lighter red */
+  --nova-accent: 200 24 36;        /* rojo legible sobre blanco */
   --nova-core: 235 25 20;          /* core sphere */
-  --nova-border: 255 255 255;      /* holo borders (white, matches grid) */
-  --nova-glow: 0.6;                /* 0..1 glow intensity */
-  --nova-particles: 1;             /* 0..1 particle density multiplier */
-  --nova-motion: 1;                /* 0..1 animation intensity */
+  --nova-border: 17 17 23;         /* bordes oscuros: visibles sobre blanco */
+  --nova-glow: 0.5;
+  --nova-particles: 1;
+  --nova-motion: 1;
 
-  /* dark palette (default): pure black + white grid */
-  --bg-0: #000000;
-  --bg-1: #050505;
-  --bg-2: #0a0a0a;
-  --grid-line: 255 255 255;
-  --grid-alpha: 0.06;
-  --panel: 255 255 255;            /* used as rgb() with low alpha */
+  /* TEMA ÚNICO: blanco. Grises subidos de contraste para que el texto
+     secundario se lea bien (antes venían pensados para fondo negro). */
+  --bg-0: #f7f7f8;
+  --bg-1: #f0f0f2;
+  --bg-2: #e9e9ec;
+  --grid-line: 0 0 0;
+  --grid-alpha: 0.055;
+  --panel: 17 17 23;               /* used as rgb() with low alpha */
   --panel-alpha: 0.05;
-  --panel-border-alpha: 0.12;
-  --fg: #f4f4f5;
-  --fg-dim: #a1a1aa;
-  --fg-faint: #63636b;
-  --success: 52 211 153;
-  --warning: 251 191 36;
-  --danger: 248 113 113;
+  --panel-border-alpha: 0.16;
+  --fg: #101014;
+  --nova-fg: 16 16 20;             /* versión rgb de --fg para usar con alfa */
+  --fg-dim: #3f3f46;
+  --fg-faint: #64646e;
+  --success: 5 150 105;
+  --warning: 180 83 9;
+  --danger: 220 38 38;
 
   --radius: 20px;
   --blur: 18px;
-}
-
-:root[data-theme="light"] {
-  --bg-0: #f6f6f7;
-  --bg-1: #efeff1;
-  --bg-2: #e8e8ea;
-  --grid-line: 0 0 0;
-  --grid-alpha: 0.08;
-  --panel: 20 20 24;
-  --panel-alpha: 0.05;
-  --panel-border-alpha: 0.14;
-  --fg: #101014;
-  --fg-dim: #4b4b55;
-  --fg-faint: #7f7f8a;
 }
 
 @theme inline {
@@ -75,8 +63,8 @@ body {
   /* Black stage + a faint red field glow (the moving grid lives in ::before) */
   background-color: var(--bg-0);
   background-image:
-    radial-gradient(1100px 750px at 50% 118%, rgb(var(--nova-primary) / 0.12), transparent 62%),
-    radial-gradient(750px 520px at 88% -12%, rgb(var(--nova-primary) / 0.06), transparent 55%);
+    radial-gradient(1100px 750px at 50% 118%, rgb(var(--nova-primary) / 0.07), transparent 62%),
+    radial-gradient(750px 520px at 88% -12%, rgb(var(--nova-primary) / 0.04), transparent 55%);
   background-attachment: fixed;
   overflow: hidden;
   overscroll-behavior: none;
@@ -150,7 +138,8 @@ body::before {
 }
 
 .glow-text {
-  text-shadow: 0 0 calc(18px * var(--nova-glow)) rgb(var(--nova-primary) / 0.6);
+  /* Sobre blanco, el halo fuerte emborrona: brillo sutil y tinta nítida. */
+  text-shadow: 0 0 calc(10px * var(--nova-glow)) rgb(var(--nova-primary) / 0.28);
 }
 
 /* Scrollbars */

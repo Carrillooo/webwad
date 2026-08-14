@@ -47,7 +47,7 @@ export function PlanCard({ compact = false }: { compact?: boolean }) {
           <li>· Memoria personal: ZERO se acuerda de lo tuyo</li>
         </ul>
       )}
-      <p className="mt-2 text-[11px]" style={{ color: "rgb(251 191 36)" }}>
+      <p className="mt-2 text-[11px]" style={{ color: "rgb(180 83 9)" }}>
         14 días de prueba gratis · sin tarjeta
       </p>
     </div>
@@ -178,7 +178,7 @@ export function AuthScreen({
                 autoFocus
               />
               {error && (
-                <p className="text-[12px] leading-snug px-1" style={{ color: "rgb(248 113 113)" }}>
+                <p className="text-[12px] leading-snug px-1" style={{ color: "rgb(220 38 38)" }}>
                   {error}
                 </p>
               )}
@@ -289,7 +289,7 @@ export function AuthScreen({
             )}
 
             {error && (
-              <p className="text-[12px] leading-snug px-1" style={{ color: "rgb(248 113 113)" }}>
+              <p className="text-[12px] leading-snug px-1" style={{ color: "rgb(220 38 38)" }}>
                 {error}
               </p>
             )}

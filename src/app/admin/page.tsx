@@ -22,9 +22,9 @@ interface AdminData {
 }
 
 const ESTADO: Record<string, { label: string; color: string }> = {
-  active: { label: "Activa", color: "rgb(52 211 153)" },
-  trial: { label: "Prueba", color: "rgb(251 191 36)" },
-  expired: { label: "Caducada", color: "rgb(248 113 113)" },
+  active: { label: "Activa", color: "rgb(5 150 105)" },
+  trial: { label: "Prueba", color: "rgb(180 83 9)" },
+  expired: { label: "Caducada", color: "rgb(220 38 38)" },
 };
 
 function Stat({ label, value }: { label: string; value: number }) {
@@ -131,19 +131,19 @@ export default function AdminPage() {
                     {!u.isOwner && (
                       <span className={busyId === u.id ? "opacity-40 pointer-events-none" : ""}>
                         {u.subscription.status !== "active" && (
-                          <button onClick={() => void act(u.id, "activate")} className="px-2.5 py-1 rounded-lg text-[11px] mr-1.5" style={{ background: "rgb(52 211 153 / 0.18)", color: "rgb(52 211 153)" }}>
+                          <button onClick={() => void act(u.id, "activate")} className="px-2.5 py-1 rounded-lg text-[11px] mr-1.5" style={{ background: "rgb(52 211 153 / 0.18)", color: "rgb(5 150 105)" }}>
                             Activar
                           </button>
                         )}
                         {u.subscription.status !== "expired" && (
-                          <button onClick={() => void act(u.id, "revoke", `¿Cortar el acceso a ${u.email}?`)} className="px-2.5 py-1 rounded-lg text-[11px] mr-1.5" style={{ background: "rgb(251 191 36 / 0.15)", color: "rgb(251 191 36)" }}>
+                          <button onClick={() => void act(u.id, "revoke", `¿Cortar el acceso a ${u.email}?`)} className="px-2.5 py-1 rounded-lg text-[11px] mr-1.5" style={{ background: "rgb(251 191 36 / 0.15)", color: "rgb(180 83 9)" }}>
                             Cortar
                           </button>
                         )}
                         <button onClick={() => void act(u.id, "extend")} className="px-2.5 py-1 rounded-lg text-[11px] mr-1.5" style={{ background: "rgb(var(--nova-accent) / 0.2)" }}>
                           +14 días
                         </button>
-                        <button onClick={() => void act(u.id, "delete", `¿BORRAR ${u.email} y todos sus datos? No se puede deshacer.`)} className="px-2.5 py-1 rounded-lg text-[11px]" style={{ background: "rgb(248 113 113 / 0.15)", color: "rgb(248 113 113)" }}>
+                        <button onClick={() => void act(u.id, "delete", `¿BORRAR ${u.email} y todos sus datos? No se puede deshacer.`)} className="px-2.5 py-1 rounded-lg text-[11px]" style={{ background: "rgb(248 113 113 / 0.15)", color: "rgb(220 38 38)" }}>
                           Borrar
                         </button>
                       </span>

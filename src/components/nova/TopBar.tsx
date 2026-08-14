@@ -49,7 +49,7 @@ export function TopBar() {
             type="button"
             onClick={() => setSettingsOpen(true)}
             className="text-[10px] font-semibold tracking-wide px-2 py-1 rounded-full"
-            style={{ background: "rgba(251,191,36,0.14)", color: "rgb(251 191 36)", border: "1px solid rgba(251,191,36,0.35)" }}
+            style={{ background: "rgba(251,191,36,0.14)", color: "rgb(180 83 9)", border: "1px solid rgba(180,83,9,0.45)" }}
             title="Datos simulados: nada llega a tu Google. Pulsa para ver qué falta."
           >
             DEMO · por qué
@@ -62,7 +62,7 @@ export function TopBar() {
           <span
             className="w-1.5 h-1.5 rounded-full"
             style={{
-              background: novaState === "error" ? "rgb(248 113 113)" : "rgb(var(--nova-accent))",
+              background: novaState === "error" ? "rgb(220 38 38)" : "rgb(var(--nova-accent))",
               boxShadow: "0 0 6px currentColor",
             }}
           />

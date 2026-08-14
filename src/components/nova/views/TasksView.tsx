@@ -48,7 +48,7 @@ export function TasksView() {
             className="w-full text-left px-3 py-2 flex items-center gap-3 opacity-50 hover:opacity-70"
           >
             <span className="w-4 h-4 rounded-full grid place-items-center shrink-0" style={{ background: "rgba(52,211,153,0.25)" }}>
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="rgb(52 211 153)" strokeWidth="3">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="rgb(5 150 105)" strokeWidth="3">
                 <path d="M20 6 9 17l-5-5" />
               </svg>
             </span>

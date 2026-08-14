@@ -33,7 +33,7 @@ export function HistoryView() {
             <span className="text-xs tabular-nums text-faint w-12">
               {new Date(r.at).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })}
             </span>
-            <span className={`flex-1 text-sm ${r.ok ? "" : "text-[rgb(248,113,113)]"}`}>{r.label}</span>
+            <span className={`flex-1 text-sm ${r.ok ? "" : "text-[rgb(220,38,38)]"}`}>{r.label}</span>
             {r.undoable && <span className="text-[10px] text-faint">deshacer disp.</span>}
           </motion.div>
         ))}

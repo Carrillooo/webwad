@@ -4,18 +4,6 @@ import { useEffect, useState } from "react";
 import { useNova, defaultSettings, type Settings as S } from "@/lib/store";
 import { usePush } from "@/hooks/usePush";
 
-function rgbToHex(rgb: string): string {
-  const [r, g, b] = rgb.split(" ").map(Number);
-  return "#" + [r, g, b].map((n) => n.toString(16).padStart(2, "0")).join("");
-}
-function hexToRgb(hex: string): string {
-  const m = hex.replace("#", "");
-  const r = parseInt(m.slice(0, 2), 16);
-  const g = parseInt(m.slice(2, 4), 16);
-  const b = parseInt(m.slice(4, 6), 16);
-  return `${r} ${g} ${b}`;
-}
-
 /** Fila estilo Ajustes de iOS: etiqueta (y pista opcional) a la izquierda,
  *  control a la derecha. Va dentro de un <Group> que pinta los separadores. */
 function Row({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
@@ -57,17 +45,6 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean
         transition={{ type: "spring", stiffness: 550, damping: 34 }}
       />
     </button>
-  );
-}
-
-function Color({ value, onChange }: { value: string; onChange: (v: string) => void }) {
-  return (
-    <input
-      type="color"
-      value={rgbToHex(value)}
-      onChange={(e) => onChange(hexToRgb(e.target.value))}
-      className="w-10 h-7 rounded bg-transparent cursor-pointer"
-    />
   );
 }
 
@@ -115,7 +92,7 @@ function GoogleConnection() {
             await fetch("/api/google/disconnect", { method: "POST" });
             setState({ ...state, connection: { connected: false } });
           }}
-          className="px-3 py-1.5 rounded-lg text-xs text-[rgb(248,113,113)]"
+          className="px-3 py-1.5 rounded-lg text-xs text-[rgb(220,38,38)]"
           style={{ background: "rgba(248,113,113,0.14)" }}
         >
           Desconectar
@@ -237,7 +214,7 @@ function AccountSection() {
             await fetch("/api/auth/logout", { method: "POST" });
             window.location.reload();
           }}
-          className="px-3 py-1.5 rounded-lg text-xs shrink-0 text-[rgb(248,113,113)]"
+          className="px-3 py-1.5 rounded-lg text-xs shrink-0 text-[rgb(220,38,38)]"
           style={{ background: "rgba(248,113,113,0.14)" }}
         >
           Cerrar sesión
@@ -247,7 +224,7 @@ function AccountSection() {
         <span className="text-dim">
           {account.plan.name} · {account.plan.priceEur} €/mes
         </span>
-        <span style={{ color: sub.status === "expired" ? "rgb(248 113 113)" : "rgb(52 211 153)" }}>
+        <span style={{ color: sub.status === "expired" ? "rgb(220 38 38)" : "rgb(5 150 105)" }}>
           {estado}
         </span>
       </div>
@@ -334,7 +311,7 @@ function MicCheck() {
       {result && (
         <p
           className="text-[11px] leading-snug"
-          style={{ color: result.ok ? "rgb(52 211 153)" : "rgb(251 191 36)" }}
+          style={{ color: result.ok ? "rgb(5 150 105)" : "rgb(180 83 9)" }}
         >
           {result.text}
         </p>
@@ -389,9 +366,9 @@ function Diagnostico() {
   return (
     <div
       className="glass px-3 py-2.5 text-xs space-y-1.5"
-      style={{ border: "1px solid rgba(251,191,36,0.35)" }}
+      style={{ border: "1px solid rgba(180,83,9,0.45)" }}
     >
-      <div style={{ color: "rgb(251 191 36)" }} className="font-semibold">
+      <div style={{ color: "rgb(180 83 9)" }} className="font-semibold">
         {demoMode ? "Modo demo: nada llega a tus cuentas" : "Falta algo por conectar"}
       </div>
       {faltan.length > 0 ? (
@@ -441,7 +418,7 @@ function DatabaseStatus() {
       <span
         className="text-[10px] font-semibold px-2 py-1 rounded-full"
         style={{
-          color: ready ? "rgb(52 211 153)" : ready === false ? "rgb(251 191 36)" : "var(--fg-faint)",
+          color: ready ? "rgb(5 150 105)" : ready === false ? "rgb(180 83 9)" : "var(--fg-faint)",
           background: ready ? "rgba(52,211,153,0.12)" : ready === false ? "rgba(251,191,36,0.12)" : "rgb(var(--panel) / 0.05)",
         }}
       >
@@ -487,7 +464,7 @@ function OutlookConnection() {
             await fetch("/api/microsoft/disconnect", { method: "POST" });
             setState({ ...state, connection: { connected: false } });
           }}
-          className="px-3 py-1.5 rounded-lg text-xs text-[rgb(248,113,113)]"
+          className="px-3 py-1.5 rounded-lg text-xs text-[rgb(220,38,38)]"
           style={{ background: "rgba(248,113,113,0.14)" }}
         >
           Desconectar
@@ -564,7 +541,10 @@ export function Settings() {
             <motion.section
               role="dialog"
               aria-label="Ajustes"
-              className="pointer-events-auto w-[min(94vw,560px)] max-h-[88dvh] flex flex-col glass holo-border rounded-3xl overflow-hidden"
+              // Fondo OPACO: siendo translúcido, el oscurecido de detrás se
+              // colaba y lavaba todos los textos del panel.
+              className="pointer-events-auto w-[min(94vw,560px)] max-h-[88dvh] flex flex-col holo-border rounded-3xl overflow-hidden border border-[rgb(var(--nova-fg)/0.12)]"
+              style={{ background: "var(--bg-0)", boxShadow: "0 24px 80px rgb(0 0 0 / 0.25)" }}
               initial={{ opacity: 0, scale: 0.94, y: 18 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.96, y: 12 }}
@@ -622,28 +602,7 @@ export function Settings() {
                   </Group>
                 </section>
 
-                <section>
-                  <h3 className="text-[11px] uppercase tracking-wide text-faint mb-1.5 px-4">Apariencia</h3>
-                  <Group>
-                    <Row label="Tema">
-                      <select value={settings.theme} onChange={(e) => set("theme", e.target.value as S["theme"])} className="glass px-2 py-1.5 text-sm bg-transparent rounded-lg">
-                        <option value="dark">Oscuro</option>
-                        <option value="light">Claro</option>
-                        <option value="system">Sistema</option>
-                      </select>
-                    </Row>
-                    <Row label="Color principal"><Color value={settings.primary} onChange={(v) => set("primary", v)} /></Row>
-                    <Row label="Color de acento"><Color value={settings.accent} onChange={(v) => set("accent", v)} /></Row>
-                    <Row label="Color del núcleo"><Color value={settings.core} onChange={(v) => set("core", v)} /></Row>
-                    <Row label="Bordes holográficos"><Color value={settings.border} onChange={(v) => set("border", v)} /></Row>
-                    <Row label="Brillo (glow)"><Slider value={settings.glow} min={0} max={1} step={0.05} onChange={(v) => set("glow", v)} /></Row>
-                    <Row label="Partículas"><Slider value={settings.particles} min={0} max={1} step={0.05} onChange={(v) => set("particles", v)} /></Row>
-                    <Row label="Animaciones"><Slider value={settings.motion} min={0} max={1} step={0.05} onChange={(v) => set("motion", v)} /></Row>
-                    <Row label="Efectos reducidos" hint="Menos brillos y movimiento; va más fluido">
-                      <Toggle checked={settings.reducedEffects} onChange={(v) => set("reducedEffects", v)} />
-                    </Row>
-                  </Group>
-                </section>
+                {/* La apariencia es fija (tema blanco de marca): sin ajustes. */}
 
                 <section>
                   <h3 className="text-[11px] uppercase tracking-wide text-faint mb-1.5 px-4">Suscribir el calendario</h3>

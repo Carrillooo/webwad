@@ -53,6 +53,10 @@ export function AuthScreen({
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
+  const [terms, setTerms] = useState(false);
+  /** "code" = te hemos mandado el código de 6 dígitos al email. */
+  const [step, setStep] = useState<"form" | "code">("form");
+  const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -68,20 +72,34 @@ export function AuthScreen({
     }
   }, []);
 
-  const submit = async (e: FormEvent) => {
-    e.preventDefault();
+  const submit = async (e?: FormEvent, withCode?: string) => {
+    e?.preventDefault();
     if (busy) return;
+    if (mode === "register" && !terms) {
+      setError("Marca la casilla de los Términos para crear la cuenta.");
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
+      const body =
+        mode === "register"
+          ? { email, password, name, acceptTerms: terms, ...(withCode ? { code: withCode } : {}) }
+          : { email, password };
       const res = await fetch(`/api/auth/${mode}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(mode === "register" ? { email, password, name } : { email, password }),
+        body: JSON.stringify(body),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         setError(data.error ?? "No se pudo completar. Inténtalo de nuevo.");
+        return;
+      }
+      if (data.pending) {
+        // Código enviado: pedirlo antes de crear nada.
+        setStep("code");
+        setCode("");
         return;
       }
       onDone();
@@ -97,6 +115,7 @@ export function AuthScreen({
       type="button"
       onClick={() => {
         setMode(m);
+        setStep("form");
         setError(null);
       }}
       className="flex-1 py-2 text-sm rounded-lg transition-colors"
@@ -119,6 +138,53 @@ export function AuthScreen({
           <p className="text-dim text-sm">Tu asistente personal con IA, por voz y en español.</p>
         </header>
 
+        {step === "code" ? (
+          <div className="glass holo-border p-4 space-y-3">
+            <h2 className="text-sm font-medium">Confirma tu email</h2>
+            <p className="text-[12.5px] text-dim leading-snug">
+              Te hemos enviado un código de 6 dígitos a <span className="text-fg">{email}</span>.
+              Escríbelo aquí (caduca en 10 minutos):
+            </p>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                void submit(undefined, code);
+              }}
+              className="space-y-2.5"
+            >
+              <input
+                value={code}
+                onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                placeholder="······"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                className="w-full glass px-3 py-2.5 text-center text-xl tracking-[0.5em] bg-transparent outline-none"
+                autoFocus
+              />
+              {error && (
+                <p className="text-[12px] leading-snug px-1" style={{ color: "rgb(248 113 113)" }}>
+                  {error}
+                </p>
+              )}
+              <button
+                type="submit"
+                disabled={busy || code.length !== 6}
+                className="w-full py-2.5 rounded-xl text-sm font-medium disabled:opacity-50"
+                style={{ background: "rgb(var(--nova-primary) / 0.85)" }}
+              >
+                {busy ? "Un momento…" : "Crear mi cuenta"}
+              </button>
+            </form>
+            <div className="flex justify-between text-[12px]">
+              <button type="button" onClick={() => { setStep("form"); setError(null); }} className="text-faint hover:text-fg">
+                ← Corregir datos
+              </button>
+              <button type="button" disabled={busy} onClick={() => void submit()} className="disabled:opacity-50" style={{ color: "rgb(var(--nova-accent))" }}>
+                Reenviar código
+              </button>
+            </div>
+          </div>
+        ) : (
         <div className="glass holo-border p-4 space-y-3">
           <div className="flex gap-2">
             {tab("login", "Entrar")}
@@ -188,6 +254,24 @@ export function AuthScreen({
               required
             />
 
+            {mode === "register" && (
+              <label className="flex items-start gap-2.5 px-1 py-1 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={terms}
+                  onChange={(e) => setTerms(e.target.checked)}
+                  className="mt-0.5 w-4 h-4 shrink-0 accent-[rgb(var(--nova-primary))]"
+                  required
+                />
+                <span className="text-[12px] text-dim leading-snug">
+                  He leído y acepto los{" "}
+                  <a href="/legal/terminos" target="_blank" className="underline underline-offset-2 text-fg">Términos del servicio</a>{" "}
+                  y la{" "}
+                  <a href="/legal/privacidad" target="_blank" className="underline underline-offset-2 text-fg">Política de privacidad</a>.
+                </span>
+              </label>
+            )}
+
             {error && (
               <p className="text-[12px] leading-snug px-1" style={{ color: "rgb(248 113 113)" }}>
                 {error}
@@ -196,7 +280,7 @@ export function AuthScreen({
 
             <button
               type="submit"
-              disabled={busy}
+              disabled={busy || (mode === "register" && !terms)}
               className="w-full py-2.5 rounded-xl text-sm font-medium disabled:opacity-50"
               style={{ background: "rgb(var(--nova-primary) / 0.85)" }}
             >
@@ -204,6 +288,7 @@ export function AuthScreen({
             </button>
           </form>
         </div>
+        )}
 
         <PlanCard />
 

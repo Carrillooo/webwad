@@ -152,6 +152,18 @@ export async function findByEmail(email: string): Promise<StoredUser | null> {
   return memUsers().get(norm) ?? null;
 }
 
+/** Validación previa del registro, reutilizable antes de enviar el código. */
+export function registrationProblem(
+  email: string,
+  password: string,
+  displayName: string,
+): RegisterError | null {
+  if (!EMAIL_RE.test(normalizeEmail(email))) return "email_invalido";
+  if (password.length < 8) return "password_corta";
+  if (!displayName.trim()) return "nombre_vacio";
+  return null;
+}
+
 export async function registerUser(
   email: string,
   password: string,
@@ -159,9 +171,8 @@ export async function registerUser(
 ): Promise<{ user: AuthUser } | { error: RegisterError }> {
   const norm = normalizeEmail(email);
   const name = displayName.trim();
-  if (!EMAIL_RE.test(norm)) return { error: "email_invalido" };
-  if (password.length < 8) return { error: "password_corta" };
-  if (!name) return { error: "nombre_vacio" };
+  const problem = registrationProblem(email, password, displayName);
+  if (problem) return { error: problem };
   if (await findByEmail(norm)) return { error: "email_en_uso" };
 
   const first = (await countUsers()) === 0;
@@ -186,10 +197,11 @@ export async function registerUser(
       on conflict (id) do update set display_name = excluded.display_name, updated_at = now()
     `;
     try {
+      // accepted_terms_at: la API solo deja llegar aquí con la casilla marcada.
       await sql`
-        insert into auth_users (id, email, password_hash, display_name, subscription_status, trial_ends_at, is_owner)
+        insert into auth_users (id, email, password_hash, display_name, subscription_status, trial_ends_at, is_owner, accepted_terms_at)
         values (${user.id}, ${user.email}, ${user.passwordHash}, ${user.displayName},
-                ${user.subscriptionStatus}, ${user.trialEndsAt}, ${user.isOwner})
+                ${user.subscriptionStatus}, ${user.trialEndsAt}, ${user.isOwner}, now())
       `;
     } catch (e) {
       // Carrera entre dos registros con el mismo email: el unique manda.
@@ -239,10 +251,12 @@ export async function findOrCreateOAuthUser(
       on conflict (id) do update set display_name = excluded.display_name, updated_at = now()
     `;
     try {
+      // accepted_terms_at: la pantalla avisa de que continuar con Google/
+      // Microsoft implica aceptar los términos.
       await sql`
-        insert into auth_users (id, email, password_hash, display_name, subscription_status, trial_ends_at, is_owner)
+        insert into auth_users (id, email, password_hash, display_name, subscription_status, trial_ends_at, is_owner, accepted_terms_at)
         values (${user.id}, ${user.email}, ${null}, ${user.displayName},
-                ${user.subscriptionStatus}, ${user.trialEndsAt}, ${user.isOwner})
+                ${user.subscriptionStatus}, ${user.trialEndsAt}, ${user.isOwner}, now())
       `;
     } catch (e) {
       // Carrera: otro registro con el mismo email ganó. Usa esa cuenta.

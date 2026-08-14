@@ -156,6 +156,16 @@ const SCHEMA_STATEMENTS = [
   )`,
   // Cuentas creadas con "Continuar con Google/Microsoft" no tienen contraseña.
   `alter table auth_users alter column password_hash drop not null`,
+  // Cuándo aceptó los términos (la casilla del registro / el aviso de OAuth).
+  `alter table auth_users add column if not exists accepted_terms_at timestamptz`,
+  // Códigos de verificación del email en el registro (hasheados, caducan).
+  `create table if not exists email_verifications (
+    email text primary key,
+    code_hash text not null,
+    attempts int not null default 0,
+    expires_at timestamptz not null,
+    created_at timestamptz not null default now()
+  )`,
   `create table if not exists auth_sessions (
     token_hash text primary key,
     user_id text not null references auth_users(id) on delete cascade,

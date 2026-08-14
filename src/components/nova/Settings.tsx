@@ -2,7 +2,6 @@
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useState } from "react";
 import { useNova, defaultSettings, type Settings as S } from "@/lib/store";
-import { WebSpeechTTS } from "@/lib/providers/speech/browser";
 import { usePush } from "@/hooks/usePush";
 
 function rgbToHex(rgb: string): string {
@@ -536,24 +535,6 @@ export function Settings() {
   const setOpen = useNova((s) => s.setSettingsOpen);
   const settings = useNova((s) => s.settings);
   const update = useNova((s) => s.updateSettings);
-  const [voices, setVoices] = useState<{ name: string; lang: string }[]>([]);
-  const [elevenVoices, setElevenVoices] = useState<{ id: string; name: string; detail: string }[]>([]);
-
-  useEffect(() => {
-    fetch("/api/tts/voices")
-      .then((r) => r.json())
-      .then((d) => setElevenVoices(d.voices ?? []))
-      .catch(() => setElevenVoices([]));
-  }, []);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const tts = new WebSpeechTTS();
-    const load = () => setVoices(tts.listVoices().filter((v) => v.lang?.startsWith("es")));
-    load();
-    window.speechSynthesis?.addEventListener?.("voiceschanged", load);
-    return () => window.speechSynthesis?.removeEventListener?.("voiceschanged", load);
-  }, []);
 
   const set = <K extends keyof S>(k: K, v: S[K]) => update({ [k]: v } as Partial<S>);
 
@@ -626,29 +607,7 @@ export function Settings() {
                     <Row label="Sonidos" hint="El bip al empezar a escuchar">
                       <Toggle checked={settings.sounds} onChange={(v) => set("sounds", v)} />
                     </Row>
-                    {elevenVoices.length > 0 && (
-                      <Row label="Voz de ZERO">
-                        <select
-                          value={settings.ttsVoiceId ?? ""}
-                          onChange={(e) => set("ttsVoiceId", e.target.value || null)}
-                          className="glass px-2 py-1.5 text-sm bg-transparent rounded-lg max-w-[11rem]"
-                        >
-                          <option value="">Por defecto</option>
-                          {elevenVoices.map((v) => (
-                            <option key={v.id} value={v.id}>
-                              {v.name}
-                              {v.detail ? ` · ${v.detail}` : ""}
-                            </option>
-                          ))}
-                        </select>
-                      </Row>
-                    )}
-                    <Row label={elevenVoices.length > 0 ? "Voz de repuesto" : "Voz (TTS)"}>
-                      <select value={settings.voiceName ?? ""} onChange={(e) => set("voiceName", e.target.value || null)} className="glass px-2 py-1.5 text-sm bg-transparent rounded-lg max-w-[10rem]">
-                        <option value="">Automática</option>
-                        {voices.map((v) => (<option key={v.name} value={v.name}>{v.name}</option>))}
-                      </select>
-                    </Row>
+                    {/* La voz de ZERO es fija (la pone el servidor): sin selector. */}
                     <Row label="Velocidad"><Slider value={settings.voiceRate} min={0.5} max={2} step={0.1} onChange={(v) => set("voiceRate", v)} /></Row>
                     <Row label="Volumen"><Slider value={settings.voiceVolume} min={0} max={1} step={0.05} onChange={(v) => set("voiceVolume", v)} /></Row>
                   </Group>

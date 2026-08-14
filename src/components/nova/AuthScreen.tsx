@@ -2,6 +2,22 @@
 import { FormEvent, useEffect, useState } from "react";
 import { motion } from "motion/react";
 
+/** Instagram de la marca — SOLO se enseña en esta pantalla de entrada.
+ *  Se puede cambiar sin tocar código con NEXT_PUBLIC_INSTAGRAM_URL en Vercel. */
+const INSTAGRAM_URL =
+  process.env.NEXT_PUBLIC_INSTAGRAM_URL ?? "https://www.instagram.com/asistentezerodc";
+const INSTAGRAM_HANDLE = `@${(INSTAGRAM_URL.split("/").filter(Boolean).pop() ?? "instagram").replace(/^@/, "")}`;
+
+function InstagramIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+      <rect x="3" y="3" width="18" height="18" rx="5" />
+      <circle cx="12" cy="12" r="4" />
+      <circle cx="17.2" cy="6.8" r="0.6" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
 /** Errores con los que puede volver «Continuar con Google/Microsoft». */
 const LOGIN_ERRORES: Record<string, string> = {
   sin_email: "El proveedor no nos dio tu email. Prueba con otra cuenta.",
@@ -297,6 +313,16 @@ export function AuthScreen({
           <a href="/legal/terminos" className="underline underline-offset-2">Términos</a> y la{" "}
           <a href="/legal/privacidad" className="underline underline-offset-2">Política de privacidad</a>.
         </p>
+
+        <a
+          href={INSTAGRAM_URL}
+          target="_blank"
+          rel="noreferrer"
+          className="mx-auto flex items-center justify-center gap-2 w-fit glass px-4 py-2 rounded-full text-[12px] text-dim hover:text-fg transition-colors"
+        >
+          <InstagramIcon />
+          Síguenos en Instagram · {INSTAGRAM_HANDLE}
+        </a>
       </motion.div>
     </main>
   );

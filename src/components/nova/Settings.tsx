@@ -256,6 +256,15 @@ function AccountSection() {
           La pasarela de pago está al llegar; podrás suscribirte desde aquí sin perder nada.
         </p>
       )}
+      {account.isOwner && (
+        <a
+          href="/admin"
+          className="block text-center text-[12px] py-1.5 rounded-lg"
+          style={{ background: "rgb(var(--nova-accent) / 0.18)" }}
+        >
+          Panel de administración →
+        </a>
+      )}
       </div>
     </section>
   );

@@ -23,10 +23,6 @@ export const PLAN = {
 
 const SESSION_DAYS = 60;
 
-/** Id del dueño único de la etapa anterior: su Google/memoria se lo queda la
- *  primera cuenta que se registre, para no perder nada en la transición. */
-const LEGACY_OWNER_ID = process.env.ZERO_OWNER_ID?.trim() || "00000000-0000-4000-8000-000000000001";
-
 export interface AuthUser {
   id: string;
   email: string;
@@ -156,37 +152,6 @@ export async function findByEmail(email: string): Promise<StoredUser | null> {
   return memUsers().get(norm) ?? null;
 }
 
-/** La primera cuenta hereda los datos del dueño único de la etapa anterior
- *  (conexión de Google, memoria, push…) para que nada se pierda al migrar. */
-async function adoptLegacyOwnerData(newUserId: string): Promise<void> {
-  if (!isDatabaseConfigured() || newUserId === LEGACY_OWNER_ID) return;
-  try {
-    const sql = await database();
-    const legacy = await sql`select id from profiles where id = ${LEGACY_OWNER_ID} limit 1`;
-    if (!legacy[0]) return;
-    const tables = [
-      "user_preferences",
-      "integration_connections",
-      "oauth_credentials",
-      "assistant_sessions",
-      "assistant_messages",
-      "tool_executions",
-      "action_receipts",
-      "memory_items",
-      "notifications",
-      "push_subscriptions",
-      "audit_logs",
-    ];
-    for (const t of tables) {
-      await sql.unsafe(`update ${t} set user_id = $1 where user_id = $2`, [newUserId, LEGACY_OWNER_ID]);
-    }
-    await sql`delete from profiles where id = ${LEGACY_OWNER_ID}`;
-  } catch (e) {
-    // Mejor una cuenta nueva sin herencia que un registro que falla.
-    console.error("adopción del dueño anterior falló", e);
-  }
-}
-
 export async function registerUser(
   email: string,
   password: string,
@@ -237,7 +202,6 @@ export async function registerUser(
     memUsers().set(norm, user);
   }
 
-  if (first) await adoptLegacyOwnerData(user.id);
   return { user: publicUser(user) };
 }
 
@@ -292,7 +256,6 @@ export async function findOrCreateOAuthUser(
     memUsers().set(norm, user);
   }
 
-  if (first) await adoptLegacyOwnerData(user.id);
   return { user: publicUser(user) };
 }
 
@@ -351,6 +314,84 @@ export async function destroySession(token: string): Promise<void> {
     return;
   }
   memSessions().delete(hash);
+}
+
+// ---------------------------- administración --------------------------------
+
+/** Todas las cuentas, para el panel /admin (solo cuenta máster). */
+export async function listAllUsers(): Promise<AuthUser[]> {
+  if (isDatabaseConfigured()) {
+    const sql = await database();
+    const rows = await sql`select * from auth_users order by created_at asc`;
+    return (rows as unknown as Record<string, unknown>[]).map(rowToUser).map(publicUser);
+  }
+  return [...memUsers().values()].map(publicUser);
+}
+
+export type AdminAction = "activate" | "revoke" | "extend";
+
+/** Cambia la suscripción de una cuenta desde el panel:
+ *  activate = de pago para siempre · revoke = corta el acceso ya ·
+ *  extend = regala otros 14 días de prueba. */
+export async function setSubscription(userId: string, action: AdminAction): Promise<boolean> {
+  const status = action === "activate" ? "active" : "trial";
+  const trialEnds =
+    action === "activate"
+      ? null
+      : action === "extend"
+        ? new Date(Date.now() + PLAN.trialDays * 86_400_000)
+        : new Date(0); // revoke: prueba caducada desde ya
+  if (isDatabaseConfigured()) {
+    const sql = await database();
+    const rows = await sql`
+      update auth_users set subscription_status = ${status}, trial_ends_at = ${trialEnds}
+      where id = ${userId} returning id
+    `;
+    return rows.length > 0;
+  }
+  for (const u of memUsers().values()) {
+    if (u.id === userId) {
+      u.subscriptionStatus = status;
+      u.trialEndsAt = trialEnds ? trialEnds.toISOString() : null;
+      return true;
+    }
+  }
+  return false;
+}
+
+/** Borra la cuenta y TODOS sus datos (perfil, conexiones, memoria, sesiones). */
+export async function deleteUserCompletely(userId: string): Promise<boolean> {
+  if (isDatabaseConfigured()) {
+    const sql = await database();
+    // profiles cascada sobre todas las tablas de datos y sobre auth_users.
+    const rows = await sql`delete from profiles where id = ${userId} returning id`;
+    return rows.length > 0;
+  }
+  for (const [email, u] of memUsers()) {
+    if (u.id === userId) {
+      memUsers().delete(email);
+      for (const [hash, s] of memSessions()) if (s.userId === userId) memSessions().delete(hash);
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Borrado TOTAL: deja la base como recién creada, sin ninguna cuenta.
+ * La siguiente persona que entre (con Google o registro) será la fundadora.
+ */
+export async function wipeAllData(): Promise<void> {
+  if (isDatabaseConfigured()) {
+    const sql = await database();
+    // profiles arrastra en cascada todas las tablas de datos y auth_users.
+    await sql`delete from profiles`;
+    await sql`delete from auth_sessions`;
+    await sql`delete from auth_users`;
+    return;
+  }
+  g.__zeroAuthUsers = new Map();
+  g.__zeroAuthSessions = new Map();
 }
 
 // ----------------------------- para los crons -------------------------------

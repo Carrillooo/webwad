@@ -12,7 +12,25 @@ anterior sigue: multiusuario SaaS, ZERO Pro 20 €/mes con 14 días de prueba y
 paywall (la pasarela de pago sigue siendo lo ÚNICO que falta), datos por
 cuenta, crons multiusuario, iCal por usuario, WhatsApp. 147 tests._
 
-## 🆕 Última sesión — Entrar con Google/Microsoft, correo propio, calendario Outlook
+## 🆕 Última sesión (2) — Admin, legal, monitorización y estreno limpio
+
+- **Panel `/admin`** (solo cuenta máster; enlace en Ajustes → Cuenta): lista de
+  cuentas con métricas (total/activas/prueba/caducadas) y acciones Activar
+  (pago sin caducidad), Cortar (paywall ya), +14 días y Borrar (todo en
+  cascada). La máster no puede tocarse a sí misma. API: `/api/admin/users`.
+- **Reseteo total** `POST /api/admin/reset` con `Authorization: Bearer
+  $CRON_SECRET`: vacía TODAS las cuentas y datos (incluido el dueño legado).
+  La siguiente cuenta que entre —p. ej. con Google— es la máster. La herencia
+  `adoptLegacyOwnerData` se ha eliminado del código: estreno limpio.
+- **Legal**: `/legal/terminos` y `/legal/privacidad` (con cláusula de Uso
+  Limitado de datos de Google — requisito para la verificación de la app en
+  Google Cloud), enlazadas desde la pantalla de entrada.
+- **Monitorización**: los errores de JavaScript del navegador se mandan a
+  `POST /api/log` (rate limit por IP) y quedan en los logs de Vercel con
+  prefijo `[client-error]`. Recomendado además: UptimeRobot (gratis) sobre
+  `/api/health` y Sentry cuando haya cuenta.
+
+## Sesión anterior — Entrar con Google/Microsoft, correo propio, calendario Outlook
 
 - **«Continuar con Google» / «Continuar con Microsoft»** en la pantalla de
   entrada (`/api/auth/{google,microsoft}/start`). Reutilizan los callbacks de

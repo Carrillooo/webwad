@@ -206,6 +206,12 @@ export function AuthScreen({
         </div>
 
         <PlanCard />
+
+        <p className="text-center text-[11px] text-faint leading-snug">
+          Al crear la cuenta o continuar con Google/Microsoft aceptas los{" "}
+          <a href="/legal/terminos" className="underline underline-offset-2">Términos</a> y la{" "}
+          <a href="/legal/privacidad" className="underline underline-offset-2">Política de privacidad</a>.
+        </p>
       </motion.div>
     </main>
   );

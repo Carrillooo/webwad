@@ -378,6 +378,33 @@ export async function deleteUserCompletely(userId: string): Promise<boolean> {
 }
 
 /**
+ * Nombra máster a la cuenta con ese email (activa para siempre) y retira la
+ * insignia a cualquier otra. Para cuando el orden de registro no salió como
+ * se quería; protegido con el secreto del servidor.
+ */
+export async function promoteToMaster(email: string): Promise<boolean> {
+  const norm = normalizeEmail(email);
+  if (isDatabaseConfigured()) {
+    const sql = await database();
+    const rows = await sql`
+      update auth_users set is_owner = true, subscription_status = 'active', trial_ends_at = null
+      where email = ${norm} returning id
+    `;
+    if (rows.length === 0) return false;
+    await sql`update auth_users set is_owner = false where email <> ${norm}`;
+    return true;
+  }
+  // Primero comprobar que existe: un email equivocado NO debe tocar a nadie.
+  const target = memUsers().get(norm);
+  if (!target) return false;
+  for (const u of memUsers().values()) u.isOwner = false;
+  target.isOwner = true;
+  target.subscriptionStatus = "active";
+  target.trialEndsAt = null;
+  return true;
+}
+
+/**
  * Borrado TOTAL: deja la base como recién creada, sin ninguna cuenta.
  * La siguiente persona que entre (con Google o registro) será la fundadora.
  */

@@ -17,12 +17,47 @@ function hexToRgb(hex: string): string {
   return `${r} ${g} ${b}`;
 }
 
-function Row({ label, children }: { label: string; children: React.ReactNode }) {
+/** Fila estilo Ajustes de iOS: etiqueta (y pista opcional) a la izquierda,
+ *  control a la derecha. Va dentro de un <Group> que pinta los separadores. */
+function Row({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
   return (
-    <label className="flex items-center justify-between gap-3 py-2">
-      <span className="text-sm text-dim">{label}</span>
+    <label className="flex items-center justify-between gap-3 px-4 py-3 min-h-[48px]">
+      <span className="min-w-0">
+        <span className="block text-sm">{label}</span>
+        {hint && <span className="block text-[11px] text-faint leading-snug mt-0.5">{hint}</span>}
+      </span>
       {children}
     </label>
+  );
+}
+
+/** Grupo redondeado con separadores finos, como las tarjetas de Ajustes de iOS. */
+function Group({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="glass holo-border rounded-2xl overflow-hidden divide-y divide-[rgb(var(--nova-fg)/0.08)]">
+      {children}
+    </div>
+  );
+}
+
+/** Interruptor estilo Apple: verde al activar, con el tirador animado. */
+function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      onClick={() => onChange(!checked)}
+      className="relative w-[50px] h-[30px] rounded-full shrink-0 transition-colors duration-200"
+      style={{ background: checked ? "rgb(52 199 89)" : "rgb(var(--nova-fg) / 0.22)" }}
+    >
+      <motion.span
+        className="absolute top-[2px] left-[2px] w-[26px] h-[26px] rounded-full bg-white"
+        style={{ boxShadow: "0 2px 5px rgb(0 0 0 / 0.35)" }}
+        animate={{ x: checked ? 20 : 0 }}
+        transition={{ type: "spring", stiffness: 550, damping: 34 }}
+      />
+    </button>
   );
 }
 
@@ -178,7 +213,7 @@ function AccountSection() {
       .catch(() => setMe(null));
   }, []);
 
-  if (!me?.account) return null; // en demo local no hay cuenta
+  if (!me?.account) return null; // en demo local no hay cuenta (y no se pinta ni la cabecera)
 
   const { account } = me;
   const sub = account.subscription;
@@ -190,7 +225,9 @@ function AccountSection() {
         : "Prueba terminada";
 
   return (
-    <div className="glass holo-border px-3 py-2.5 space-y-2">
+    <section>
+      <h3 className="text-[11px] uppercase tracking-wide text-faint mb-1.5 px-4">Cuenta</h3>
+      <div className="glass holo-border rounded-2xl px-4 py-3 space-y-2">
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
           <div className="text-sm truncate">{account.name}</div>
@@ -220,7 +257,8 @@ function AccountSection() {
           La pasarela de pago está al llegar; podrás suscribirte desde aquí sin perder nada.
         </p>
       )}
-    </div>
+      </div>
+    </section>
   );
 }
 
@@ -397,27 +435,26 @@ function NotificationsSetting() {
     subscribed: "Activadas ✓",
   };
   const canEnable = state === "default" || state === "granted";
+  const subscribed = state === "subscribed";
   return (
-    <div className="glass holo-border px-3 py-2.5 flex items-center justify-between gap-3">
-      <div className="min-w-0">
-        <div className="text-sm">Web Push</div>
-        <div className="text-[11px] text-faint">{label[state]}</div>
-      </div>
-      {state === "subscribed" ? (
-        <button onClick={() => void test()} className="px-3 py-1.5 rounded-lg text-xs" style={{ background: "rgb(var(--nova-accent) / 0.22)" }}>
-          Probar
-        </button>
-      ) : (
-        <button
-          onClick={() => void enable()}
-          disabled={!canEnable}
-          className="px-3 py-1.5 rounded-lg text-xs disabled:opacity-40"
-          style={{ background: "rgb(var(--nova-accent) / 0.22)" }}
-        >
-          Activar
-        </button>
+    <Group>
+      <Row label="Avisos en el móvil" hint={label[state]}>
+        {subscribed ? (
+          <Toggle checked onChange={() => {}} />
+        ) : (
+          <span className={canEnable ? "" : "opacity-40 pointer-events-none"}>
+            <Toggle checked={false} onChange={() => void enable()} />
+          </span>
+        )}
+      </Row>
+      {subscribed && (
+        <Row label="Enviar un aviso de prueba">
+          <button onClick={() => void test()} className="px-3 py-1.5 rounded-lg text-xs" style={{ background: "rgb(var(--nova-accent) / 0.22)" }}>
+            Probar
+          </button>
+        </Row>
       )}
-    </div>
+    </Group>
   );
 }
 
@@ -452,138 +489,155 @@ export function Settings() {
       {open && (
         <>
           <motion.div
-            className="fixed inset-0 z-40 bg-black/50"
+            className="fixed inset-0 z-40"
+            style={{ background: "rgb(0 0 0 / 0.55)", backdropFilter: "blur(4px)", WebkitBackdropFilter: "blur(4px)" }}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => setOpen(false)}
           />
-          <motion.aside
-            role="dialog"
-            aria-label="Configuración"
-            className="fixed z-50 top-0 right-0 h-full w-[min(92vw,380px)] glass holo-border p-5 overflow-y-auto nova-scroll"
-            initial={{ x: "100%" }}
-            animate={{ x: 0 }}
-            exit={{ x: "100%" }}
-            transition={{ type: "spring", stiffness: 300, damping: 32 }}
-          >
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-medium glow-text">Configuración</h2>
-              <button onClick={() => setOpen(false)} aria-label="Cerrar" className="text-dim hover:text-fg text-xl leading-none">×</button>
-            </div>
+          {/* Modal centrado (≈ media pantalla en escritorio), estilo hoja de iOS. */}
+          <div className="fixed inset-0 z-50 grid place-items-center p-3 pointer-events-none">
+            <motion.section
+              role="dialog"
+              aria-label="Ajustes"
+              className="pointer-events-auto w-[min(94vw,560px)] max-h-[88dvh] flex flex-col glass holo-border rounded-3xl overflow-hidden"
+              initial={{ opacity: 0, scale: 0.94, y: 18 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.96, y: 12 }}
+              transition={{ type: "spring", stiffness: 340, damping: 30 }}
+            >
+              <header className="flex items-center justify-between px-5 py-3.5 border-b border-[rgb(var(--nova-fg)/0.08)] shrink-0">
+                <span className="w-12" aria-hidden />
+                <h2 className="text-base font-semibold glow-text">Ajustes</h2>
+                <button
+                  onClick={() => setOpen(false)}
+                  className="w-12 text-right text-sm font-medium"
+                  style={{ color: "rgb(var(--nova-accent))" }}
+                >
+                  Listo
+                </button>
+              </header>
 
-            <section className="mb-4">
-              <h3 className="text-[11px] uppercase tracking-wide text-faint mb-1">Apariencia</h3>
-              <Row label="Tema">
-                <select value={settings.theme} onChange={(e) => set("theme", e.target.value as S["theme"])} className="glass px-2 py-1 text-sm bg-transparent">
-                  <option value="dark">Oscuro</option>
-                  <option value="light">Claro</option>
-                  <option value="system">Sistema</option>
-                </select>
-              </Row>
-              <Row label="Color principal"><Color value={settings.primary} onChange={(v) => set("primary", v)} /></Row>
-              <Row label="Color de acento"><Color value={settings.accent} onChange={(v) => set("accent", v)} /></Row>
-              <Row label="Color del núcleo"><Color value={settings.core} onChange={(v) => set("core", v)} /></Row>
-              <Row label="Bordes holográficos"><Color value={settings.border} onChange={(v) => set("border", v)} /></Row>
-              <Row label="Glow"><Slider value={settings.glow} min={0} max={1} step={0.05} onChange={(v) => set("glow", v)} /></Row>
-              <Row label="Partículas"><Slider value={settings.particles} min={0} max={1} step={0.05} onChange={(v) => set("particles", v)} /></Row>
-              <Row label="Animaciones"><Slider value={settings.motion} min={0} max={1} step={0.05} onChange={(v) => set("motion", v)} /></Row>
-              <Row label="Efectos reducidos">
-                <input type="checkbox" checked={settings.reducedEffects} onChange={(e) => set("reducedEffects", e.target.checked)} className="w-4 h-4 accent-[rgb(var(--nova-primary))]" />
-              </Row>
-            </section>
+              <div className="overflow-y-auto nova-scroll px-4 py-4 space-y-5">
+                <AccountSection />
 
-            <section className="mb-4">
-              <h3 className="text-[11px] uppercase tracking-wide text-faint mb-1">Voz</h3>
-              <Row label="Voz activada">
-                <input type="checkbox" checked={settings.voiceEnabled} onChange={(e) => set("voiceEnabled", e.target.checked)} className="w-4 h-4 accent-[rgb(var(--nova-primary))]" />
-              </Row>
-              <Row label="Activar con 2 palmadas 👏">
-                <input type="checkbox" checked={settings.clapEnabled} onChange={(e) => set("clapEnabled", e.target.checked)} className="w-4 h-4 accent-[rgb(var(--nova-primary))]" />
-              </Row>
-              <Row label="Conversación seguida 🎙️">
-                <input type="checkbox" checked={settings.autoListen} onChange={(e) => set("autoListen", e.target.checked)} className="w-4 h-4 accent-[rgb(var(--nova-primary))]" />
-              </Row>
-              {elevenVoices.length > 0 && (
-                <Row label="Voz de ZERO">
-                  <select
-                    value={settings.ttsVoiceId ?? ""}
-                    onChange={(e) => set("ttsVoiceId", e.target.value || null)}
-                    className="glass px-2 py-1 text-sm bg-transparent max-w-[10rem]"
-                  >
-                    <option value="">Por defecto</option>
-                    {elevenVoices.map((v) => (
-                      <option key={v.id} value={v.id}>
-                        {v.name}
-                        {v.detail ? ` · ${v.detail}` : ""}
-                      </option>
-                    ))}
-                  </select>
-                </Row>
-              )}
-              <Row label={elevenVoices.length > 0 ? "Voz de repuesto" : "Voz (TTS)"}>
-                <select value={settings.voiceName ?? ""} onChange={(e) => set("voiceName", e.target.value || null)} className="glass px-2 py-1 text-sm bg-transparent max-w-[9rem]">
-                  <option value="">Automática</option>
-                  {voices.map((v) => (<option key={v.name} value={v.name}>{v.name}</option>))}
-                </select>
-              </Row>
-              <Row label="Velocidad"><Slider value={settings.voiceRate} min={0.5} max={2} step={0.1} onChange={(v) => set("voiceRate", v)} /></Row>
-              <Row label="Volumen"><Slider value={settings.voiceVolume} min={0} max={1} step={0.05} onChange={(v) => set("voiceVolume", v)} /></Row>
-              <Row label="Sonidos">
-                <input type="checkbox" checked={settings.sounds} onChange={(e) => set("sounds", e.target.checked)} className="w-4 h-4 accent-[rgb(var(--nova-primary))]" />
-              </Row>
-            </section>
+                <section>
+                  <h3 className="text-[11px] uppercase tracking-wide text-faint mb-1.5 px-4">Cuentas enlazadas</h3>
+                  <div className="space-y-2">
+                    <GoogleConnection />
+                    <OutlookConnection />
+                  </div>
+                  <p className="text-[11px] text-faint leading-snug mt-1.5 px-4">
+                    Al enlazar, ZERO usa tu calendario, tus tareas y tu correo de verdad.
+                  </p>
+                </section>
 
-            <section className="mb-4">
-              <h3 className="text-[11px] uppercase tracking-wide text-faint mb-1">Regional</h3>
-              <Row label="Idioma">
-                <select value={settings.language} onChange={(e) => set("language", e.target.value)} className="glass px-2 py-1 text-sm bg-transparent">
-                  <option value="es-ES">Español (España)</option>
-                  <option value="es-MX">Español (México)</option>
-                </select>
-              </Row>
-              <Row label="Zona horaria">
-                <span className="text-sm text-faint">{settings.timezone}</span>
-              </Row>
-            </section>
+                <section>
+                  <h3 className="text-[11px] uppercase tracking-wide text-faint mb-1.5 px-4">Avisos</h3>
+                  <NotificationsSetting />
+                </section>
 
-            <section className="mb-4">
-              <h3 className="text-[11px] uppercase tracking-wide text-faint mb-1">Cuenta</h3>
-              <AccountSection />
-            </section>
+                <section>
+                  <h3 className="text-[11px] uppercase tracking-wide text-faint mb-1.5 px-4">Voz</h3>
+                  <Group>
+                    <Row label="Hablar con ZERO" hint="El micrófono y las respuestas por voz">
+                      <Toggle checked={settings.voiceEnabled} onChange={(v) => set("voiceEnabled", v)} />
+                    </Row>
+                    <Row label="Activar con 2 palmadas 👏">
+                      <Toggle checked={settings.clapEnabled} onChange={(v) => set("clapEnabled", v)} />
+                    </Row>
+                    <Row label="Conversación seguida 🎙️" hint="Si ZERO te pregunta, el micro se abre solo">
+                      <Toggle checked={settings.autoListen} onChange={(v) => set("autoListen", v)} />
+                    </Row>
+                    <Row label="Sonidos" hint="El bip al empezar a escuchar">
+                      <Toggle checked={settings.sounds} onChange={(v) => set("sounds", v)} />
+                    </Row>
+                    {elevenVoices.length > 0 && (
+                      <Row label="Voz de ZERO">
+                        <select
+                          value={settings.ttsVoiceId ?? ""}
+                          onChange={(e) => set("ttsVoiceId", e.target.value || null)}
+                          className="glass px-2 py-1.5 text-sm bg-transparent rounded-lg max-w-[11rem]"
+                        >
+                          <option value="">Por defecto</option>
+                          {elevenVoices.map((v) => (
+                            <option key={v.id} value={v.id}>
+                              {v.name}
+                              {v.detail ? ` · ${v.detail}` : ""}
+                            </option>
+                          ))}
+                        </select>
+                      </Row>
+                    )}
+                    <Row label={elevenVoices.length > 0 ? "Voz de repuesto" : "Voz (TTS)"}>
+                      <select value={settings.voiceName ?? ""} onChange={(e) => set("voiceName", e.target.value || null)} className="glass px-2 py-1.5 text-sm bg-transparent rounded-lg max-w-[10rem]">
+                        <option value="">Automática</option>
+                        {voices.map((v) => (<option key={v.name} value={v.name}>{v.name}</option>))}
+                      </select>
+                    </Row>
+                    <Row label="Velocidad"><Slider value={settings.voiceRate} min={0.5} max={2} step={0.1} onChange={(v) => set("voiceRate", v)} /></Row>
+                    <Row label="Volumen"><Slider value={settings.voiceVolume} min={0} max={1} step={0.05} onChange={(v) => set("voiceVolume", v)} /></Row>
+                  </Group>
+                </section>
 
-            <section className="mb-4">
-              <h3 className="text-[11px] uppercase tracking-wide text-faint mb-1">Estado</h3>
-              <Diagnostico />
-            </section>
+                <section>
+                  <h3 className="text-[11px] uppercase tracking-wide text-faint mb-1.5 px-4">Apariencia</h3>
+                  <Group>
+                    <Row label="Tema">
+                      <select value={settings.theme} onChange={(e) => set("theme", e.target.value as S["theme"])} className="glass px-2 py-1.5 text-sm bg-transparent rounded-lg">
+                        <option value="dark">Oscuro</option>
+                        <option value="light">Claro</option>
+                        <option value="system">Sistema</option>
+                      </select>
+                    </Row>
+                    <Row label="Color principal"><Color value={settings.primary} onChange={(v) => set("primary", v)} /></Row>
+                    <Row label="Color de acento"><Color value={settings.accent} onChange={(v) => set("accent", v)} /></Row>
+                    <Row label="Color del núcleo"><Color value={settings.core} onChange={(v) => set("core", v)} /></Row>
+                    <Row label="Bordes holográficos"><Color value={settings.border} onChange={(v) => set("border", v)} /></Row>
+                    <Row label="Brillo (glow)"><Slider value={settings.glow} min={0} max={1} step={0.05} onChange={(v) => set("glow", v)} /></Row>
+                    <Row label="Partículas"><Slider value={settings.particles} min={0} max={1} step={0.05} onChange={(v) => set("particles", v)} /></Row>
+                    <Row label="Animaciones"><Slider value={settings.motion} min={0} max={1} step={0.05} onChange={(v) => set("motion", v)} /></Row>
+                    <Row label="Efectos reducidos" hint="Menos brillos y movimiento; va más fluido">
+                      <Toggle checked={settings.reducedEffects} onChange={(v) => set("reducedEffects", v)} />
+                    </Row>
+                  </Group>
+                </section>
 
-            <section className="mb-4">
-              <h3 className="text-[11px] uppercase tracking-wide text-faint mb-1">Datos</h3>
-              <DatabaseStatus />
-            </section>
+                <section>
+                  <h3 className="text-[11px] uppercase tracking-wide text-faint mb-1.5 px-4">Suscribir el calendario</h3>
+                  <CalendarFeed />
+                </section>
 
-            <section className="mb-4">
-              <h3 className="text-[11px] uppercase tracking-wide text-faint mb-1">Integraciones</h3>
-              <div className="space-y-2">
-                <GoogleConnection />
-                <OutlookConnection />
+                <section>
+                  <h3 className="text-[11px] uppercase tracking-wide text-faint mb-1.5 px-4">Regional</h3>
+                  <Group>
+                    <Row label="Idioma">
+                      <select value={settings.language} onChange={(e) => set("language", e.target.value)} className="glass px-2 py-1.5 text-sm bg-transparent rounded-lg">
+                        <option value="es-ES">Español (España)</option>
+                        <option value="es-MX">Español (México)</option>
+                      </select>
+                    </Row>
+                    <Row label="Zona horaria">
+                      <span className="text-sm text-faint">{settings.timezone}</span>
+                    </Row>
+                  </Group>
+                </section>
+
+                <section>
+                  <h3 className="text-[11px] uppercase tracking-wide text-faint mb-1.5 px-4">Estado del sistema</h3>
+                  <div className="space-y-2">
+                    <Diagnostico />
+                    <DatabaseStatus />
+                  </div>
+                </section>
+
+                <button onClick={() => update(defaultSettings)} className="w-full glass holo-border rounded-2xl py-2.5 text-sm text-dim hover:text-fg">
+                  Restablecer valores
+                </button>
               </div>
-            </section>
-
-            <section className="mb-4">
-              <h3 className="text-[11px] uppercase tracking-wide text-faint mb-1">Suscribir el calendario</h3>
-              <CalendarFeed />
-            </section>
-
-            <section className="mb-4">
-              <h3 className="text-[11px] uppercase tracking-wide text-faint mb-1">Notificaciones</h3>
-              <NotificationsSetting />
-            </section>
-
-            <button onClick={() => update(defaultSettings)} className="w-full glass holo-border py-2 text-sm text-dim hover:text-fg mt-2">
-              Restablecer valores
-            </button>
-          </motion.aside>
+            </motion.section>
+          </div>
         </>
       )}
     </AnimatePresence>

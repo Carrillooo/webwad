@@ -33,11 +33,11 @@ export function useVoice(onFinal: (text: string) => void) {
     store.setTranscript("");
 
     const gotMic = await startMic();
-    if (!gotMic) {
-      store.setNovaState("error");
-      setTimeout(() => useNova.getState().setNovaState("idle"), 1500);
+    if (gotMic !== true) {
       active.current = false;
-      return { micDenied: true };
+      // El motivo exacto sube a la UI para explicar QUÉ tocar (candado,
+      // ajustes del sistema…) — un parpadeo rojo mudo no ayuda a nadie.
+      return { micDenied: true, reason: gotMic };
     }
 
     if (!stt || !stt.available) {

@@ -5,6 +5,9 @@ import { useCallback, useRef, useState } from "react";
  * Real microphone amplitude via Web Audio API, for the core visualizer.
  * Returns a 0..1 level and start/stop controls. Never records/persists audio.
  */
+/** Por qué no arrancó el micro, para poder explicárselo al usuario. */
+export type MicFail = "denied" | "unsupported" | "nomic" | "error";
+
 export function useMicLevel() {
   const [level, setLevel] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -22,11 +25,11 @@ export function useMicLevel() {
     setLevel(0);
   }, []);
 
-  const start = useCallback(async (): Promise<boolean> => {
+  const start = useCallback(async (): Promise<true | MicFail> => {
     setError(null);
     if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) {
       setError("unsupported");
-      return false;
+      return "unsupported";
     }
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -53,9 +56,19 @@ export function useMicLevel() {
       loop();
       return true;
     } catch (e) {
-      setError((e as Error).name === "NotAllowedError" ? "denied" : "error");
+      const name = (e as Error).name;
+      // NotAllowed = bloqueado (por el usuario, el navegador o el sistema);
+      // NotFound = no hay micrófono. El navegador NO vuelve a preguntar si el
+      // permiso quedó bloqueado — por eso hay que decirlo en pantalla.
+      const kind: MicFail =
+        name === "NotAllowedError" || name === "SecurityError"
+          ? "denied"
+          : name === "NotFoundError" || name === "OverconstrainedError"
+            ? "nomic"
+            : "error";
+      setError(kind);
       stop();
-      return false;
+      return kind;
     }
   }, [stop]);
 

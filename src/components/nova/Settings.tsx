@@ -262,6 +262,79 @@ function AccountSection() {
   );
 }
 
+/** Probador de micrófono: pide permiso de verdad y dice qué falla y dónde
+ *  arreglarlo. Pensado para "no me pide permisos y no va". */
+function MicCheck() {
+  const [result, setResult] = useState<{ ok: boolean; text: string } | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const probar = async () => {
+    setBusy(true);
+    setResult(null);
+    try {
+      if (!navigator.mediaDevices?.getUserMedia) {
+        setResult({ ok: false, text: "Este navegador no permite el micrófono aquí. Usa Chrome, Edge o Safari actualizados, siempre por https." });
+        return;
+      }
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream.getTracks().forEach((t) => t.stop());
+      const stt =
+        typeof window !== "undefined" &&
+        Boolean(
+          (window as unknown as { SpeechRecognition?: unknown; webkitSpeechRecognition?: unknown })
+            .SpeechRecognition ??
+            (window as unknown as { webkitSpeechRecognition?: unknown }).webkitSpeechRecognition,
+        );
+      setResult({
+        ok: true,
+        text: stt
+          ? "Micrófono y reconocimiento de voz funcionando ✓"
+          : "Micrófono OK, pero este navegador no reconoce voz: habla ZERO pero tendrás que escribirle (usa Chrome/Edge/Safari para dictar).",
+      });
+    } catch (e) {
+      const name = (e as Error).name;
+      setResult({
+        ok: false,
+        text:
+          name === "NotAllowedError" || name === "SecurityError"
+            ? "El micrófono está BLOQUEADO para esta web. Pulsa el candado 🔒 junto a la dirección → Micrófono → Permitir y recarga. Si no aparece la opción, es el ordenador: en Mac, Ajustes del Sistema → Privacidad y seguridad → Micrófono → activa el navegador; en Windows, Configuración → Privacidad → Micrófono."
+            : name === "NotFoundError"
+              ? "No hay ningún micrófono conectado o activo en este equipo."
+              : `El micrófono falló (${name}). Cierra otras apps que lo usen y prueba de nuevo.`,
+      });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="glass holo-border px-3 py-2.5 space-y-2">
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <div className="text-sm">Micrófono</div>
+          <div className="text-[11px] text-faint">Comprueba permiso y reconocimiento de voz.</div>
+        </div>
+        <button
+          onClick={() => void probar()}
+          disabled={busy}
+          className="px-3 py-1.5 rounded-lg text-xs shrink-0 disabled:opacity-40"
+          style={{ background: "rgb(var(--nova-accent) / 0.22)" }}
+        >
+          {busy ? "Probando…" : "Probar"}
+        </button>
+      </div>
+      {result && (
+        <p
+          className="text-[11px] leading-snug"
+          style={{ color: result.ok ? "rgb(52 211 153)" : "rgb(251 191 36)" }}
+        >
+          {result.text}
+        </p>
+      )}
+    </div>
+  );
+}
+
 /** Qué hacer ante cada motivo, en cristiano. */
 const MOTIVO: Record<string, string> = {
   sin_credenciales: "Faltan GOOGLE_CLIENT_ID y GOOGLE_CLIENT_SECRET en Vercel.",
@@ -627,6 +700,7 @@ export function Settings() {
                 <section>
                   <h3 className="text-[11px] uppercase tracking-wide text-faint mb-1.5 px-4">Estado del sistema</h3>
                   <div className="space-y-2">
+                    <MicCheck />
                     <Diagnostico />
                     <DatabaseStatus />
                   </div>

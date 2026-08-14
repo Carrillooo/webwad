@@ -60,6 +60,29 @@ export function NovaApp() {
     if (novaState === "idle" || novaState === "success" || novaState === "warning" || novaState === "error") {
       playActivationBeep();
       const r = await voice.start();
+      if (r?.micDenied) {
+        // El navegador NO vuelve a preguntar cuando el permiso quedó
+        // bloqueado: hay que decir exactamente dónde desbloquearlo.
+        const MIC_MSGS: Record<string, string> = {
+          denied:
+            "El navegador tiene el micrófono bloqueado para esta web. Pulsa el candado 🔒 junto a la dirección → Micrófono → Permitir, recarga y prueba otra vez. Si sigue igual, revisa también los ajustes de privacidad del ordenador (Micrófono → permite el navegador).",
+          unsupported:
+            "Este navegador no permite usar el micrófono aquí. Abre ZERO en Chrome, Edge o Safari actualizados (y siempre por https).",
+          nomic:
+            "No encuentro ningún micrófono en este equipo. Conecta o activa uno y vuelve a intentarlo.",
+          error:
+            "El micrófono no arrancó. Cierra otras aplicaciones que lo estén usando (llamadas, grabadoras) y prueba de nuevo.",
+        };
+        useNova.getState().applyTurn(
+          { reply: MIC_MSGS[r.reason ?? "error"] ?? MIC_MSGS.error, view: useNova.getState().view },
+          useNova.getState().demoMode,
+        );
+        useNova.getState().setNovaState("warning");
+        setTimeout(() => {
+          if (useNova.getState().novaState === "warning") useNova.getState().setNovaState("idle");
+        }, 2500);
+        return;
+      }
       if (r?.noStt) {
         useNova.getState().applyTurn(
           { reply: "El reconocimiento de voz no está disponible en este navegador. Pulsa el teclado para escribirme.", view: useNova.getState().view },

@@ -166,6 +166,21 @@ const SCHEMA_STATEMENTS = [
     expires_at timestamptz not null,
     created_at timestamptz not null default now()
   )`,
+  // Llamadas telefónicas que ZERO hace en nombre del usuario (Twilio).
+  `create table if not exists phone_calls (
+    id uuid primary key default gen_random_uuid(),
+    user_id text not null references profiles(id) on delete cascade,
+    call_sid text,
+    to_number text not null,
+    contact_name text,
+    goal text not null,
+    status text not null default 'iniciando',
+    result text,
+    turns jsonb not null default '[]'::jsonb,
+    duration_s int,
+    created_at timestamptz not null default now()
+  )`,
+  `create index if not exists idx_calls_user on phone_calls(user_id)`,
   `create table if not exists auth_sessions (
     token_hash text primary key,
     user_id text not null references auth_users(id) on delete cascade,

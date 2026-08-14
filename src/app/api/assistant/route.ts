@@ -8,6 +8,10 @@ import { getStorage } from "@/lib/providers/storage";
 import type { MemoryItem } from "@/lib/providers/storage/types";
 import { OWNER_NAME, DEFAULT_TIMEZONE } from "@/lib/constants";
 import { mailSenderFor, sendMailForUser } from "@/lib/mail/user-mail";
+import { requestOrigin } from "@/lib/http/origin";
+import { isTwilioConfigured, serverConfig } from "@/lib/config";
+import { placeCall } from "@/lib/twilio/place";
+import { listCalls } from "@/lib/twilio/store";
 
 const BodySchema = z.object({
   messages: z
@@ -67,6 +71,24 @@ export async function POST(req: NextRequest) {
     },
     // El correo sale del buzón del propio usuario (Gmail/Outlook conectado).
     mail: { send: (input) => sendMailForUser(userId, authed, input) },
+    // Llamadas telefónicas (Twilio): solo si está configurado de verdad.
+    ...(isTwilioConfigured() && serverConfig.anthropic.apiKey
+      ? {
+          calls: {
+            place: (input: { to: string; contactName?: string; goal: string }) =>
+              placeCall(userId, requestOrigin(req), input),
+            list: async () =>
+              (await listCalls(userId, 5)).map((c) => ({
+                to: c.toNumber,
+                contactName: c.contactName,
+                goal: c.goal,
+                status: c.status,
+                result: c.result,
+                createdAt: c.createdAt,
+              })),
+          },
+        }
+      : {}),
   });
   const sender = await mailSenderFor(userId, authed);
   const ctx = {
@@ -78,6 +100,7 @@ export async function POST(req: NextRequest) {
     mailFrom: sender
       ? `${sender.address}${sender.via === "gmail" ? " (su Gmail)" : sender.via === "outlook" ? " (su Outlook)" : ""}`
       : null,
+    canCall: isTwilioConfigured() && serverConfig.anthropic.apiKey.length > 0,
   };
   const startedAt = Date.now();
   try {

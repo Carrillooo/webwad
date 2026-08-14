@@ -12,7 +12,24 @@ anterior sigue: multiusuario SaaS, ZERO Pro 20 €/mes con 14 días de prueba y
 paywall (la pasarela de pago sigue siendo lo ÚNICO que falta), datos por
 cuenta, crons multiusuario, iCal por usuario, WhatsApp. 147 tests._
 
-## 🆕 Última sesión (2) — Admin, legal, monitorización y estreno limpio
+## 🆕 Última sesión (3) — ZERO llama por teléfono (Twilio)
+
+- **«Llama a la peluquería y pide cita el viernes por la tarde»**: herramienta
+  `make_phone_call` (ALTO RIESGO: repite número+objetivo y exige un "sí")
+  y `list_phone_calls`. La llamada la hace Twilio y ZERO conversa por turnos:
+  Gather de voz es-ES ↔ cerebro Anthropic (salida forzada JSON: frase, done,
+  resultado) ↔ voz Polly.Lucia. Al colgar, push con el resultado.
+- Piezas: `src/lib/twilio/` (store BD+memoria con tabla `phone_calls`, firma
+  X-Twilio-Signature validada en tiempo constante, REST sin SDK, TwiML con
+  escape XML, cerebro con reglas de llamada) + rutas `/api/calls` (guardada,
+  rate limit 4 llamadas/10 min por usuario) y `/api/twilio/{voice,status}`
+  (públicas pero SOLO con firma válida y CallSid propio). Tope de 5 min por
+  llamada (TimeLimit) y 30 turnos.
+- Sin Twilio configurado el asistente lo dice claro y no finge llamar.
+- ⚠️ Cuenta de prueba de Twilio: solo llama a números verificados y mete una
+  locución inicial; para llamar a cualquiera hay que cargar saldo.
+
+## Sesión anterior — Admin, legal, monitorización y estreno limpio
 
 - **Panel `/admin`** (solo cuenta máster; enlace en Ajustes → Cuenta): lista de
   cuentas con métricas (total/activas/prueba/caducadas) y acciones Activar

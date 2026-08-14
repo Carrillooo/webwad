@@ -79,6 +79,13 @@ export const serverConfig = {
   /** Opcional: fija una hoja de tareas concreta para el asistente. Sin ella,
    *  la IA la busca por nombre en el Drive del usuario conectado. */
   tasksSpreadsheetId: process.env.TASKS_SPREADSHEET_ID ?? "",
+  /** Twilio: llamadas telefónicas salientes en nombre del usuario. */
+  twilio: {
+    accountSid: process.env.TWILIO_ACCOUNT_SID ?? "",
+    authToken: process.env.TWILIO_AUTH_TOKEN ?? "",
+    /** Número comprado en Twilio en formato E.164, p. ej. +34XXXXXXXXX. */
+    fromNumber: process.env.TWILIO_FROM_NUMBER ?? "",
+  },
 } as const;
 
 export const ZERO_ATTRIBUTION = "(by zerodc)";
@@ -101,6 +108,11 @@ export function isElevenLabsConfigured(): boolean {
 export function isSmtpConfigured(): boolean {
   const s = serverConfig.smtp;
   return s.host.trim().length > 0 && s.user.trim().length > 0 && s.pass.trim().length > 0;
+}
+
+export function isTwilioConfigured(): boolean {
+  const t = serverConfig.twilio;
+  return t.accountSid.trim().length > 0 && t.authToken.trim().length > 0 && t.fromNumber.trim().length > 0;
 }
 
 export function isWhatsappConfigured(): boolean {

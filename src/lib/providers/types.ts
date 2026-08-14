@@ -177,6 +177,8 @@ export interface AssistantContext {
   /** Desde dónde saldrían los emails de este usuario ("adrian@gmail.com (Gmail)");
    *  null/ausente = no hay forma de enviar. */
   mailFrom?: string | null;
+  /** true si ZERO puede hacer llamadas telefónicas (Twilio configurado). */
+  canCall?: boolean;
 }
 
 /** Runtime conversation state threaded across turns for follow-ups. */

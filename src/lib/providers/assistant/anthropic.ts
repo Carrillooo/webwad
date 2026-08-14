@@ -34,6 +34,13 @@ export interface AssistantExtras {
       senderName?: string;
     }) => Promise<{ ok: boolean; detail: string }>;
   };
+  /** Llamadas telefónicas de ZERO en nombre del usuario (Twilio). */
+  calls?: {
+    place: (input: { to: string; contactName?: string; goal: string }) => Promise<{ ok: boolean; detail: string }>;
+    list: () => Promise<
+      { to: string; contactName: string | null; goal: string; status: string; result: string | null; createdAt: string }[]
+    >;
+  };
 }
 
 type Effort = NonNullable<Anthropic.OutputConfig["effort"]>;
@@ -393,6 +400,26 @@ export class AnthropicAssistantProvider implements AssistantProvider {
           if (!fc.ok) return { data: { error: `No pude consultar el tiempo: ${fc.error}` }, isError: true };
           return { data: { location: "Madrid", days: fc.days } };
         }
+        case "make_phone_call": {
+          // HIGH RISK — como send_email: el modelo debe haber enseñado a quién
+          // llama y para qué, y tener un "sí" explícito antes de llamar.
+          if (!this.extras.calls) {
+            return { data: { error: "Las llamadas no están disponibles en esta cuenta." }, isError: true };
+          }
+          const r = await this.extras.calls.place({
+            to: String(input.to),
+            contactName: input.contactName ? String(input.contactName) : undefined,
+            goal: String(input.goal),
+          });
+          receipt("call.place", r.ok ? `Llamando a ${input.contactName ?? input.to}` : "Llamada NO iniciada", r.ok);
+          return { data: r, isError: !r.ok };
+        }
+        case "list_phone_calls": {
+          if (!this.extras.calls) {
+            return { data: { error: "Las llamadas no están disponibles en esta cuenta." }, isError: true };
+          }
+          return { data: await this.extras.calls.list() };
+        }
         case "remember_fact": {
           if (!this.extras.memory) return { data: { error: "La memoria no está disponible." }, isError: true };
           const item = await this.extras.memory.remember(
@@ -562,6 +589,23 @@ function stablePrompt(ctx: AssistantContext): string {
       : `  de que conecte Google u Outlook en Ajustes para poder enviarlo desde su propio correo.`,
     `- Redacta en español, tono profesional cercano, y firma con el nombre de ${ctx.ownerName}.`,
     `  Nunca envíes sin destinatario claro ni sin confirmación. Nunca inventes direcciones.`,
+    ``,
+    `TELÉFONO (make_phone_call):`,
+    ctx.canCall
+      ? `- Puedes LLAMAR por teléfono en nombre de ${ctx.ownerName} para gestiones: pedir cita, reservar`
+      : `- AÚN NO DISPONIBLE: si pide que llames a alguien, dilo claro y ofrece alternativas (email).`,
+    ctx.canCall
+      ? `  mesa, preguntar un horario, confirmar una reunión. ALTO RIESGO — flujo OBLIGATORIO: 1) repite`
+      : `  Nunca digas que has llamado: no puedes.`,
+    ctx.canCall
+      ? `  a quién llamas, a qué número (formato +34...) y el objetivo EXACTO; 2) espera un "sí"/"llama"`
+      : ``,
+    ctx.canCall
+      ? `  EXPLÍCITO; 3) solo entonces make_phone_call. La llamada sigue sola: el resultado llega al`
+      : ``,
+    ctx.canCall
+      ? `  colgar (aviso push) y con list_phone_calls lo consultas si te preguntan "¿qué tal la llamada?".`
+      : ``,
     ``,
     `TIEMPO: get_weather da la previsión de 7 días en Madrid (Open-Meteo). Úsala si pregunta`,
     `por el tiempo, o para avisar proactivamente si un evento es al aire libre y va a llover.`,
@@ -743,6 +787,28 @@ const TOOLS: Anthropic.Tool[] = [
       },
       required: ["to", "subject", "body"],
     },
+  },
+  {
+    name: "make_phone_call",
+    description:
+      "LLAMA por teléfono en nombre del usuario para una gestión (pedir cita, reservar, preguntar). ALTO RIESGO: repite antes a quién, a qué número y el objetivo exacto, y llama SOLO tras un 'sí' explícito. La llamada transcurre sola; el resultado se consulta con list_phone_calls.",
+    input_schema: {
+      type: "object",
+      properties: {
+        to: { type: "string", description: "número en formato internacional E.164, p. ej. +34600112233" },
+        contactName: { type: "string", description: "a quién se llama (persona o negocio)" },
+        goal: {
+          type: "string",
+          description: "objetivo concreto y autocontenido de la llamada, con fechas/horas si las hay",
+        },
+      },
+      required: ["to", "goal"],
+    },
+  },
+  {
+    name: "list_phone_calls",
+    description: "Últimas llamadas telefónicas de ZERO con su estado y resultado.",
+    input_schema: { type: "object", properties: {} },
   },
   {
     name: "get_weather",

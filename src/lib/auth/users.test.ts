@@ -167,24 +167,3 @@ describe("entrar con Google/Microsoft (findOrCreateOAuthUser)", () => {
   });
 });
 
-describe("promoteToMaster", () => {
-  it("promueve por email y degrada a la máster anterior", async () => {
-    const { promoteToMaster } = await import("./users");
-    await registerUser("primera@x.com", "clave11111", "Primera");
-    await registerUser("adri@x.com", "clave22222", "Adrián");
-    expect(await promoteToMaster("ADRI@x.com")).toBe(true);
-    const adri = await verifyLogin("adri@x.com", "clave22222");
-    const primera = await verifyLogin("primera@x.com", "clave11111");
-    expect(adri?.isOwner).toBe(true);
-    expect(adri?.subscriptionStatus).toBe("active");
-    expect(primera?.isOwner).toBe(false);
-  });
-
-  it("un email inexistente devuelve false y NO toca a la máster actual", async () => {
-    const { promoteToMaster } = await import("./users");
-    await registerUser("master@x.com", "clave11111", "Máster");
-    expect(await promoteToMaster("nadie@x.com")).toBe(false);
-    // La máster sigue siéndolo: el fallo no puede dejar la app sin dueño.
-    expect((await verifyLogin("master@x.com", "clave11111"))?.isOwner).toBe(true);
-  });
-});

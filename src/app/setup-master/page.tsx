@@ -3,33 +3,24 @@ import { useState } from "react";
 import Link from "next/link";
 
 /**
- * Nombrar la cuenta máster desde el navegador (móvil incluido), sin Terminal.
- * La página es pública pero inofensiva: la operación real la valida la API
- * con el CRON_SECRET del servidor — sin el secreto no hace nada.
+ * TEMPORAL — un botón para que la cuenta fundadora se nombre máster, sin
+ * claves: la API solo acepta la sesión del email fundador (fijado en el
+ * servidor). Quitar esta página cuando Adrián confirme.
  */
 export default function SetupMaster() {
-  const [email, setEmail] = useState("");
-  const [secret, setSecret] = useState("");
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<{ ok: boolean; text: string } | null>(null);
 
-  const submit = async () => {
+  const claim = async () => {
     if (busy) return;
     setBusy(true);
     setResult(null);
     try {
-      const r = await fetch("/api/admin/promote", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${secret.trim()}`,
-        },
-        body: JSON.stringify({ email: email.trim() }),
-      });
+      const r = await fetch("/api/admin/claim", { method: "POST" });
       const d = await r.json().catch(() => ({}));
       setResult(
         r.ok
-          ? { ok: true, text: `${d.detail ?? "Hecho."} Cierra sesión y vuelve a entrar para ver la insignia.` }
+          ? { ok: true, text: d.detail ?? "Hecho." }
           : { ok: false, text: d.error ?? `Error ${r.status}.` },
       );
     } catch {
@@ -44,32 +35,21 @@ export default function SetupMaster() {
       <div className="w-full max-w-sm space-y-4">
         <header className="text-center space-y-1">
           <h1 className="text-2xl font-semibold tracking-[0.3em] glow-text">ZERO</h1>
-          <p className="text-dim text-sm">Nombrar la cuenta máster</p>
+          <p className="text-dim text-sm">Activar la cuenta máster</p>
         </header>
 
-        <div className="glass holo-border rounded-2xl p-4 space-y-2.5">
-          <input
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="Email de la cuenta (ya registrada)"
-            type="email"
-            autoComplete="email"
-            className="w-full glass px-3 py-2.5 text-sm bg-transparent outline-none rounded-xl"
-          />
-          <input
-            value={secret}
-            onChange={(e) => setSecret(e.target.value)}
-            placeholder="CRON_SECRET (el de Vercel)"
-            type="password"
-            className="w-full glass px-3 py-2.5 text-sm bg-transparent outline-none rounded-xl"
-          />
+        <div className="glass holo-border rounded-2xl p-4 space-y-3">
+          <p className="text-[12.5px] text-dim leading-snug">
+            Pulsa el botón <strong>con tu sesión de Google ya iniciada</strong> en ZERO. Solo
+            funciona para la cuenta fundadora; para cualquier otra persona este botón no hace nada.
+          </p>
           <button
-            onClick={() => void submit()}
-            disabled={busy || !email.trim() || !secret.trim()}
+            onClick={() => void claim()}
+            disabled={busy}
             className="w-full py-2.5 rounded-xl text-sm font-medium disabled:opacity-50"
             style={{ background: "rgb(var(--nova-primary) / 0.85)" }}
           >
-            {busy ? "Un momento…" : "Hacer máster"}
+            {busy ? "Un momento…" : "Hacer máster mi cuenta"}
           </button>
           {result && (
             <p
@@ -79,10 +59,6 @@ export default function SetupMaster() {
               {result.text}
             </p>
           )}
-          <p className="text-[11px] text-faint leading-snug">
-            La cuenta queda activa para siempre y con acceso al panel /admin; si otra cuenta era
-            máster, deja de serlo. El secreto no se guarda en el navegador.
-          </p>
         </div>
 
         <p className="text-center">

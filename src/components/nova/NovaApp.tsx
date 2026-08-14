@@ -115,9 +115,14 @@ export function NovaApp() {
   useAutoListen(autoListen, activate);
 
   const centered = CENTER_STATES.has(novaState);
-  const dockScale = w < 520 ? 0.56 : 0.62;
+  const mobile = w < 640;
+  const dockScale = mobile ? 0.74 : 0.62;
   const centerScale = w < 520 ? 0.94 : 1.08;
-  const dock = { x: 4, y: h - CORE_H * dockScale - 66, scale: dockScale };
+  // Móvil: la piedra vive centrada y con presencia (en una pantalla estrecha,
+  // una esquina la hace parecer perdida). Escritorio: esquina inferior izquierda.
+  const dock = mobile
+    ? { x: w / 2 - CORE_W / 2, y: h - CORE_H * dockScale - 132, scale: dockScale }
+    : { x: 4, y: h - CORE_H * dockScale - 66, scale: dockScale };
   const center = { x: w / 2 - CORE_W / 2, y: h / 2 - CORE_H / 2 - 68, scale: centerScale };
 
   // Puerta de la app de pago: sin sesión → entrar; prueba caducada → plan.

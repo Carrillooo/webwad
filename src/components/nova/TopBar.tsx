@@ -18,11 +18,15 @@ export function TopBar() {
     return () => clearInterval(id);
   }, []);
 
+  // En móvil el nombre completo rompía el saludo en una columna de palabras:
+  // con el nombre de pila basta y cabe siempre.
+  const firstName = userName?.trim().split(/\s+/)[0] ?? null;
+
   return (
-    <header className="flex items-start justify-between px-5 pt-4 gap-3">
-      <div>
-        <h1 className="text-lg sm:text-xl font-medium glow-text">
-          {now ? `${greeting(now)}${userName ? `, ${userName}` : ""}.` : " "}
+    <header className="flex flex-col-reverse sm:flex-row sm:items-start sm:justify-between px-5 pt-4 gap-2 sm:gap-3">
+      <div className="min-w-0">
+        <h1 className="text-xl font-medium glow-text truncate">
+          {now ? `${greeting(now)}${firstName ? `, ${firstName}` : ""}.` : " "}
         </h1>
         <p className="text-dim text-xs sm:text-sm mt-0.5 tabular-nums">
           {now ? (
@@ -37,7 +41,7 @@ export function TopBar() {
         </p>
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 justify-end">
         {demoMode && (
           // Pulsable: el usuario ve "DEMO" y lo primero que quiere saber es por
           // qué. Lleva directo a Ajustes, donde está el diagnóstico.

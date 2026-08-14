@@ -46,7 +46,7 @@ function Slider({ value, min, max, step, onChange }: { value: number; min: numbe
 function GoogleConnection() {
   const [state, setState] = useState<{
     configured: boolean;
-    connection: { connected: boolean; email?: string; preconfigured?: boolean };
+    connection: { connected: boolean; email?: string };
   } | null>(null);
 
   useEffect(() => {
@@ -67,8 +67,6 @@ function GoogleConnection() {
   }
 
   const connected = state.connection.connected;
-  // Cuenta fija (GOOGLE_REFRESH_TOKEN): no hay nada que enlazar ni desenlazar.
-  const preconfigured = Boolean(state.connection.preconfigured);
   return (
     <div className="glass holo-border px-3 py-2.5 flex items-center justify-between gap-3">
       <div className="min-w-0">
@@ -77,14 +75,7 @@ function GoogleConnection() {
           {connected ? state.connection.email ?? "Conectado" : "Sin conectar"}
         </div>
       </div>
-      {preconfigured ? (
-        <span
-          className="px-3 py-1.5 rounded-lg text-[11px] text-dim shrink-0"
-          style={{ background: "rgb(var(--nova-accent) / 0.14)" }}
-        >
-          Siempre enlazado
-        </span>
-      ) : connected ? (
+      {connected ? (
         <button
           onClick={async () => {
             await fetch("/api/google/disconnect", { method: "POST" });
@@ -167,6 +158,72 @@ function CalendarFeed() {
 }
 
 /** Qué falta para que ZERO deje de ir en demo. Sin adivinar: lo dice /api/health. */
+/** Cuenta y suscripción: quién soy, qué plan tengo y cerrar sesión. */
+function AccountSection() {
+  const [me, setMe] = useState<{
+    authRequired: boolean;
+    account: {
+      email: string;
+      name: string;
+      isOwner: boolean;
+      subscription: { status: string; daysLeft: number | null };
+      plan: { name: string; priceEur: number };
+    } | null;
+  } | null>(null);
+
+  useEffect(() => {
+    fetch("/api/auth/me")
+      .then((r) => r.json())
+      .then(setMe)
+      .catch(() => setMe(null));
+  }, []);
+
+  if (!me?.account) return null; // en demo local no hay cuenta
+
+  const { account } = me;
+  const sub = account.subscription;
+  const estado =
+    account.isOwner || sub.status === "active"
+      ? "Suscripción activa"
+      : sub.status === "trial"
+        ? `Prueba gratuita · ${sub.daysLeft} día${sub.daysLeft === 1 ? "" : "s"} restantes`
+        : "Prueba terminada";
+
+  return (
+    <div className="glass holo-border px-3 py-2.5 space-y-2">
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <div className="text-sm truncate">{account.name}</div>
+          <div className="text-[11px] text-faint truncate">{account.email}</div>
+        </div>
+        <button
+          onClick={async () => {
+            await fetch("/api/auth/logout", { method: "POST" });
+            window.location.reload();
+          }}
+          className="px-3 py-1.5 rounded-lg text-xs shrink-0 text-[rgb(248,113,113)]"
+          style={{ background: "rgba(248,113,113,0.14)" }}
+        >
+          Cerrar sesión
+        </button>
+      </div>
+      <div className="flex items-center justify-between text-[11px]">
+        <span className="text-dim">
+          {account.plan.name} · {account.plan.priceEur} €/mes
+        </span>
+        <span style={{ color: sub.status === "expired" ? "rgb(248 113 113)" : "rgb(52 211 153)" }}>
+          {estado}
+        </span>
+      </div>
+      {sub.status === "trial" && (
+        <p className="text-[11px] text-faint leading-snug">
+          La pasarela de pago está al llegar; podrás suscribirte desde aquí sin perder nada.
+        </p>
+      )}
+    </div>
+  );
+}
+
 /** Qué hacer ante cada motivo, en cristiano. */
 const MOTIVO: Record<string, string> = {
   sin_credenciales: "Faltan GOOGLE_CLIENT_ID y GOOGLE_CLIENT_SECRET en Vercel.",
@@ -488,6 +545,11 @@ export function Settings() {
               <Row label="Zona horaria">
                 <span className="text-sm text-faint">{settings.timezone}</span>
               </Row>
+            </section>
+
+            <section className="mb-4">
+              <h3 className="text-[11px] uppercase tracking-wide text-faint mb-1">Cuenta</h3>
+              <AccountSection />
             </section>
 
             <section className="mb-4">

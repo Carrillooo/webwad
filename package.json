@@ -12,12 +12,10 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
-    "gen:icons": "node scripts/gen-icons.mjs",
-    "google:token": "node scripts/google-token.mjs"
+    "gen:icons": "node scripts/gen-icons.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.116.0",
-    "@supabase/supabase-js": "^2.112.3",
     "clsx": "^2.1.1",
     "date-fns": "^4.4.0",
     "date-fns-tz": "^3.2.0",

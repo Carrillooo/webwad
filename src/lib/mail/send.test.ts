@@ -11,7 +11,7 @@ vi.mock("nodemailer", () => ({
 }));
 
 // Toggled per test so we can exercise both the configured and unconfigured paths.
-const smtp = { host: "", port: 587, user: "", pass: "", from: "daniel@rolmovil.com" };
+const smtp = { host: "", port: 587, user: "", pass: "", from: "zero@ejemplo.com" };
 vi.mock("@/lib/config", async () => {
   const actual = await vi.importActual<typeof import("./../config")>("./../config");
   return {
@@ -26,7 +26,7 @@ const { sendMail } = await import("./send");
 beforeEach(() => {
   sendMailMock.mockReset();
   createTransportMock.mockClear();
-  Object.assign(smtp, { host: "", port: 587, user: "", pass: "", from: "daniel@rolmovil.com" });
+  Object.assign(smtp, { host: "", port: 587, user: "", pass: "", from: "zero@ejemplo.com" });
 });
 
 describe("sendMail", () => {
@@ -41,14 +41,24 @@ describe("sendMail", () => {
     Object.assign(smtp, { host: "smtp.test", port: 587, user: "u", pass: "p" });
     sendMailMock.mockResolvedValue({ accepted: ["a@b.com"], messageId: "<id-1>" });
 
-    const r = await sendMail({ to: "a@b.com", subject: "Presupuesto", body: "Adjunto. Daniel" });
+    const r = await sendMail({ to: "a@b.com", subject: "Presupuesto", body: "Adjunto." });
     expect(r.ok).toBe(true);
     expect(r.detail).toContain("a@b.com");
 
     const opts = sendMailMock.mock.calls[0][0];
-    expect(opts.from).toContain("daniel@rolmovil.com");
+    expect(opts.from).toContain("zero@ejemplo.com");
     expect(opts.to).toBe("a@b.com");
     expect(opts.subject).toBe("Presupuesto");
+  });
+
+  it("shows the account's name as sender and falls back to SMTP_USER without MAIL_FROM", async () => {
+    Object.assign(smtp, { host: "smtp.test", port: 587, user: "cuenta@correo.com", pass: "p", from: "" });
+    sendMailMock.mockResolvedValue({ accepted: ["a@b.com"], messageId: "<id-2>" });
+
+    await sendMail({ to: "a@b.com", subject: "s", body: "b", senderName: 'Adri "El Jefe"' });
+    const opts = sendMailMock.mock.calls[0][0];
+    // Comillas fuera (romperían la cabecera), nombre dentro, remitente = SMTP_USER.
+    expect(opts.from).toBe('"Adri El Jefe" <cuenta@correo.com>');
   });
 
   it("uses implicit TLS on port 465", async () => {

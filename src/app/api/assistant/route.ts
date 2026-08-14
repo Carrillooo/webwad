@@ -3,7 +3,7 @@ import { z } from "zod";
 import { getAssistant } from "@/lib/providers/assistant";
 import { MockAssistantProvider } from "@/lib/providers/assistant/mock";
 import { resolveProviders } from "@/lib/providers";
-import { resolveUser } from "@/lib/auth";
+import { guardApi } from "@/lib/api-guard";
 import { getStorage } from "@/lib/providers/storage";
 import type { MemoryItem } from "@/lib/providers/storage/types";
 import { OWNER_NAME, DEFAULT_TIMEZONE } from "@/lib/constants";
@@ -34,6 +34,10 @@ const BodySchema = z.object({
 });
 
 export async function POST(req: NextRequest) {
+  // Autenticación ANTES de leer el body: sin sesión no se revela ni el schema.
+  const g = await guardApi(req);
+  if (g.res) return g.res;
+
   let json: unknown;
   try {
     json = await req.json();
@@ -45,7 +49,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Petición inválida", issues: parsed.error.issues }, { status: 400 });
   }
 
-  const { userId, authed } = await resolveUser(req);
+  const { userId, authed } = g.ctx;
   const providers = await resolveProviders(userId, authed);
   const storage = getStorage(authed);
   const asKind = (k?: string): MemoryItem["kind"] =>
@@ -61,7 +65,8 @@ export async function POST(req: NextRequest) {
     },
   });
   const ctx = {
-    ownerName: OWNER_NAME,
+    // Cada cuenta tiene su nombre: ZERO habla con quien ha iniciado sesión.
+    ownerName: g.ctx.user?.displayName ?? OWNER_NAME,
     nowIso: new Date().toISOString(),
     timezone: DEFAULT_TIMEZONE,
     demoMode: providers.demoMode,

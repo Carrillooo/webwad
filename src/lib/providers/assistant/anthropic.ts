@@ -76,6 +76,8 @@ function withAttribution(values: string[]): string[] {
 export class AnthropicAssistantProvider implements AssistantProvider {
   readonly kind = "anthropic" as const;
   private client: Anthropic;
+  /** Nombre de la cuenta del turno en curso (para firmar emails). */
+  private ownerName = "ZERO";
   constructor(
     private providers: Providers,
     private extras: AssistantExtras = {},
@@ -88,11 +90,12 @@ export class AnthropicAssistantProvider implements AssistantProvider {
     ctx: AssistantContext,
   ): Promise<AssistantTurn & { state?: ConversationState }> {
     const messages: Anthropic.MessageParam[] = history.map((m) => ({ role: m.role, content: m.content }));
+    this.ownerName = ctx.ownerName;
     const receipts: ActionReceipt[] = [];
     let view: MonitorView | undefined;
     let focusDate: string | undefined;
 
-    // Personal memory is injected into the prompt so ZERO "knows" Daniel
+    // Personal memory is injected into the prompt so ZERO "knows" the user
     // without needing a tool call on every turn. Cached in-process for a few
     // seconds: a DB round trip before every reply costs latency for data that
     // barely ever changes.
@@ -330,6 +333,7 @@ export class AnthropicAssistantProvider implements AssistantProvider {
             to: String(input.to),
             subject: String(input.subject),
             body: String(input.body),
+            senderName: this.ownerName,
           });
           receipt("email.send", result.ok ? `Email enviado a ${input.to}` : "Email NO enviado", result.ok);
           return { data: result, isError: !result.ok };
@@ -406,7 +410,7 @@ function volatilePrompt(ctx: AssistantContext, memories: MemoryItem[] = []): str
   if (memories.length) {
     lines.push(
       ``,
-      `MEMORIA PERSONAL (cosas que Daniel te ha pedido recordar; úsalas con naturalidad):`,
+      `MEMORIA PERSONAL (cosas que ${ctx.ownerName} te ha pedido recordar; úsalas con naturalidad):`,
       ...memories.map((m) => `- [${m.id}] ${m.value}`),
     );
   }
@@ -432,7 +436,7 @@ function stablePrompt(ctx: AssistantContext): string {
     `  No consultes el calendario "por si acaso" cuando la orden ya es clara.`,
     ``,
     `PERSONALIDAD Y CONVERSACIÓN:`,
-    `- NO eres solo un gestor de calendario: eres un asistente completo. Daniel puede`,
+    `- NO eres solo un gestor de calendario: eres un asistente completo. ${ctx.ownerName} puede`,
     `  contarte cómo le ha ido el día, pedirte opinión sobre una idea, hacerte preguntas`,
     `  de cultura general, pedir consejo... Conversa con naturalidad, con criterio propio`,
     `  y cercanía, como un buen copiloto. Sé honesto cuando algo no lo sepas.`,
@@ -478,11 +482,11 @@ function stablePrompt(ctx: AssistantContext): string {
     ``,
     `HOJA DE TAREAS POR PERSONA (Google Sheets o Excel .xlsx en Drive):`,
     serverConfig.tasksSpreadsheetId
-      ? `- LA hoja de tareas de los trabajadores tiene el id "${serverConfig.tasksSpreadsheetId}".`
-      : `- Si no sabes cuál es la hoja de tareas, búscala con find_spreadsheet antes de nada.`,
-    `  Úsala siempre que te pidan apuntar/quitar trabajo a una persona o categoría`,
-    `  (p. ej. "ponle a Abdu que revise la furgoneta", "añade a Juan el montaje del lunes").`,
-    `  No hace falta que te den el enlace: ya lo tienes.`,
+      ? `- La hoja de tareas fijada tiene el id "${serverConfig.tasksSpreadsheetId}"; úsala directamente.`
+      : `- Cuando pidan apuntar trabajo "a X persona" en su hoja/Excel, encuéntrala con`,
+    serverConfig.tasksSpreadsheetId
+      ? `  Úsala siempre que te pidan apuntar/quitar trabajo a una persona o categoría.`
+      : `  find_spreadsheet (por el nombre que mencionen) y confirma cuál es si hay varias.`,
     `- Está compartida en vivo con los trabajadores: se edita EN SU SITIO (mismo archivo/enlace),`,
     `  así que ellos ven el cambio al momento. No la dupliques ni la conviertas.`,
     `- ANTES de escribir, ESCANEA la estructura: usa list_spreadsheet_tabs y read_spreadsheet para`,
@@ -499,27 +503,27 @@ function stablePrompt(ctx: AssistantContext): string {
     `list_outlook_tasks / create_outlook_task / complete_outlook_task. Si no lo menciona,`,
     `las tareas van a Google Tasks (list_tasks / create_task).`,
     ``,
-    `EMAIL (send_email — envía desde ${serverConfig.smtp.from}):`,
+    `EMAIL (send_email${serverConfig.smtp.from ? ` — envía desde ${serverConfig.smtp.from}` : ""}):`,
     isSmtpConfigured()
       ? `- Disponible. Flujo OBLIGATORIO: 1) redacta el borrador (Para / Asunto / Cuerpo) y`
       : `- AÚN NO CONFIGURADO (faltan credenciales SMTP): si pide enviar un email, redacta el`,
     isSmtpConfigured()
       ? `  muéstraselo; 2) espera un "sí"/"envíalo" EXPLÍCITO; 3) solo entonces llama a send_email.`
       : `  borrador igualmente y avisa de que falta configurar el correo en Ajustes/.env.local.`,
-    `- Redacta en español, tono profesional cercano, firma "Daniel". Nunca envíes sin`,
-    `  destinatario claro ni sin confirmación. Nunca inventes direcciones de correo.`,
+    `- Redacta en español, tono profesional cercano, y firma con el nombre de ${ctx.ownerName}.`,
+    `  Nunca envíes sin destinatario claro ni sin confirmación. Nunca inventes direcciones.`,
     ``,
     `TIEMPO: get_weather da la previsión de 7 días en Madrid (Open-Meteo). Úsala si pregunta`,
     `por el tiempo, o para avisar proactivamente si un evento es al aire libre y va a llover.`,
     ``,
-    `MEMORIA PERSONAL: cuando Daniel te cuente algo estable sobre él ("mi mujer se llama...",`,
-    `"odio madrugar", "el NIF de la empresa es...") o te pida "recuerda que...", guárdalo con`,
-    `remember_fact (frases cortas y autocontenidas). Usa forget_memory si pide olvidar algo.`,
+    `MEMORIA PERSONAL: cuando ${ctx.ownerName} te cuente algo estable sobre él o ella ("mi`,
+    `  mujer se llama...", "odio madrugar", "el NIF es...") o te pida "recuerda que...", usa`,
+    `remember_fact (frases cortas y autocontenidas), y forget_memory si pide olvidar algo.`,
     `No guardes trivialidades ni datos de un solo uso.`,
     ``,
     `CONVERSACIÓN SEGUIDA: cuando necesites un dato para continuar, termina tu respuesta con`,
-    `UNA pregunta concreta y corta acabada en "?". El micrófono se reabre solo y Daniel te`,
-    `contesta de viva voz, así que no le pidas que pulse nada. Una pregunta cada vez.`,
+    `UNA pregunta concreta y corta acabada en "?". El micrófono se reabre solo y te`,
+    `contestan de viva voz, así que no pidas que pulsen nada. Una pregunta cada vez.`,
     ``,
     `Actúa solo mediante las herramientas. Tras actuar, responde en una o dos frases; incluye horas`,
     `en formato 24h. No expliques tu razonamiento interno.`,
@@ -679,13 +683,13 @@ const TOOLS: Anthropic.Tool[] = [
   {
     name: "send_email",
     description:
-      "Envía un email desde la cuenta de Daniel. ALTO RIESGO: muestra antes el borrador (para/asunto/cuerpo) y pide confirmación explícita; llama solo tras un 'sí'.",
+      "Envía un email en nombre del usuario. ALTO RIESGO: muestra antes el borrador (para/asunto/cuerpo) y pide confirmación explícita; llama solo tras un 'sí'.",
     input_schema: {
       type: "object",
       properties: {
         to: { type: "string", description: "destinatario, email válido" },
         subject: { type: "string" },
-        body: { type: "string", description: "cuerpo en texto plano, firmado 'Daniel'" },
+        body: { type: "string", description: "cuerpo en texto plano, firmado con el nombre del usuario" },
       },
       required: ["to", "subject", "body"],
     },
@@ -698,7 +702,7 @@ const TOOLS: Anthropic.Tool[] = [
   {
     name: "remember_fact",
     description:
-      "Guarda un dato estable sobre Daniel en la memoria persistente (frase corta y autocontenida). kind: preference|fact|note.",
+      "Guarda un dato estable sobre el usuario en la memoria persistente (frase corta y autocontenida). kind: preference|fact|note.",
     input_schema: {
       type: "object",
       properties: { value: { type: "string" }, kind: { type: "string" } },

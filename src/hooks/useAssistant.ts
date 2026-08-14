@@ -205,6 +205,23 @@ export function useAssistant() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ messages, state: store.conversation }),
         });
+        if (res.status === 401 || res.status === 402) {
+          // Sesión caducada o prueba terminada: avisar claro y dejar que el
+          // gate (AuthScreen/Paywall) tome el control al recargar.
+          useNova.getState().applyTurn(
+            {
+              reply:
+                res.status === 401
+                  ? "Tu sesión ha caducado. Vuelve a iniciar sesión."
+                  : "Tu periodo de prueba ha terminado. Suscríbete para seguir usando ZERO.",
+              view: "home",
+            },
+            useNova.getState().demoMode,
+          );
+          useNova.getState().setNovaState("warning");
+          setTimeout(() => window.location.reload(), 2200);
+          return;
+        }
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         const turn = data.turn;

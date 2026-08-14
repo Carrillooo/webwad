@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { resolveProviders } from "@/lib/providers";
-import { resolveUser } from "@/lib/auth";
+import { guardApi } from "@/lib/api-guard";
 import { dayBounds, weekBounds } from "@/lib/datetime";
 
 /** GET /api/calendar?date=ISO&range=day|week|month */
@@ -21,7 +21,9 @@ export async function GET(req: NextRequest) {
     ({ start, end } = dayBounds(base));
   }
 
-  const { userId, authed } = await resolveUser(req);
+  const g = await guardApi(req);
+  if (g.res) return g.res;
+  const { userId, authed } = g.ctx;
   const providers = await resolveProviders(userId, authed);
   const [events, calendars] = await Promise.all([
     providers.calendar.listEvents(start.toISOString(), end.toISOString()),

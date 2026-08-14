@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { verifyWebhook, verifySignature, parseIncoming } from "@/lib/providers/messaging/whatsapp";
 import { isWhatsappConfigured } from "@/lib/config";
 import { resolveProviders } from "@/lib/providers";
-import { ensureOwnerUser } from "@/lib/db/owner";
+import { listBillableUsers } from "@/lib/auth/users";
 import { DEMO_USER_ID } from "@/lib/auth";
 import { parseDay } from "@/lib/nlu/spanish-datetime";
 import { toZonedIso } from "@/lib/datetime";
@@ -37,8 +37,11 @@ export async function POST(req: NextRequest) {
 
   const messages = parseIncoming(payload);
   if (messages.length) {
-    const ownerId = await ensureOwnerUser();
-    const providers = await resolveProviders(ownerId ?? DEMO_USER_ID, !!ownerId);
+    // El número de WhatsApp es único para toda la instalación, así que los
+    // mensajes entran a la cuenta fundadora (multiusuario real de WhatsApp
+    // exigiría mapear número→cuenta; queda para cuando haya pasarela).
+    const owner = (await listBillableUsers()).find((u) => u.isOwner) ?? null;
+    const providers = await resolveProviders(owner?.id ?? DEMO_USER_ID, Boolean(owner));
     for (const m of messages) {
       // Detect a date mention; store as a task the owner can turn into an event.
       const day = parseDay(m.text, new Date());

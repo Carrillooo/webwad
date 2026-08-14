@@ -2,10 +2,10 @@
 import { useEffect, useState } from "react";
 import { useNova } from "@/lib/store";
 import { greeting, humanDay, humanTime } from "@/lib/datetime";
-import { OWNER_NAME } from "@/lib/constants";
 
 export function TopBar() {
   const [now, setNow] = useState<Date | null>(null);
+  const userName = useNova((s) => s.userName);
   const demoMode = useNova((s) => s.demoMode);
   const setSettingsOpen = useNova((s) => s.setSettingsOpen);
   const panelOpen = useNova((s) => s.panelOpen);
@@ -22,7 +22,7 @@ export function TopBar() {
     <header className="flex items-start justify-between px-5 pt-4 gap-3">
       <div>
         <h1 className="text-lg sm:text-xl font-medium glow-text">
-          {now ? `${greeting(now)}, ${OWNER_NAME}.` : " "}
+          {now ? `${greeting(now)}${userName ? `, ${userName}` : ""}.` : " "}
         </h1>
         <p className="text-dim text-xs sm:text-sm mt-0.5 tabular-nums">
           {now ? (

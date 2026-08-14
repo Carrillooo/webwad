@@ -1,99 +1,72 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { saveConnection, getConnection, getAccessToken, disconnect } from "./connection";
 
-/** Config mutable: cada test decide si hay cuenta preconfigurada. */
-const google = {
-  clientId: "cid",
-  clientSecret: "csecret",
-  redirectUri: "http://localhost:3000/api/google/callback",
-  refreshToken: "",
-  accountEmail: "",
-};
+/** Conexión por usuario (camino en memoria: sin DATABASE_URL en tests). */
 
-vi.mock("../config", async () => {
-  const actual = await vi.importActual<typeof import("../config")>("../config");
+const g = globalThis as unknown as { __novaGoogle?: Map<string, unknown> };
+
+function tokens(expiresInMs: number) {
   return {
-    ...actual,
-    serverConfig: {
-      ...actual.serverConfig,
-      get google() {
-        return google;
-      },
-    },
+    accessToken: "ya29.acceso",
+    refreshToken: "1//refresh",
+    expiresAt: Date.now() + expiresInMs,
   };
-});
-
-const { getAccessToken, getConnection, isGooglePreconfigured } = await import("./connection");
-
-const g = globalThis as unknown as { __zeroGoogleEnvTok?: unknown; __novaGoogle?: Map<string, unknown> };
-
-function tokenResponse(access: string, expiresIn = 3600) {
-  return new Response(JSON.stringify({ access_token: access, expires_in: expiresIn }), {
-    status: 200,
-    headers: { "Content-Type": "application/json" },
-  });
 }
 
 beforeEach(() => {
-  Object.assign(google, { refreshToken: "", accountEmail: "" });
-  g.__zeroGoogleEnvTok = undefined; // caché del access token entre peticiones
-  g.__novaGoogle = undefined; // conexiones guardadas a mano
+  g.__novaGoogle = undefined;
 });
 afterEach(() => vi.unstubAllGlobals());
 
-describe("cuenta de Google preconfigurada", () => {
-  it("sin GOOGLE_REFRESH_TOKEN sigue haciendo falta enlazar", async () => {
-    expect(isGooglePreconfigured()).toBe(false);
+describe("conexión de Google por usuario", () => {
+  it("sin conectar no hay nada: ni conexión ni token", async () => {
     expect(await getConnection("u1", false)).toEqual({ connected: false });
     expect(await getAccessToken("u1", false)).toBeNull();
   });
 
-  it("con GOOGLE_REFRESH_TOKEN aparece conectada sin pulsar nada", async () => {
-    Object.assign(google, { refreshToken: "1//refresh", accountEmail: "daniel@ejemplo.com" });
-    expect(isGooglePreconfigured()).toBe(true);
-    expect(await getConnection("u1", false)).toMatchObject({
-      connected: true,
-      preconfigured: true,
-      email: "daniel@ejemplo.com",
-    });
+  it("guardar y leer: cada usuario ve SOLO su conexión", async () => {
+    await saveConnection("u1", false, tokens(3600_000), "uno@ejemplo.com");
+    expect(await getConnection("u1", false)).toMatchObject({ connected: true, email: "uno@ejemplo.com" });
+    // El vecino no ve nada — esta es la garantía multiusuario.
+    expect(await getConnection("u2", false)).toEqual({ connected: false });
+    expect(await getAccessToken("u2", false)).toBeNull();
   });
 
-  it("canjea el refresh token por un access token", async () => {
-    Object.assign(google, { refreshToken: "1//refresh" });
-    const fetchMock = vi.fn(async (_url: string, _init: RequestInit) => tokenResponse("ya29.token"));
-    vi.stubGlobal("fetch", fetchMock);
+  it("guardar exige refresh token (nunca una conexión que morirá en 1 h)", async () => {
+    await expect(
+      saveConnection("u1", false, { accessToken: "x", expiresAt: Date.now() + 1000 }, "a@b.com"),
+    ).rejects.toThrow(/refresh token/);
+  });
 
-    expect(await getAccessToken("u1", false)).toBe("ya29.token");
+  it("con el access token vigente no llama a Google", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    await saveConnection("u1", false, tokens(3600_000));
+    expect(await getAccessToken("u1", false)).toBe("ya29.acceso");
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("caducado el access token, lo renueva con el refresh", async () => {
+    const fetchMock = vi.fn(
+      async (_url: string, _init: RequestInit) =>
+        new Response(JSON.stringify({ access_token: "ya29.nuevo", expires_in: 3600 }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    await saveConnection("u1", false, tokens(-1000)); // ya caducado
+    expect(await getAccessToken("u1", false)).toBe("ya29.nuevo");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
     const body = String(fetchMock.mock.calls[0][1].body);
     expect(body).toContain("grant_type=refresh_token");
-    expect(body).toContain("refresh_token=1%2F%2Frefresh");
   });
 
-  it("cachea el access token en vez de pedir uno por petición", async () => {
-    Object.assign(google, { refreshToken: "1//refresh" });
-    const fetchMock = vi.fn(async (_url: string, _init: RequestInit) => tokenResponse("ya29.token"));
-    vi.stubGlobal("fetch", fetchMock);
-
-    await getAccessToken("u1", false);
-    await getAccessToken("u1", false);
-    await getAccessToken("u1", false);
-    expect(fetchMock).toHaveBeenCalledTimes(1);
-  });
-
-  it("vuelve a pedirlo cuando está a punto de caducar", async () => {
-    Object.assign(google, { refreshToken: "1//refresh" });
-    // 30 s de vida: por debajo del margen de seguridad de 60 s.
-    const fetchMock = vi.fn(async () => tokenResponse("ya29.corto", 30));
-    vi.stubGlobal("fetch", fetchMock);
-
-    await getAccessToken("u1", false);
-    await getAccessToken("u1", false);
-    expect(fetchMock).toHaveBeenCalledTimes(2);
-  });
-
-  it("si Google revoca el token no revienta: degrada a los mocks", async () => {
-    Object.assign(google, { refreshToken: "1//revocado" });
-    vi.stubGlobal("fetch", vi.fn(async () => new Response("invalid_grant", { status: 400 })));
-    // null = resolveProviders se queda con los mocks en vez de lanzar.
-    await expect(getAccessToken("u1", false)).resolves.toBeNull();
+  it("desconectar borra la conexión de ese usuario y solo la suya", async () => {
+    await saveConnection("u1", false, tokens(3600_000), "uno@ejemplo.com");
+    await saveConnection("u2", false, tokens(3600_000), "dos@ejemplo.com");
+    await disconnect("u1", false);
+    expect(await getConnection("u1", false)).toEqual({ connected: false });
+    expect(await getConnection("u2", false)).toMatchObject({ connected: true });
   });
 });

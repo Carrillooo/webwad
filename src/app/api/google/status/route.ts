@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { resolveUser } from "@/lib/auth";
-import { getConnection, getAccessToken, isGooglePreconfigured } from "@/lib/google/connection";
+import { getConnection, getAccessToken } from "@/lib/google/connection";
 import { isGoogleConfigured } from "@/lib/google/oauth";
 import { isEncryptionConfigured } from "@/lib/crypto/tokens";
 import { serverConfig } from "@/lib/config";
@@ -28,13 +28,11 @@ export async function GET(req: NextRequest) {
 
   if (!configured) reason = "sin_credenciales";
   else if (serverConfig.demoMode) reason = "demo_mode";
-  else if (!isEncryptionConfigured() && !isGooglePreconfigured()) reason = "sin_cifrado";
+  else if (!isEncryptionConfigured()) reason = "sin_cifrado";
   else {
     try {
       usable = Boolean(await getAccessToken(userId, authed));
-      // Con cuenta preconfigurada siempre se intenta refrescar, así que un null
-      // no es "falta conectar": es que Google no aceptó el token.
-      if (!usable) reason = isGooglePreconfigured() ? "token_rechazado" : "sin_conexion";
+      if (!usable) reason = "sin_conexion";
     } catch {
       reason = "token_rechazado";
     }

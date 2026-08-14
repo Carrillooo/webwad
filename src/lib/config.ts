@@ -30,11 +30,6 @@ export const serverConfig = {
     clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? "",
     redirectUri:
       process.env.GOOGLE_REDIRECT_URI ?? "http://localhost:3000/api/google/callback",
-    /** Cuenta preconfigurada: ZERO lo usa una sola persona, así que en vez de
-     *  pulsar "Conectar" cada vez se autoriza UNA vez (npm run google:token) y
-     *  el refresh token vive aquí. Si está puesto, no hay que enlazar nada. */
-    refreshToken: process.env.GOOGLE_REFRESH_TOKEN ?? "",
-    accountEmail: process.env.GOOGLE_ACCOUNT_EMAIL ?? "",
   },
   microsoft: {
     clientId: process.env.MICROSOFT_CLIENT_ID ?? "",
@@ -63,7 +58,7 @@ export const serverConfig = {
   vapid: {
     publicKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? "",
     privateKey: process.env.VAPID_PRIVATE_KEY ?? "",
-    subject: process.env.VAPID_SUBJECT ?? "mailto:danielrolmovil@gmail.com",
+    subject: process.env.VAPID_SUBJECT ?? "mailto:soporte@zero.app",
   },
   elevenlabs: {
     apiKey: process.env.ELEVENLABS_API_KEY ?? "",
@@ -78,14 +73,12 @@ export const serverConfig = {
     port: Number(process.env.SMTP_PORT ?? 587),
     user: process.env.SMTP_USER ?? "",
     pass: process.env.SMTP_PASS ?? "",
-    from: process.env.MAIL_FROM ?? "daniel@rolmovil.com",
+    // Sin MAIL_FROM se envía desde el propio buzón SMTP.
+    from: process.env.MAIL_FROM ?? process.env.SMTP_USER ?? "",
   },
-  /** Hoja de tareas por persona que ZERO edita EN SU SITIO (mismo enlace, lo
-   *  que ven los trabajadores). El id no es un secreto — sin la conexión de
-   *  Google no se puede leer ni escribir — así que va como valor por defecto
-   *  para que funcione sin tocar el .env. TASKS_SPREADSHEET_ID lo sobrescribe. */
-  tasksSpreadsheetId:
-    process.env.TASKS_SPREADSHEET_ID ?? "1ZVRJ1FLYXJ7lphgXS7ipI3ptuGouN5T4tKteEsNgYMA",
+  /** Opcional: fija una hoja de tareas concreta para el asistente. Sin ella,
+   *  la IA la busca por nombre en el Drive del usuario conectado. */
+  tasksSpreadsheetId: process.env.TASKS_SPREADSHEET_ID ?? "",
 } as const;
 
 export const ZERO_ATTRIBUTION = "(by zerodc)";
@@ -133,13 +126,8 @@ export function computeCapabilities(): Capability[] {
   const has = (v: string) => v.trim().length > 0;
 
   const databaseReady = has(c.database.url);
-  // Con cuenta preconfigurada no hace falta TOKEN_ENCRYPTION_KEY: no se guarda
-  // ningún token, se usa el de GOOGLE_REFRESH_TOKEN.
-  const googlePreset = has(c.google.refreshToken);
   const googleReady =
-    has(c.google.clientId) &&
-    has(c.google.clientSecret) &&
-    (googlePreset || has(c.tokenEncryptionKey));
+    has(c.google.clientId) && has(c.google.clientSecret) && has(c.tokenEncryptionKey);
   const anthropicReady = has(c.anthropic.apiKey);
 
   return [
@@ -174,11 +162,9 @@ export function computeCapabilities(): Capability[] {
       key: "google",
       label: "Google OAuth",
       status: googleReady ? "READY" : "MISSING",
-      detail: !googleReady
-        ? "Sin credenciales: Calendar/Tasks/Docs en modo demo."
-        : googlePreset
-          ? "Cuenta preconfigurada: Google siempre enlazado, sin pulsar nada."
-          : "Conexión con Google disponible (hay que enlazar la cuenta).",
+      detail: googleReady
+        ? "Conexión con Google disponible: cada cuenta enlaza la suya."
+        : "Sin credenciales: Calendar/Tasks/Docs en modo demo.",
       required: false,
     },
     {

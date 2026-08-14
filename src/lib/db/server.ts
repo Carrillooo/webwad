@@ -142,6 +142,25 @@ const SCHEMA_STATEMENTS = [
     created_at timestamptz not null default now()
   )`,
   `create index if not exists idx_audit_user on audit_logs(user_id)`,
+  // --- Cuentas propias (multiusuario) ---
+  // El id también existe en profiles: todas las tablas de datos cuelgan de ahí.
+  `create table if not exists auth_users (
+    id text primary key references profiles(id) on delete cascade,
+    email text not null unique,
+    password_hash text not null,
+    display_name text not null,
+    subscription_status text not null default 'trial' check (subscription_status in ('trial','active')),
+    trial_ends_at timestamptz,
+    is_owner boolean not null default false,
+    created_at timestamptz not null default now()
+  )`,
+  `create table if not exists auth_sessions (
+    token_hash text primary key,
+    user_id text not null references auth_users(id) on delete cascade,
+    expires_at timestamptz not null,
+    created_at timestamptz not null default now()
+  )`,
+  `create index if not exists idx_auth_sessions_user on auth_sessions(user_id)`,
 ] as const;
 
 /**

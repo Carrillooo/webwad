@@ -5,6 +5,8 @@ export interface MailInput {
   to: string;
   subject: string;
   body: string;
+  /** Nombre a mostrar como remitente (el de la cuenta que envía). */
+  senderName?: string;
 }
 
 export interface MailResult {
@@ -13,9 +15,9 @@ export interface MailResult {
 }
 
 /**
- * Sends a plain-text email through the configured SMTP account
- * (daniel@rolmovil.com). Never fakes success: the receipt is only positive
- * when the SMTP server accepted the message.
+ * Sends a plain-text email through the configured SMTP account.
+ * Never fakes success: the receipt is only positive when the SMTP
+ * server accepted the message.
  */
 export async function sendMail(input: MailInput): Promise<MailResult> {
   if (!isSmtpConfigured()) {
@@ -25,7 +27,8 @@ export async function sendMail(input: MailInput): Promise<MailResult> {
         "El correo no está configurado todavía (faltan SMTP_HOST/SMTP_USER/SMTP_PASS en .env.local).",
     };
   }
-  const { host, port, user, pass, from } = serverConfig.smtp;
+  const { host, port, user, pass } = serverConfig.smtp;
+  const from = serverConfig.smtp.from || user;
   try {
     const transporter = nodemailer.createTransport({
       host,
@@ -36,7 +39,7 @@ export async function sendMail(input: MailInput): Promise<MailResult> {
       socketTimeout: 20_000,
     });
     const info = await transporter.sendMail({
-      from: `"Daniel (ZERO)" <${from}>`,
+      from: `"${(input.senderName ?? "ZERO").replace(/"/g, "")}" <${from}>`,
       to: input.to,
       subject: input.subject,
       text: input.body,

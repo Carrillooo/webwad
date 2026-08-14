@@ -70,6 +70,9 @@ export const defaultSettings: Settings = {
 };
 
 interface NovaStore {
+  /** Nombre de la cuenta con sesión (no persistido; lo fija NovaApp). */
+  userName: string | null;
+  setUserName: (n: string | null) => void;
   novaState: NovaState;
   view: MonitorView;
   /** Whether the holographic monitor is dropped down from the top. */
@@ -142,6 +145,8 @@ export const useNova = create<NovaStore>()(
           receipts: turn.receipts ? [...turn.receipts, ...st.receipts].slice(0, 100) : st.receipts,
           demoMode,
         })),
+      userName: null,
+      setUserName: (n) => set({ userName: n }),
       reset: () => set({ messages: [], conversation: {}, pendingProposal: null, receipts: [], view: "home" }),
     }),
     {

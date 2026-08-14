@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { resolveUser } from "@/lib/auth";
+import { guardApi } from "@/lib/api-guard";
 import { saveSubscription, removeSubscription } from "@/lib/push/store";
 import { isPushConfigured, serverConfig } from "@/lib/config";
 
@@ -14,9 +14,11 @@ export async function POST(req: NextRequest) {
   if (!isPushConfigured()) {
     return NextResponse.json({ error: "Push no configurado (faltan claves VAPID)." }, { status: 400 });
   }
+  const g = await guardApi(req);
+  if (g.res) return g.res;
   const parsed = Sub.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "suscripción inválida" }, { status: 400 });
-  const { userId, authed } = await resolveUser(req);
+  const { userId, authed } = g.ctx;
   await saveSubscription(userId, authed, parsed.data);
   return NextResponse.json({ ok: true });
 }
@@ -30,7 +32,9 @@ export async function GET() {
 export async function DELETE(req: NextRequest) {
   const endpoint = new URL(req.url).searchParams.get("endpoint");
   if (!endpoint) return NextResponse.json({ error: "endpoint requerido" }, { status: 400 });
-  const { userId, authed } = await resolveUser(req);
+  const g = await guardApi(req);
+  if (g.res) return g.res;
+  const { userId, authed } = g.ctx;
   await removeSubscription(userId, authed, endpoint);
   return NextResponse.json({ ok: true });
 }

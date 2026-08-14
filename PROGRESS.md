@@ -3,11 +3,50 @@
 Estado exhaustivo del desarrollo de ZERO. Permite a otra sesión continuar
 exactamente donde se quedó.
 
-_Última actualización: **Fases 1–10 completas** + login Supabase (enlace mágico).
-Google Calendar/Tasks/Docs/Sheets reales, Supabase con persistencia + login, asistente
-Anthropic (tool-calling, con fallback al motor local), Web Push, WhatsApp (API oficial
-de Meta) y config de deploy. Todo se activa con credenciales; el demo funciona sin ellas.
-43 tests. MVP completo._
+_Última actualización: **ZERO es multiusuario (SaaS)**. Registro/login propios
+(scrypt + sesiones con cookie), plan único **ZERO Pro 20 €/mes** con 14 días de
+prueba y paywall (sin pasarela de pago todavía — es lo ÚNICO que falta), datos y
+conexiones Google/Outlook separados por cuenta, y fuera todo lo preconfigurado
+(cuenta Google fija, Excel por defecto, correo de daniel@rolmovil.com). Google
+Calendar/Tasks/Docs/Sheets reales, asistente Anthropic con tool-calling, ElevenLabs,
+Web Push, crons multiusuario, iCal por usuario y WhatsApp. El demo sigue
+funcionando sin credenciales._
+
+## 🆕 Última sesión — ZERO multiusuario, listo para vender (sólo falta la pasarela)
+
+Pivote a SaaS pedido por Adrián: cuentas propias, nada compartido entre usuarios.
+
+- **Cuentas y sesiones** (`src/lib/auth/users.ts` + `/api/auth/{register,login,logout,me}`):
+  contraseñas con **scrypt** (`v1:salt:hash`), sesiones opacas con el token
+  **hasheado (SHA-256)** en BD y cookie httpOnly `zero_session` (60 días). Rate
+  limit por IP (6 registros/min, 10 logins/min). Tablas `auth_users` y
+  `auth_sessions` se crean solas (idempotente) en Vercel Postgres.
+- **La primera cuenta registrada = fundadora**: `is_owner`, suscripción `active`
+  para siempre y **hereda todos los datos del dueño anterior** (conexiones
+  Google/Outlook, memoria, preferencias, push… — `adoptLegacyOwnerData` migra el
+  `user_id` legado en las 11 tablas). Adrián debe registrarse EL PRIMERO tras el
+  deploy. Las demás cuentas: **14 días de prueba** y después paywall.
+- **Plan único ZERO Pro — 20 €/mes** (`PLAN` en `users.ts`). Sin pasarela: para
+  cobrar de momento se activa a mano (`update auth_users set
+  subscription_status='active' where email='...'`). La pantalla de paywall ya
+  existe con el botón «Suscribirme» deshabilitado («muy pronto»).
+- **Guardia de API** (`src/lib/api-guard.ts`): con BD y sin `DEMO_MODE`, toda
+  ruta de datos exige sesión → `401 auth_required` / `402 subscription_required`.
+  Sin BD (desarrollo) la app queda abierta en modo demo como siempre.
+- **UI**: `AuthScreen` (entrar/crear cuenta + tarjeta del plan), `PaywallScreen`,
+  sección **Cuenta** en Ajustes (nombre, email, plan, estado, cerrar sesión) y
+  saludo con el nombre del usuario. Gate en `NovaApp` vía `useAccount`.
+- **Aislamiento real por usuario**: conexiones Google/Outlook, memoria,
+  preferencias, push, iCal (`/api/calendar/feed.ics?u=<id>&token=…` con HMAC por
+  usuario) y crons (briefing/recordatorios iteran las cuentas facturables con
+  push activo). El WhatsApp entrante se enruta a la cuenta fundadora.
+- **Fuera lo preconfigurado**: eliminados `GOOGLE_REFRESH_TOKEN`/cuenta fija (y
+  `scripts/google-token.mjs`), el Excel por defecto `1ZVRJ…` (ahora
+  `TASKS_SPREADSHEET_ID` es opcional; sin él la IA busca la hoja por nombre en el
+  Drive del usuario), el correo fijo de Daniel (SMTP opcional, `MAIL_FROM` cae a
+  `SMTP_USER`, el remitente muestra el nombre de la cuenta) y los restos de
+  Supabase. El prompt del asistente ya no dice «Daniel»: usa el nombre de la
+  cuenta.
 
 ## Fases 5–9 (resumen)
 - **5 Tasks / 6 Docs+Drive / +Sheets**: providers reales; al conectar Google se
@@ -34,10 +73,13 @@ Eso es exactamente lo que hacía que ZERO respondiera en modo básico.
 **Hay que rotar, en este orden:**
 1. `ANTHROPIC_API_KEY` — console.anthropic.com → API Keys → borrar la vieja y crear otra.
 2. `GOOGLE_CLIENT_SECRET` — Google Cloud → Credenciales → restablecer secreto.
-3. `SUPABASE_SERVICE_ROLE_KEY` (si el proyecto sigue vivo) y cualquier clave de BD.
-4. `TOKEN_ENCRYPTION_KEY` — `openssl rand -base64 32` (al cambiarla hay que volver
+3. `MICROSOFT_CLIENT_SECRET` — se pegó un secreto en el chat de esta sesión:
+   Azure → Certificates & secrets → crear otro y borrar el viejo (tras verificar
+   que Outlook conecta).
+4. `ELEVENLABS_API_KEY` — también se pegó en el chat en su día.
+5. `TOKEN_ENCRYPTION_KEY` — `openssl rand -base64 32` (al cambiarla hay que volver
    a conectar Google/Outlook: los refresh tokens guardados dejan de descifrarse).
-5. `VAPID_PRIVATE_KEY` — `npx web-push generate-vapid-keys` (hay que resuscribir el push).
+6. `VAPID_PRIVATE_KEY` — `npx web-push generate-vapid-keys` (hay que resuscribir el push).
 
 Las claves nuevas van **sólo** en `.env.local` (local) y en Vercel →
 Settings → Environment Variables (producción). Nunca en el repositorio.
@@ -56,44 +98,29 @@ Recomendado además: poner el repositorio en **privado**.
   cambia entre recargas.
 - Cubierto por tests con las voces reales de macOS y de Edge.
 
-## 🔗 Google preconfigurado (sin botón de "Conectar")
+## 🔗 Google y Outlook: cada usuario conecta su cuenta
 
-ZERO lo usa una sola persona, así que la cuenta de Google puede quedar fija:
-se autoriza **una vez** y a partir de ahí entra solo, también tras reiniciar,
-redesplegar o quedarse sin base de datos.
+Ya **no existe** la cuenta de Google preconfigurada (`GOOGLE_REFRESH_TOKEN`,
+`GOOGLE_ACCOUNT_EMAIL`, `npm run google:token` — todo eliminado): era
+incompatible con vender la app, porque todos los usuarios compartían el mismo
+Google. Ahora cada cuenta conecta la suya desde Ajustes → Integraciones y el
+refresh token se guarda **cifrado (AES-256-GCM) por usuario** en Postgres.
 
-```bash
-npm run google:token     # abre el navegador, autorizas y te imprime el token
-```
-
-Pega lo que imprime en `.env.local` y en Vercel:
-
-```
-GOOGLE_ACCOUNT_EMAIL=danielrolmovil@gmail.com
-GOOGLE_REFRESH_TOKEN=1//...
-```
-
-- El script escucha en el redirect que ya está dado de alta
-  (`http://localhost:3000/api/google/callback`), así que **no hay que tocar
-  Google Cloud** — pero cierra antes `npm run dev`, que ocupa ese puerto.
-- Con `GOOGLE_REFRESH_TOKEN` puesto, Ajustes → Integraciones muestra
-  «Siempre enlazado» y desaparece el botón de conectar/desconectar.
-- Una conexión hecha a mano (el flujo de siempre) tiene prioridad sobre la
-  preconfigurada, así que ambas conviven.
-- El access token se cachea en el proceso con 60 s de margen: una llamada a
-  Google menos por petición.
-- Si el token se revoca, ZERO **no se cae**: degrada a los mocks y deja el
-  motivo en la terminal.
+- El `redirect_uri` se deriva del origen de la petición (`x-forwarded-host`),
+  así el mismo deploy funciona en localhost y en Vercel sin tocar variables.
+- Si un token se revoca, ZERO **no se cae**: degrada a los mocks y la sección
+  Estado + `/api/google/status` dicen el motivo exacto.
 - ⚠️ **Pantalla de consentimiento en «Testing» = el token caduca a los 7 días.**
   Google Cloud → APIs y servicios → Pantalla de consentimiento → **Publicar**.
-- Ya no hace falta `TOKEN_ENCRYPTION_KEY` para Google (no se guarda nada);
-  sigue haciendo falta para Outlook y para el enlace del calendario.
+- `TOKEN_ENCRYPTION_KEY` es obligatoria para guardar conexiones (Google y
+  Outlook) y firma también el enlace del calendario.
 
 ## 📅 Calendario suscribible (iCal)
 
-`GET /api/calendar/feed.ics?token=…` publica la agenda que ve ZERO en formato
-iCalendar (RFC 5545) para suscribirse desde iPhone/Mac, Google Calendar u
-Outlook. Ventana: 90 días atrás y 365 por delante.
+`GET /api/calendar/feed.ics?u=<usuario>&token=…` publica la agenda de ESA cuenta
+en formato iCalendar (RFC 5545) para suscribirse desde iPhone/Mac, Google
+Calendar u Outlook. Ventana: 90 días atrás y 365 por delante. El token es un
+HMAC **por usuario**: el enlace de uno no sirve para ver la agenda de otro.
 
 - **Solo lectura.** Quien tenga el enlace ve la agenda; no puede modificarla.
 - **El token va en la URL** porque los clientes de calendario piden el enlace
@@ -114,7 +141,7 @@ refresca las suscripciones cada 8-24 h** — es un límite suyo. Para que en
 Google aparezca al instante, lo correcto es conectar Google en ZERO: entonces
 escribe directamente en su calendario real.
 
-## 🆕 Última sesión — asistente "todo terreno" (voz real, email, memoria, avisos)
+## Sesión anterior — asistente "todo terreno" (voz real, email, memoria, avisos)
 
 Verificado con `lint` ✅ · `typecheck` ✅ · `test` ✅ (67) · `build` ✅ · captura sin
 errores de consola. Lo que **no** se pudo probar en vivo aquí: ElevenLabs,
@@ -139,9 +166,10 @@ con `fetch` simulado en tests y en la máquina de Daniel).
 7. **Barra espaciadora = hablar** (`usePushToTalkKey`) además de las 2 palmadas.
 8. **Beep de activación** (`src/lib/sound.ts`), respeta Ajustes → sonidos.
 9. **"Deshacer"** y más ejemplos coloquiales en el prompt del calendario.
-10. **Hoja de tareas de los trabajadores por defecto**
-    (`1ZVRJ1FLYXJ7lphgXS7ipI3ptuGouN5T4tKteEsNgYMA`): la IA la escanea antes de
-    escribir, edita **en su sitio** y firma `(by zerodc)`.
+10. **Hoja de tareas**: la IA la escanea antes de escribir, edita **en su sitio**
+    y firma `(by zerodc)`. (El ID fijo por defecto se retiró en el pivote SaaS:
+    ahora `TASKS_SPREADSHEET_ID` es opcional y sin él se busca por nombre en el
+    Drive del usuario conectado.)
 
 También: el motor local ahora dice claramente que está en **«modo básico»** en vez
 de «no le he entendido», para distinguir un fallo de IA de un fallo de comprensión.
@@ -211,19 +239,20 @@ de «no le he entendido», para distinguir un fallo de IA de un fallo de compren
   si no el mock NLU. System prompt con seguridad: no fingir éxito, datos externos
   UNTRUSTED, confirmaciones por riesgo, conflictos. Conversación multi-turno nativa.
 
-## ⚠️ Qué falta para producción (faltan credenciales o fases posteriores)
+## ⚠️ Qué falta para salir al mercado
 
-- **Credenciales**: sin `GOOGLE_*` + `TOKEN_ENCRYPTION_KEY` no hay Calendar real;
-  sin `SUPABASE_*` la persistencia es en memoria/local. El código ya está listo:
-  al ponerlas y `DEMO_MODE=false`, `resolveProviders` usa Google real.
-- **Supabase Auth (UI de login)**: falta la pantalla de login (magic link). Hoy
-  `resolveUser` devuelve el usuario demo salvo que llegue un `sb-access-token`
-  válido. Con login, la persistencia por usuario (RLS) se activa sola.
-- **Google Tasks/Drive/Docs reales**: Fases 5/6 (Calendar ya es real). El factory
-  devuelve mocks de tasks/documents aunque Google esté conectado.
-- **Anthropic real**: usa el `MockAssistantProvider` (NLU local); tool-calling listo
-  para enchufar `AnthropicAssistantProvider`.
-- **Web Push**: SW preparado pero sin backend VAPID.
+- **La pasarela de pago** (Stripe o similar) — lo ÚNICO pendiente de código. El
+  plan, el trial, el paywall y los estados ya existen; sólo falta cambiar el
+  botón «Suscribirme — muy pronto» por el checkout y marcar
+  `subscription_status='active'` al cobrar. Hasta entonces, activación manual en
+  la BD.
+- **Rotar las credenciales filtradas** (sección URGENTE de arriba) — sin la
+  `ANTHROPIC_API_KEY` nueva la IA responde en modo básico.
+- **Azure**: para Outlook faltan los permisos delegados `Tasks.ReadWrite` +
+  `offline_access` (hoy sólo tiene `User.Read`) y corregir el redirect de
+  localhost a `/api/microsoft/callback`.
+- **Pantalla de consentimiento de Google en «Publicar»** para que los refresh
+  tokens de los clientes no caduquen a los 7 días.
 
 ## 🐛 Bugs conocidos / notas
 
@@ -273,23 +302,13 @@ de «no le he entendido», para distinguir un fallo de IA de un fallo de compren
 - **CÓMO COMPROBAR:** abre `/setup` → «Google OAuth» debe aparecer **READY**.
   Luego conecta la cuenta desde Configuración (flujo OAuth, Fase 4).
 
-### USER ACTION REQUIRED — Supabase (Auth + BD)
-- **SERVICIO:** Supabase.
-- **QUÉ NECESITO:** Project URL, anon key y service_role key.
-- **POR QUÉ:** Auth, preferencias, memoria, sesiones, logs y tokens cifrados por usuario.
-- **DÓNDE CONSEGUIRLO:** https://supabase.com/dashboard → tu proyecto → Settings → API.
-- **PASOS EXACTOS:**
-  1. Crea un proyecto en Supabase.
-  2. Settings → API: copia *Project URL* y *anon public key*.
-  3. Copia también *service_role* key (sólo backend, nunca al cliente).
-  4. Aplica las migraciones (se añadirán en `supabase/migrations` en Fase 3).
-- **VARIABLES .ENV:**
-  ```
-  NEXT_PUBLIC_SUPABASE_URL=
-  NEXT_PUBLIC_SUPABASE_ANON_KEY=
-  SUPABASE_SERVICE_ROLE_KEY=
-  ```
-- **CÓMO COMPROBAR:** `/setup` → «Supabase» = READY.
+### USER ACTION REQUIRED — Base de datos (Vercel Postgres / Neon) ✅ HECHO
+- **SERVICIO:** Vercel → Storage → Create Database → Neon (Postgres).
+- **POR QUÉ:** cuentas, sesiones, conexiones OAuth cifradas, memoria, preferencias
+  y push por usuario. El esquema se crea solo al arrancar (idempotente).
+- **VARIABLES .ENV:** `DATABASE_URL` (la integración de Vercel la pone sola).
+- **CÓMO COMPROBAR:** Ajustes → Estado → «PostgreSQL conectado · persistencia
+  activa». Con BD y `DEMO_MODE=false`, la app pide login (multiusuario ON).
 
 ### USER ACTION REQUIRED — Anthropic (IA real)
 - **SERVICIO:** Anthropic Console.
@@ -300,27 +319,30 @@ de «no le he entendido», para distinguir un fallo de IA de un fallo de compren
 - **VARIABLES .ENV:**
   ```
   ANTHROPIC_API_KEY=
-  ANTHROPIC_MODEL=claude-opus-4-8
+  ANTHROPIC_MODEL=claude-sonnet-5
   DEMO_MODE=false
   ```
+- ⚠️ La key actual está **revocada** (se filtró en GitHub): hay que crear una
+  nueva o la IA seguirá en modo básico.
 - **CÓMO COMPROBAR:** `/setup` → «Anthropic» = READY.
 
 Mientras tanto, ZERO sigue funcionando con los MockProviders.
 
 ---
 
-### USER ACTION REQUIRED — SMTP para enviar correo desde daniel@rolmovil.com
-- **QUÉ NECESITO:** servidor SMTP, puerto, usuario y contraseña del buzón.
-- **DÓNDE:** el panel del proveedor del dominio `rolmovil.com` (Ionos, Hostinger,
-  Google Workspace, Microsoft 365…). Si es Gmail/Workspace hay que crear una
-  **contraseña de aplicación**, no vale la contraseña normal.
+### USER ACTION REQUIRED — SMTP para `send_email` (OPCIONAL)
+- **QUÉ NECESITO:** servidor SMTP, puerto, usuario y contraseña de un buzón
+  cualquiera (Gmail/Workspace exige **contraseña de aplicación**).
+- Es un buzón **del servicio** (uno para toda la app); el remitente muestra el
+  nombre de la cuenta que envía. Sin SMTP la herramienta responde con un fallo
+  claro, nunca finge.
 - **VARIABLES .ENV:**
   ```
   SMTP_HOST=
   SMTP_PORT=587
-  SMTP_USER=daniel@rolmovil.com
+  SMTP_USER=
   SMTP_PASS=
-  MAIL_FROM=daniel@rolmovil.com
+  MAIL_FROM=   # opcional; sin él se envía desde SMTP_USER
   ```
 - **CÓMO COMPROBAR:** pídele a ZERO «manda un correo a X» → enseña borrador →
   dices «sí» → responde con el id del mensaje sólo si el SMTP lo aceptó.
@@ -333,13 +355,20 @@ Mientras tanto, ZERO sigue funcionando con los MockProviders.
 
 ## NEXT SESSION
 
-**Orden exacta para continuar:** «Completa la Fase 5 (Google Tasks real:
-`GoogleTasksProvider` vía Tasks API con estrategia de hora vía notas/Calendar) y
-la Fase 6 (`GoogleDocumentsProvider` con Drive+Docs API: buscar, recientes, leer,
-crear, append, update con confirmación, resumir), enchúfalos en
-`resolveProviders` junto al `GoogleCalendarProvider`. Luego añade la UI de login de
-Supabase (magic link) para que `resolveUser` devuelva el usuario real y active RLS,
-y el `AnthropicAssistantProvider` (tool-calling) sobre los providers inyectados.»
+**Orden exacta para continuar:** «Añade la pasarela de pago con **Stripe**
+(Checkout en modo suscripción, 20 €/mes, webhook `checkout.session.completed` /
+`customer.subscription.deleted` que actualice `auth_users.subscription_status`,
+botón real en `PaywallScreen` y portal de cliente para cancelar). Mantén la
+activación manual en BD como vía de emergencia. Después: página de marketing /
+landing pública y textos legales (privacidad, condiciones) antes de vender.»
+
+Notas para esa sesión:
+- La primera cuenta registrada es la fundadora (`is_owner`, activa para siempre)
+  y hereda los datos del dueño legado; NO tocar esa lógica al meter Stripe.
+- `subscriptionOf()` en `src/lib/auth/users.ts` es el único sitio que decide
+  trial/active/expired — enchufar Stripe ahí.
+- El paywall devuelve `402 subscription_required` desde `guardApi`; el frontend
+  ya lo pinta (`useAccount.gate === "paywall"`).
 
 Antes de empezar: `npm install && npm run dev`, abre `/setup`. Para probar Google:
 rellena `GOOGLE_*` + `TOKEN_ENCRYPTION_KEY`, `DEMO_MODE=false`, y conecta desde

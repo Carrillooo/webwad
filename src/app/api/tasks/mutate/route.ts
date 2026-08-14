@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { resolveProviders } from "@/lib/providers";
-import { resolveUser } from "@/lib/auth";
+import { guardApi } from "@/lib/api-guard";
 
 const Schema = z.object({
   action: z.enum(["complete", "reopen", "create", "delete", "update"]),
@@ -13,10 +13,12 @@ const Schema = z.object({
 
 /** POST /api/tasks/mutate — direct task mutations from the UI (non-voice). */
 export async function POST(req: NextRequest) {
+  const g = await guardApi(req);
+  if (g.res) return g.res;
   const parsed = Schema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "inválido" }, { status: 400 });
   const { action, id, title, notes, due } = parsed.data;
-  const { userId, authed } = await resolveUser(req);
+  const { userId, authed } = g.ctx;
   const tasks = (await resolveProviders(userId, authed)).tasks;
   try {
     switch (action) {

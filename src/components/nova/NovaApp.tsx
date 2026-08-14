@@ -15,6 +15,8 @@ import { NovaCore } from "./NovaCore";
 import { Composer } from "./Composer";
 import { Settings } from "./Settings";
 import { OAuthNotice } from "./OAuthNotice";
+import { AuthScreen, PaywallScreen } from "./AuthScreen";
+import { useAccount } from "@/hooks/useAccount";
 
 const CENTER_STATES = new Set(["listening", "transcribing", "thinking", "planning"]);
 
@@ -35,6 +37,7 @@ function useViewport() {
 
 export function NovaApp() {
   useThemeSync();
+  const { account, gate, refresh, logout } = useAccount();
   const { send, stopSpeaking } = useAssistant();
   const novaState = useNova((s) => s.novaState);
   const panelOpen = useNova((s) => s.panelOpen);
@@ -73,6 +76,11 @@ export function NovaApp() {
     useNova.getState().setView("home");
   }, []);
 
+  // El saludo y la IA usan el nombre de la cuenta con sesión.
+  useEffect(() => {
+    useNova.getState().setUserName(account?.name ?? null);
+  }, [account]);
+
   const clapEnabled = useNova((s) => s.settings.clapEnabled);
   useClapDetection(clapEnabled && novaState === "idle", activate);
 
@@ -88,6 +96,17 @@ export function NovaApp() {
   const centerScale = w < 520 ? 0.94 : 1.08;
   const dock = { x: 4, y: h - CORE_H * dockScale - 66, scale: dockScale };
   const center = { x: w / 2 - CORE_W / 2, y: h / 2 - CORE_H / 2 - 68, scale: centerScale };
+
+  // Puerta de la app de pago: sin sesión → entrar; prueba caducada → plan.
+  if (gate === "loading") {
+    return (
+      <main className="h-[100dvh] grid place-items-center">
+        <p className="text-faint text-sm tracking-[0.4em]">ZERO</p>
+      </main>
+    );
+  }
+  if (gate === "auth") return <AuthScreen onDone={refresh} />;
+  if (gate === "paywall") return <PaywallScreen email={account?.email ?? ""} onLogout={logout} />;
 
   return (
     <main className="relative h-[100dvh] w-full overflow-hidden">

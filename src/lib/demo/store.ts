@@ -2,7 +2,7 @@
  * In-memory demo store, shared by all Mock* providers on the server.
  *
  * Persists for the lifetime of the server process (resets on restart) — good
- * enough for DEMO_MODE. Real providers replace this with Google + Supabase.
+ * enough for DEMO_MODE. Real providers replace this with Google + Postgres.
  * Data is seeded relative to "now" so today/tomorrow always have content.
  */
 import { CalendarEvent, TaskItem, TaskList, DriveFile, DocContent } from "../providers/types";

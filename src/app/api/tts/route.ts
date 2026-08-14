@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { serverConfig, isElevenLabsConfigured } from "@/lib/config";
+import { guardApi } from "@/lib/api-guard";
 
 export const runtime = "nodejs";
 
@@ -55,6 +56,9 @@ export async function GET(req: NextRequest) {
   if (!isElevenLabsConfigured()) {
     return NextResponse.json({ error: "not_configured" }, { status: 503 });
   }
+  // La síntesis gasta cuota de ElevenLabs: solo cuentas con sesión y plan vivo.
+  const g = await guardApi(req);
+  if (g.res) return g.res;
   try {
     return await synthesize(text.slice(0, MAX_TEXT), req.nextUrl.searchParams.get("voice"));
   } catch {
@@ -72,6 +76,8 @@ export async function POST(req: NextRequest) {
   if (!isElevenLabsConfigured()) {
     return NextResponse.json({ error: "not_configured" }, { status: 503 });
   }
+  const g = await guardApi(req);
+  if (g.res) return g.res;
   const parsed = BodySchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) {
     return NextResponse.json({ error: "invalid_body" }, { status: 400 });

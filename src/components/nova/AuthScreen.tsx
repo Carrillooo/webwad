@@ -1,6 +1,15 @@
 "use client";
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { motion } from "motion/react";
+
+/** Errores con los que puede volver «Continuar con Google/Microsoft». */
+const LOGIN_ERRORES: Record<string, string> = {
+  sin_email: "El proveedor no nos dio tu email. Prueba con otra cuenta.",
+  email_invalido: "El proveedor devolvió un email que no parece válido.",
+  google_no_configurado: "Entrar con Google no está disponible todavía.",
+  microsoft_no_configurado: "Entrar con Microsoft no está disponible todavía.",
+  error: "No se pudo completar el acceso. Inténtalo de nuevo.",
+};
 
 /** Tarjeta del único plan. Sin pasarela todavía: el registro regala la prueba. */
 export function PlanCard({ compact = false }: { compact?: boolean }) {
@@ -16,7 +25,8 @@ export function PlanCard({ compact = false }: { compact?: boolean }) {
         <ul className="mt-2 space-y-1 text-[11px] text-dim leading-snug">
           <li>· Asistente con IA por voz, en español</li>
           <li>· Tu Google Calendar, Tasks, Drive y Docs de verdad</li>
-          <li>· Tareas de Outlook (Microsoft To Do)</li>
+          <li>· Calendario y tareas de Outlook (Microsoft)</li>
+          <li>· Envía emails desde TU propio correo (Gmail u Outlook)</li>
           <li>· Briefing matinal y avisos antes de cada evento</li>
           <li>· Memoria personal: ZERO se acuerda de lo tuyo</li>
         </ul>
@@ -32,13 +42,31 @@ export function PlanCard({ compact = false }: { compact?: boolean }) {
  * Puerta de entrada: crear cuenta o iniciar sesión. Cada cuenta enlaza SU
  * Google y SU Outlook: nadie ve nada de nadie.
  */
-export function AuthScreen({ onDone }: { onDone: () => void }) {
+export function AuthScreen({
+  onDone,
+  oauth,
+}: {
+  onDone: () => void;
+  oauth?: { google: boolean; microsoft: boolean };
+}) {
   const [mode, setMode] = useState<"login" | "register">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+
+  // Si venimos de un intento OAuth fallido, la URL trae ?login=<motivo>.
+  useEffect(() => {
+    const p = new URLSearchParams(window.location.search);
+    const reason = p.get("login");
+    if (reason) {
+      setError(LOGIN_ERRORES[reason] ?? LOGIN_ERRORES.error);
+      p.delete("login");
+      const rest = p.toString();
+      window.history.replaceState(null, "", window.location.pathname + (rest ? `?${rest}` : ""));
+    }
+  }, []);
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
@@ -96,6 +124,39 @@ export function AuthScreen({ onDone }: { onDone: () => void }) {
             {tab("login", "Entrar")}
             {tab("register", "Crear cuenta")}
           </div>
+
+          {(oauth?.google || oauth?.microsoft) && (
+            <div className="space-y-2">
+              {oauth.google && (
+                <a
+                  href="/api/auth/google/start"
+                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm glass"
+                  style={{ background: "rgb(var(--nova-fg) / 0.08)" }}
+                >
+                  <span aria-hidden className="font-semibold">G</span>
+                  Continuar con Google
+                </a>
+              )}
+              {oauth.microsoft && (
+                <a
+                  href="/api/auth/microsoft/start"
+                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm glass"
+                  style={{ background: "rgb(var(--nova-fg) / 0.08)" }}
+                >
+                  <span aria-hidden className="font-semibold">⊞</span>
+                  Continuar con Microsoft
+                </a>
+              )}
+              <p className="text-center text-[11px] text-faint">
+                Al entrar así, tu calendario, tareas y correo quedan enlazados de una vez.
+              </p>
+              <div className="flex items-center gap-3 text-[11px] text-faint">
+                <span className="h-px flex-1 bg-current opacity-20" />
+                o con email
+                <span className="h-px flex-1 bg-current opacity-20" />
+              </div>
+            </div>
+          )}
 
           <form onSubmit={submit} className="space-y-2.5">
             {mode === "register" && (

@@ -7,6 +7,7 @@ import { guardApi } from "@/lib/api-guard";
 import { getStorage } from "@/lib/providers/storage";
 import type { MemoryItem } from "@/lib/providers/storage/types";
 import { OWNER_NAME, DEFAULT_TIMEZONE } from "@/lib/constants";
+import { mailSenderFor, sendMailForUser } from "@/lib/mail/user-mail";
 
 const BodySchema = z.object({
   messages: z
@@ -55,6 +56,7 @@ export async function POST(req: NextRequest) {
   const asKind = (k?: string): MemoryItem["kind"] =>
     k === "preference" || k === "note" ? k : "fact";
   const assistant = getAssistant(providers, {
+    userKey: userId,
     memory: {
       list: () => storage.listMemories(userId),
       remember: (value, kind) => storage.addMemory(userId, { kind: asKind(kind), value }),
@@ -63,13 +65,19 @@ export async function POST(req: NextRequest) {
         return true;
       },
     },
+    // El correo sale del buzón del propio usuario (Gmail/Outlook conectado).
+    mail: { send: (input) => sendMailForUser(userId, authed, input) },
   });
+  const sender = await mailSenderFor(userId, authed);
   const ctx = {
     // Cada cuenta tiene su nombre: ZERO habla con quien ha iniciado sesión.
     ownerName: g.ctx.user?.displayName ?? OWNER_NAME,
     nowIso: new Date().toISOString(),
     timezone: DEFAULT_TIMEZONE,
     demoMode: providers.demoMode,
+    mailFrom: sender
+      ? `${sender.address}${sender.via === "gmail" ? " (su Gmail)" : sender.via === "outlook" ? " (su Outlook)" : ""}`
+      : null,
   };
   const startedAt = Date.now();
   try {

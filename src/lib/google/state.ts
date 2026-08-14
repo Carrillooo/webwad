@@ -6,13 +6,13 @@ function secret(): string {
   return serverConfig.tokenEncryptionKey || serverConfig.google.clientSecret || "nova-dev";
 }
 
-export function signState(payload: { uid: string; authed: boolean }): string {
+export function signState(payload: { uid: string; authed: boolean; login?: boolean }): string {
   const body = Buffer.from(JSON.stringify(payload)).toString("base64url");
   const sig = createHmac("sha256", secret()).update(body).digest("base64url");
   return `${body}.${sig}`;
 }
 
-export function verifyState(state: string): { uid: string; authed: boolean } | null {
+export function verifyState(state: string): { uid: string; authed: boolean; login?: boolean } | null {
   const [body, sig] = state.split(".");
   if (!body || !sig) return null;
   const expected = createHmac("sha256", secret()).update(body).digest("base64url");

@@ -13,6 +13,7 @@ import { GoogleDocumentsProvider } from "./documents/google";
 import { GoogleSheetsProvider } from "./sheets/google";
 import { SheetsProvider } from "./sheets/types";
 import { MicrosoftTasksProvider } from "./tasks/microsoft";
+import { MicrosoftCalendarProvider } from "./calendar/microsoft";
 import { isGoogleConfigured } from "../google/oauth";
 import { getAccessToken } from "../google/connection";
 import { isMicrosoftConfigured } from "../microsoft/oauth";
@@ -72,7 +73,15 @@ export async function resolveProviders(userId: string, authed: boolean): Promise
   if (!serverConfig.demoMode && isMicrosoftConfigured()) {
     try {
       const msToken = await getMsAccessToken(userId, authed);
-      if (msToken) providers.outlookTasks = new MicrosoftTasksProvider(msToken);
+      if (msToken) {
+        providers.outlookTasks = new MicrosoftTasksProvider(msToken);
+        // Sin Google, el calendario real es el de Outlook: al enlazar la
+        // cuenta Microsoft aparecen todos los eventos que ya tenía.
+        if (providers.calendar.kind === "mock") {
+          providers.calendar = new MicrosoftCalendarProvider(msToken);
+          providers.demoMode = false;
+        }
+      }
     } catch {
       /* leave outlook off */
     }

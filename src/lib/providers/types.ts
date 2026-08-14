@@ -31,7 +31,7 @@ export interface CalendarEvent {
   hangoutLink?: string;
   /** true until the backing service has confirmed persistence. */
   pending?: boolean;
-  source?: "mock" | "google";
+  source?: "mock" | "google" | "outlook";
 }
 
 export interface FreeSlot {
@@ -54,7 +54,7 @@ export interface CreateEventInput {
 }
 
 export interface CalendarProvider {
-  readonly kind: "mock" | "google";
+  readonly kind: "mock" | "google" | "outlook";
   listCalendars(): Promise<CalendarRef[]>;
   listEvents(rangeStartIso: string, rangeEndIso: string, calendarId?: string): Promise<CalendarEvent[]>;
   getEvent(id: string, calendarId?: string): Promise<CalendarEvent | null>;
@@ -84,7 +84,7 @@ export interface TaskItem {
 }
 
 export interface TasksProvider {
-  readonly kind: "mock" | "google";
+  readonly kind: "mock" | "google" | "outlook";
   listTaskLists(): Promise<TaskList[]>;
   listTasks(listId?: string): Promise<TaskItem[]>;
   createTask(input: { listId?: string; title: string; notes?: string; due?: string }): Promise<TaskItem>;
@@ -121,7 +121,7 @@ export interface DocSummary {
 }
 
 export interface DocumentsProvider {
-  readonly kind: "mock" | "google";
+  readonly kind: "mock" | "google" | "outlook";
   searchFiles(query: string): Promise<DriveFile[]>;
   recentFiles(limit?: number): Promise<DriveFile[]>;
   getDocument(id: string): Promise<DocContent | null>;
@@ -174,6 +174,9 @@ export interface AssistantContext {
   nowIso: string;
   timezone: string;
   demoMode: boolean;
+  /** Desde dónde saldrían los emails de este usuario ("adrian@gmail.com (Gmail)");
+   *  null/ausente = no hay forma de enviar. */
+  mailFrom?: string | null;
 }
 
 /** Runtime conversation state threaded across turns for follow-ups. */

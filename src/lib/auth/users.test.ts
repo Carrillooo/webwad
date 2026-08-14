@@ -127,3 +127,42 @@ describe("suscripción", () => {
     ]);
   });
 });
+
+describe("entrar con Google/Microsoft (findOrCreateOAuthUser)", () => {
+  it("crea la cuenta sin contraseña; la primera es fundadora activa", async () => {
+    const { findOrCreateOAuthUser } = await import("./users");
+    const out = await findOrCreateOAuthUser("adri@gmail.com", "Adrián Carrillo");
+    if ("error" in out) throw new Error(out.error);
+    expect(out.user.isOwner).toBe(true);
+    expect(out.user.subscriptionStatus).toBe("active");
+    expect(out.user.displayName).toBe("Adrián Carrillo");
+    // Sin contraseña: el login clásico con cualquier clave debe fallar.
+    expect(await verifyLogin("adri@gmail.com", "loquesea123")).toBeNull();
+  });
+
+  it("si el email ya existe, entra en ESA cuenta (no crea otra)", async () => {
+    const reg = await registerUser("adri@gmail.com", "clave-larga-8", "Adrián");
+    if ("error" in reg) throw new Error(reg.error);
+    const { findOrCreateOAuthUser } = await import("./users");
+    const out = await findOrCreateOAuthUser("ADRI@gmail.com", "Otro Nombre");
+    if ("error" in out) throw new Error(out.error);
+    expect(out.user.id).toBe(reg.user.id);
+    expect(out.user.displayName).toBe("Adrián"); // conserva su nombre original
+  });
+
+  it("la segunda cuenta OAuth entra en prueba de 14 días", async () => {
+    const { findOrCreateOAuthUser } = await import("./users");
+    await findOrCreateOAuthUser("primera@gmail.com", "Primera");
+    const out = await findOrCreateOAuthUser("segunda@outlook.com", "Segunda");
+    if ("error" in out) throw new Error(out.error);
+    expect(out.user.isOwner).toBe(false);
+    expect(subscriptionOf(out.user)).toMatchObject({ status: "trial", daysLeft: PLAN.trialDays });
+  });
+
+  it("sin nombre del proveedor usa la parte local del email", async () => {
+    const { findOrCreateOAuthUser } = await import("./users");
+    const out = await findOrCreateOAuthUser("dani.perez@gmail.com", "  ");
+    if ("error" in out) throw new Error(out.error);
+    expect(out.user.displayName).toBe("dani.perez");
+  });
+});

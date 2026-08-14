@@ -48,6 +48,7 @@ export interface Subscription {
 export type RegisterError = "email_invalido" | "password_corta" | "nombre_vacio" | "email_en_uso";
 
 interface StoredUser extends AuthUser {
+  /** Vacío en cuentas creadas con "Continuar con Google/Microsoft". */
   passwordHash: string;
 }
 
@@ -76,6 +77,7 @@ export function hashPassword(password: string): string {
 }
 
 export function verifyPassword(password: string, stored: string): boolean {
+  // Cuentas OAuth (sin contraseña): jamás entran por aquí con éxito.
   const [v, saltB64, hashB64] = stored.split(":");
   if (v !== "v1" || !saltB64 || !hashB64) return false;
   const expected = Buffer.from(hashB64, "base64");
@@ -96,7 +98,7 @@ function rowToUser(r: Record<string, unknown>): StoredUser {
     id: String(r.id),
     email: String(r.email),
     displayName: String(r.display_name),
-    passwordHash: String(r.password_hash),
+    passwordHash: r.password_hash == null ? "" : String(r.password_hash),
     subscriptionStatus: r.subscription_status === "active" ? "active" : "trial",
     trialEndsAt: r.trial_ends_at ? new Date(r.trial_ends_at as string | Date).toISOString() : null,
     isOwner: Boolean(r.is_owner),
@@ -228,6 +230,61 @@ export async function registerUser(
       // Carrera entre dos registros con el mismo email: el unique manda.
       if (String(e).includes("auth_users_email_key") || String(e).includes("duplicate")) {
         return { error: "email_en_uso" };
+      }
+      throw e;
+    }
+  } else {
+    memUsers().set(norm, user);
+  }
+
+  if (first) await adoptLegacyOwnerData(user.id);
+  return { user: publicUser(user) };
+}
+
+/**
+ * Entrar (o crear cuenta) con Google/Microsoft: busca por email y, si no
+ * existe, crea la cuenta sin contraseña. La lógica de fundador y herencia es
+ * la misma que en el registro normal.
+ */
+export async function findOrCreateOAuthUser(
+  email: string,
+  displayName: string,
+): Promise<{ user: AuthUser } | { error: RegisterError }> {
+  const norm = normalizeEmail(email);
+  if (!EMAIL_RE.test(norm)) return { error: "email_invalido" };
+  const existing = await findByEmail(norm);
+  if (existing) return { user: publicUser(existing) };
+
+  const name = (displayName.trim() || norm.split("@")[0]).slice(0, 60);
+  const first = (await countUsers()) === 0;
+  const user: StoredUser = {
+    id: randomBytes(16).toString("hex"),
+    email: norm,
+    displayName: name,
+    passwordHash: "",
+    subscriptionStatus: first ? "active" : "trial",
+    trialEndsAt: first ? null : new Date(Date.now() + PLAN.trialDays * 86_400_000).toISOString(),
+    isOwner: first,
+    createdAt: new Date().toISOString(),
+  };
+
+  if (isDatabaseConfigured()) {
+    const sql = await database();
+    await sql`
+      insert into profiles (id, display_name) values (${user.id}, ${user.displayName})
+      on conflict (id) do update set display_name = excluded.display_name, updated_at = now()
+    `;
+    try {
+      await sql`
+        insert into auth_users (id, email, password_hash, display_name, subscription_status, trial_ends_at, is_owner)
+        values (${user.id}, ${user.email}, ${null}, ${user.displayName},
+                ${user.subscriptionStatus}, ${user.trialEndsAt}, ${user.isOwner})
+      `;
+    } catch (e) {
+      // Carrera: otro registro con el mismo email ganó. Usa esa cuenta.
+      if (String(e).includes("auth_users_email_key") || String(e).includes("duplicate")) {
+        const winner = await findByEmail(norm);
+        if (winner) return { user: publicUser(winner) };
       }
       throw e;
     }

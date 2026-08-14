@@ -3,16 +3,45 @@
 Estado exhaustivo del desarrollo de ZERO. Permite a otra sesión continuar
 exactamente donde se quedó.
 
-_Última actualización: **ZERO es multiusuario (SaaS)**. Registro/login propios
-(scrypt + sesiones con cookie), plan único **ZERO Pro 20 €/mes** con 14 días de
-prueba y paywall (sin pasarela de pago todavía — es lo ÚNICO que falta), datos y
-conexiones Google/Outlook separados por cuenta, y fuera todo lo preconfigurado
-(cuenta Google fija, Excel por defecto, correo de daniel@rolmovil.com). Google
-Calendar/Tasks/Docs/Sheets reales, asistente Anthropic con tool-calling, ElevenLabs,
-Web Push, crons multiusuario, iCal por usuario y WhatsApp. El demo sigue
-funcionando sin credenciales._
+_Última actualización: **«Continuar con Google/Microsoft», correo propio y
+calendario de Outlook**. Entrar con Google u Outlook crea la cuenta y deja la
+integración enlazada en un solo viaje; `send_email` sale desde el Gmail/Outlook
+del PROPIO usuario (el SMTP compartido queda como último recurso); y con solo
+Outlook conectado su calendario real (Graph) sustituye al mock. Todo lo
+anterior sigue: multiusuario SaaS, ZERO Pro 20 €/mes con 14 días de prueba y
+paywall (la pasarela de pago sigue siendo lo ÚNICO que falta), datos por
+cuenta, crons multiusuario, iCal por usuario, WhatsApp. 147 tests._
 
-## 🆕 Última sesión — ZERO multiusuario, listo para vender (sólo falta la pasarela)
+## 🆕 Última sesión — Entrar con Google/Microsoft, correo propio, calendario Outlook
+
+- **«Continuar con Google» / «Continuar con Microsoft»** en la pantalla de
+  entrada (`/api/auth/{google,microsoft}/start`). Reutilizan los callbacks de
+  siempre con `login:true` en el `state` firmado (no hay que registrar URIs
+  nuevas). El callback crea la cuenta si no existe (fundador/prueba igual que
+  el registro normal), abre sesión y **guarda la conexión** del proveedor: un
+  solo consentimiento deja calendario, tareas, documentos y correo enlazados.
+  Cuentas OAuth no tienen contraseña (`password_hash` ya es nullable).
+- **`send_email` envía desde el correo del PROPIO usuario**
+  (`src/lib/mail/user-mail.ts`): Gmail API (`gmail.send`) → Graph
+  `/me/sendMail` (`Mail.Send`) → SMTP del servicio si existe → fallo honesto
+  pidiendo conectar una cuenta. El prompt dice el remitente real
+  (`ctx.mailFrom`) y el borrador+confirmación siguen siendo obligatorios.
+  ⚠️ Conexiones de Google hechas ANTES de este cambio no tienen el permiso
+  `gmail.send`: hay que desconectar y volver a conectar Google en Ajustes.
+- **Calendario de Outlook** (`MicrosoftCalendarProvider`, Graph
+  calendarView/events): con Outlook conectado y sin Google, es el calendario
+  real de ZERO — al enlazar la cuenta aparecen todos los eventos que ya tenía.
+  Idempotencia por título+comienzo, día completo datado en Madrid, freeBusy
+  para conflictos. Con solo Outlook, las herramientas de Google Tasks/Docs se
+  niegan con honestidad (sugieren Outlook o conectar Google) en vez de fingir.
+- **Caché de memoria por usuario**: la caché de 20 s del prompt era global y
+  podía mezclar recuerdos entre cuentas; ahora va con clave por usuario.
+- Azure necesita AHORA los permisos delegados: `Tasks.ReadWrite`,
+  `offline_access`, `Calendars.ReadWrite`, `Mail.Send` (+ `User.Read`).
+  Google Cloud: habilitar **Gmail API** y añadir el scope `gmail.send` a la
+  pantalla de consentimiento.
+
+## Sesión anterior — ZERO multiusuario, listo para vender (sólo falta la pasarela)
 
 Pivote a SaaS pedido por Adrián: cuentas propias, nada compartido entre usuarios.
 
@@ -248,9 +277,13 @@ de «no le he entendido», para distinguir un fallo de IA de un fallo de compren
   la BD.
 - **Rotar las credenciales filtradas** (sección URGENTE de arriba) — sin la
   `ANTHROPIC_API_KEY` nueva la IA responde en modo básico.
-- **Azure**: para Outlook faltan los permisos delegados `Tasks.ReadWrite` +
-  `offline_access` (hoy sólo tiene `User.Read`) y corregir el redirect de
-  localhost a `/api/microsoft/callback`.
+- **Azure**: para Outlook faltan los permisos delegados `Tasks.ReadWrite`,
+  `offline_access`, `Calendars.ReadWrite` y `Mail.Send` (hoy sólo tiene
+  `User.Read`) y corregir el redirect de localhost a `/api/microsoft/callback`.
+- **Google Cloud**: habilitar la **Gmail API** (además de Calendar/Tasks/
+  Drive/Docs/Sheets) y añadir el scope `gmail.send` en la pantalla de
+  consentimiento. Quien conectó Google antes debe desconectar y reconectar
+  para poder enviar correo.
 - **Pantalla de consentimiento de Google en «Publicar»** para que los refresh
   tokens de los clientes no caduquen a los 7 días.
 
@@ -284,7 +317,8 @@ de «no le he entendido», para distinguir un fallo de IA de un fallo de compren
 - **PASOS EXACTOS:**
   1. Crea o selecciona un proyecto en Google Cloud Console.
   2. «APIs y servicios» → «Biblioteca»: habilita Google **Calendar API**,
-     **Tasks API**, **Drive API** y **Docs API**.
+     **Tasks API**, **Drive API**, **Docs API**, **Sheets API** y **Gmail API**
+     (Gmail para que ZERO envíe correo desde la cuenta del usuario).
   3. «Pantalla de consentimiento OAuth»: tipo *External*; añádete como usuario de prueba.
   4. «Credenciales» → «Crear credenciales» → «ID de cliente OAuth» → *Aplicación web*.
   5. URI de redirección autorizado: `http://localhost:3000/api/google/callback`

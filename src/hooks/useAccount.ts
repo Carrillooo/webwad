@@ -14,6 +14,8 @@ interface MeResponse {
   authRequired: boolean;
   demoMode: boolean;
   plan: { name: string; priceEur: number; trialDays: number };
+  /** Proveedores con «Continuar con…» disponibles. */
+  oauth?: { google: boolean; microsoft: boolean };
   account: AccountInfo | null;
 }
 

@@ -37,7 +37,7 @@ function useViewport() {
 
 export function NovaApp() {
   useThemeSync();
-  const { account, gate, refresh, logout } = useAccount();
+  const { account, gate, refresh, logout, me } = useAccount();
   const { send, stopSpeaking } = useAssistant();
   const novaState = useNova((s) => s.novaState);
   const panelOpen = useNova((s) => s.panelOpen);
@@ -105,7 +105,7 @@ export function NovaApp() {
       </main>
     );
   }
-  if (gate === "auth") return <AuthScreen onDone={refresh} />;
+  if (gate === "auth") return <AuthScreen onDone={refresh} oauth={me?.oauth} />;
   if (gate === "paywall") return <PaywallScreen email={account?.email ?? ""} onLogout={logout} />;
 
   return (

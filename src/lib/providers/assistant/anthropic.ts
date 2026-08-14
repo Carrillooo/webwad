@@ -10,7 +10,7 @@ import {
 
 type MonitorView = NonNullable<AssistantTurn["view"]>;
 import { Providers } from "../index";
-import { serverConfig, ZERO_ATTRIBUTION, isSmtpConfigured } from "../../config";
+import { serverConfig, ZERO_ATTRIBUTION } from "../../config";
 import { humanDay, humanTime } from "../../datetime";
 import { sendMail } from "../../mail/send";
 import { getForecast } from "../../weather";
@@ -18,10 +18,21 @@ import type { MemoryItem } from "../storage/types";
 
 /** Extra capabilities injected per-request (memory persistence, etc.). */
 export interface AssistantExtras {
+  /** Identifica al usuario del turno: aísla las cachés por cuenta. */
+  userKey?: string;
   memory?: {
     list: () => Promise<MemoryItem[]>;
     remember: (value: string, kind?: string) => Promise<MemoryItem>;
     forget: (id: string) => Promise<boolean>;
+  };
+  /** Correo saliente EN NOMBRE del usuario (Gmail/Outlook conectado o SMTP). */
+  mail?: {
+    send: (input: {
+      to: string;
+      subject: string;
+      body: string;
+      senderName?: string;
+    }) => Promise<{ ok: boolean; detail: string }>;
   };
 }
 
@@ -37,24 +48,33 @@ const EFFORT: Effort = EFFORT_LEVELS.includes(serverConfig.anthropic.effort as E
  *  the user (a fact saved this turn is already in the prompt of the next one,
  *  because remember_fact returns before the reply is written). */
 const MEMORY_TTL_MS = 20_000;
+// SIEMPRE con clave por usuario: una caché global mezclaría los recuerdos de
+// una cuenta en el prompt de otra.
 const memCache = globalThis as unknown as {
-  __zeroMem?: { at: number; items: MemoryItem[] };
+  __zeroMem?: Map<string, { at: number; items: MemoryItem[] }>;
 };
-async function cachedMemories(list: () => Promise<MemoryItem[]>): Promise<MemoryItem[]> {
-  const hit = memCache.__zeroMem;
+function memMap() {
+  if (!memCache.__zeroMem) memCache.__zeroMem = new Map();
+  return memCache.__zeroMem;
+}
+async function cachedMemories(
+  userKey: string,
+  list: () => Promise<MemoryItem[]>,
+): Promise<MemoryItem[]> {
+  const hit = memMap().get(userKey);
   if (hit && Date.now() - hit.at < MEMORY_TTL_MS) return hit.items;
   try {
     const items = await list();
-    memCache.__zeroMem = { at: Date.now(), items };
+    memMap().set(userKey, { at: Date.now(), items });
     return items;
   } catch {
     return hit?.items ?? []; // memory unavailable → continue without it
   }
 }
 
-/** Drop the memory cache so a just-saved fact shows up immediately. */
-function invalidateMemories() {
-  memCache.__zeroMem = undefined;
+/** Drop the user's memory cache so a just-saved fact shows up immediately. */
+function invalidateMemories(userKey: string) {
+  memMap().delete(userKey);
 }
 
 /** Ensure at least one non-empty cell carries the "(by zerodc)" marker. */
@@ -99,7 +119,9 @@ export class AnthropicAssistantProvider implements AssistantProvider {
     // without needing a tool call on every turn. Cached in-process for a few
     // seconds: a DB round trip before every reply costs latency for data that
     // barely ever changes.
-    const memories = this.extras.memory ? await cachedMemories(this.extras.memory.list) : [];
+    const memories = this.extras.memory
+      ? await cachedMemories(this.extras.userKey ?? "anon", this.extras.memory.list)
+      : [];
 
     // Prompt caching: the stable half of the prompt (rules + tools) is cached,
     // so from the second turn on ZERO only pays for the volatile tail. That is
@@ -169,6 +191,32 @@ export class AnthropicAssistantProvider implements AssistantProvider {
     const p = this.providers;
     const receipt = (kind: string, label: string, ok: boolean, undoable?: boolean) =>
       receipts.push({ id: `rc-${Date.now()}-${receipts.length}`, at: new Date().toISOString(), kind, label, ok, undoable });
+
+    // Con solo Outlook conectado, el calendario es real pero las tareas y los
+    // documentos de Google siguen siendo simulados. Fuera del modo demo (que
+    // ya se anuncia solo), esas herramientas deben negarse con honestidad en
+    // vez de fingir que escriben en una cuenta que no existe.
+    const GOOGLE_TASK_TOOLS = new Set(["list_tasks", "create_task", "complete_task", "delete_all_tasks"]);
+    const GOOGLE_DOC_TOOLS = new Set(["search_documents", "get_document", "create_document"]);
+    if (!p.demoMode) {
+      if (GOOGLE_TASK_TOOLS.has(name) && p.tasks.kind === "mock") {
+        return {
+          data: {
+            error: p.outlookTasks
+              ? "Google no está conectado: usa las herramientas de Outlook (list_outlook_tasks / create_outlook_task / complete_outlook_task)."
+              : "Google no está conectado: no hay tareas reales. Pídele que conecte Google en Ajustes.",
+          },
+          isError: true,
+        };
+      }
+      if (GOOGLE_DOC_TOOLS.has(name) && p.documents.kind === "mock") {
+        return {
+          data: { error: "Los documentos necesitan Google (Drive/Docs). Pídele que conecte Google en Ajustes." },
+          isError: true,
+        };
+      }
+    }
+
     try {
       switch (name) {
         case "get_current_datetime":
@@ -329,12 +377,14 @@ export class AnthropicAssistantProvider implements AssistantProvider {
         case "send_email": {
           // HIGH RISK — the model must have shown the draft and received an
           // explicit "sí" before calling this (enforced in the system prompt).
-          const result = await sendMail({
+          const draft = {
             to: String(input.to),
             subject: String(input.subject),
             body: String(input.body),
             senderName: this.ownerName,
-          });
+          };
+          // Preferente: el buzón del propio usuario (Gmail/Outlook conectado).
+          const result = this.extras.mail ? await this.extras.mail.send(draft) : await sendMail(draft);
           receipt("email.send", result.ok ? `Email enviado a ${input.to}` : "Email NO enviado", result.ok);
           return { data: result, isError: !result.ok };
         }
@@ -349,7 +399,7 @@ export class AnthropicAssistantProvider implements AssistantProvider {
             String(input.value),
             input.kind ? String(input.kind) : "fact",
           );
-          invalidateMemories();
+          invalidateMemories(this.extras.userKey ?? "anon");
           receipt("memory.add", `Memoria guardada · ${item.value.slice(0, 40)}`, true);
           return { data: item };
         }
@@ -360,7 +410,7 @@ export class AnthropicAssistantProvider implements AssistantProvider {
         case "forget_memory": {
           if (!this.extras.memory) return { data: { error: "La memoria no está disponible." }, isError: true };
           const ok = await this.extras.memory.forget(String(input.id));
-          invalidateMemories();
+          invalidateMemories(this.extras.userKey ?? "anon");
           receipt("memory.delete", ok ? "Memoria olvidada" : "Memoria no encontrada", ok);
           return { data: { ok }, isError: !ok };
         }
@@ -503,13 +553,13 @@ function stablePrompt(ctx: AssistantContext): string {
     `list_outlook_tasks / create_outlook_task / complete_outlook_task. Si no lo menciona,`,
     `las tareas van a Google Tasks (list_tasks / create_task).`,
     ``,
-    `EMAIL (send_email${serverConfig.smtp.from ? ` — envía desde ${serverConfig.smtp.from}` : ""}):`,
-    isSmtpConfigured()
+    `EMAIL (send_email${ctx.mailFrom ? ` — sale desde ${ctx.mailFrom}` : ""}):`,
+    ctx.mailFrom
       ? `- Disponible. Flujo OBLIGATORIO: 1) redacta el borrador (Para / Asunto / Cuerpo) y`
-      : `- AÚN NO CONFIGURADO (faltan credenciales SMTP): si pide enviar un email, redacta el`,
-    isSmtpConfigured()
+      : `- SIN REMITENTE AÚN: si pide enviar un email, redacta el borrador igualmente y avisa`,
+    ctx.mailFrom
       ? `  muéstraselo; 2) espera un "sí"/"envíalo" EXPLÍCITO; 3) solo entonces llama a send_email.`
-      : `  borrador igualmente y avisa de que falta configurar el correo en Ajustes/.env.local.`,
+      : `  de que conecte Google u Outlook en Ajustes para poder enviarlo desde su propio correo.`,
     `- Redacta en español, tono profesional cercano, y firma con el nombre de ${ctx.ownerName}.`,
     `  Nunca envíes sin destinatario claro ni sin confirmación. Nunca inventes direcciones.`,
     ``,

@@ -11,8 +11,11 @@ export const GOOGLE_SCOPES = [
   "https://www.googleapis.com/auth/drive",
   "https://www.googleapis.com/auth/documents",
   "https://www.googleapis.com/auth/spreadsheets",
+  // Enviar correo EN NOMBRE del usuario desde su propio Gmail (send_email).
+  "https://www.googleapis.com/auth/gmail.send",
   "openid",
   "email",
+  "profile",
 ];
 
 export function isGoogleConfigured(): boolean {
@@ -86,16 +89,24 @@ export function refreshAccessToken(refreshToken: string): Promise<GoogleTokens> 
   });
 }
 
-/** Fetch the connected account's email (best-effort, for display). */
-export async function fetchUserEmail(accessToken: string): Promise<string | undefined> {
+/** Email y nombre de la cuenta (best-effort). El nombre sirve para crear la
+ *  cuenta de ZERO al entrar con Google. */
+export async function fetchGoogleProfile(
+  accessToken: string,
+): Promise<{ email?: string; name?: string }> {
   try {
     const res = await fetch("https://openidconnect.googleapis.com/v1/userinfo", {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
-    if (!res.ok) return undefined;
-    const j = (await res.json()) as { email?: string };
-    return j.email;
+    if (!res.ok) return {};
+    const j = (await res.json()) as { email?: string; name?: string; given_name?: string };
+    return { email: j.email, name: j.name ?? j.given_name };
   } catch {
-    return undefined;
+    return {};
   }
+}
+
+/** Fetch the connected account's email (best-effort, for display). */
+export async function fetchUserEmail(accessToken: string): Promise<string | undefined> {
+  return (await fetchGoogleProfile(accessToken)).email;
 }

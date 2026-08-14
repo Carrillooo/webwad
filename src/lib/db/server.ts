@@ -154,6 +154,8 @@ const SCHEMA_STATEMENTS = [
     is_owner boolean not null default false,
     created_at timestamptz not null default now()
   )`,
+  // Cuentas creadas con "Continuar con Google/Microsoft" no tienen contraseña.
+  `alter table auth_users alter column password_hash drop not null`,
   `create table if not exists auth_sessions (
     token_hash text primary key,
     user_id text not null references auth_users(id) on delete cascade,

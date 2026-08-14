@@ -5,7 +5,15 @@ import { serverConfig } from "../config";
  * Outlook tasks (Microsoft To Do via Graph). Token handling stays on the
  * backend; refresh tokens are encrypted at rest by the connection store.
  */
-export const MS_SCOPES = ["offline_access", "User.Read", "Tasks.ReadWrite"];
+export const MS_SCOPES = [
+  "offline_access",
+  "User.Read",
+  "Tasks.ReadWrite",
+  // Calendario de Outlook como calendario real cuando no hay Google.
+  "Calendars.ReadWrite",
+  // Enviar correo desde el buzón del usuario (send_email).
+  "Mail.Send",
+];
 
 function base(): string {
   return `https://login.microsoftonline.com/${serverConfig.microsoft.tenant}/oauth2/v2.0`;
@@ -77,16 +85,28 @@ export function refreshMsToken(refreshToken: string): Promise<MsTokens> {
   });
 }
 
-/** Connected account's email (best-effort, for display). */
-export async function fetchMsEmail(accessToken: string): Promise<string | undefined> {
+/** Email y nombre de la cuenta (best-effort). El nombre sirve para crear la
+ *  cuenta de ZERO al entrar con Microsoft. */
+export async function fetchMsProfile(
+  accessToken: string,
+): Promise<{ email?: string; name?: string }> {
   try {
     const res = await fetch("https://graph.microsoft.com/v1.0/me", {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
-    if (!res.ok) return undefined;
-    const j = (await res.json()) as { mail?: string; userPrincipalName?: string };
-    return j.mail ?? j.userPrincipalName;
+    if (!res.ok) return {};
+    const j = (await res.json()) as {
+      mail?: string;
+      userPrincipalName?: string;
+      displayName?: string;
+    };
+    return { email: j.mail ?? j.userPrincipalName, name: j.displayName };
   } catch {
-    return undefined;
+    return {};
   }
+}
+
+/** Connected account's email (best-effort, for display). */
+export async function fetchMsEmail(accessToken: string): Promise<string | undefined> {
+  return (await fetchMsProfile(accessToken)).email;
 }

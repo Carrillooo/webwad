@@ -42,12 +42,13 @@ describe("buildGmailRaw", () => {
 });
 
 describe("sendMailForUser", () => {
-  it("sin nada conectado ni SMTP: fallo honesto que pide conectar una cuenta", async () => {
+  it("sin Gmail ni Outlook enlazado NO se envía nada (ni siquiera con SMTP del servicio)", async () => {
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
     const r = await sendMailForUser("u1", false, INPUT);
     expect(r.ok).toBe(false);
-    expect(r.detail).toContain("Conecta Google u Outlook");
+    expect(r.detail).toContain("Conecta tu Google o tu Outlook");
+    expect(r.via).toBeUndefined(); // jamás cae al buzón compartido de la plataforma
     expect(fetchMock).not.toHaveBeenCalled();
     expect(await mailSenderFor("u1", false)).toBeNull();
   });

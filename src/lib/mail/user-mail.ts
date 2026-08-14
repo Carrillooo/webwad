@@ -1,14 +1,14 @@
 import { getAccessToken, getConnection } from "../google/connection";
 import { getMsAccessToken, getMsConnection } from "../microsoft/connection";
-import { isSmtpConfigured, serverConfig } from "../config";
-import { sendMail, type MailResult } from "./send";
+import { type MailResult } from "./send";
 
 /**
  * Correo saliente EN NOMBRE del usuario: cada cuenta envía desde SU buzón.
  *
- * Orden: Gmail conectado → Outlook conectado → SMTP del servicio (si existe)
- * → fallo honesto. Así el remitente es el correo real de quien usa ZERO y no
- * un buzón compartido de la plataforma.
+ * Gmail conectado → Outlook conectado → fallo honesto. SIN cuenta enlazada NO
+ * se envía NADA: el buzón SMTP del servicio queda solo para los códigos de
+ * verificación, jamás para correos personales (nadie quiere que sus emails
+ * salgan desde el buzón compartido de la plataforma).
  */
 
 export interface UserMailInput {
@@ -20,16 +20,17 @@ export interface UserMailInput {
 }
 
 export interface UserMailResult extends MailResult {
-  via?: "gmail" | "outlook" | "smtp";
+  via?: "gmail" | "outlook";
 }
 
 export interface MailSender {
-  via: "gmail" | "outlook" | "smtp";
+  via: "gmail" | "outlook";
   /** Dirección desde la que saldrá el correo (si se conoce). */
   address: string;
 }
 
-/** Desde dónde saldría un correo de este usuario ahora mismo (para el prompt). */
+/** Desde dónde saldría un correo de este usuario ahora mismo (para el prompt).
+ *  null = no puede enviar (sin Gmail/Outlook enlazado no hay envío). */
 export async function mailSenderFor(userId: string, authed: boolean): Promise<MailSender | null> {
   try {
     const google = await getConnection(userId, authed);
@@ -42,9 +43,6 @@ export async function mailSenderFor(userId: string, authed: boolean): Promise<Ma
     if (ms.connected) return { via: "outlook", address: ms.email ?? "tu Outlook" };
   } catch {
     /* seguir con el resto */
-  }
-  if (isSmtpConfigured()) {
-    return { via: "smtp", address: serverConfig.smtp.from || serverConfig.smtp.user };
   }
   return null;
 }
@@ -162,14 +160,10 @@ export async function sendMailForUser(
   } catch (e) {
     console.error("outlook send error", e);
   }
-  // 3) SMTP del servicio (si el operador lo configuró).
-  if (isSmtpConfigured()) {
-    const r = await sendMail(input);
-    return { ...r, via: "smtp" };
-  }
+  // SIN cuenta enlazada NO se envía: jamás desde el buzón del servicio.
   return {
     ok: false,
     detail:
-      "No hay ninguna cuenta de correo enlazada. Conecta Google u Outlook en Ajustes y podré enviar desde tu propio email.",
+      "No puedo enviarlo: no tienes ningún correo enlazado. Conecta tu Google o tu Outlook en Ajustes → Cuentas enlazadas y el email saldrá desde tu propia dirección.",
   };
 }

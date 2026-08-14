@@ -12,7 +12,6 @@ type MonitorView = NonNullable<AssistantTurn["view"]>;
 import { Providers } from "../index";
 import { serverConfig, ZERO_ATTRIBUTION } from "../../config";
 import { humanDay, humanTime } from "../../datetime";
-import { sendMail } from "../../mail/send";
 import { getForecast } from "../../weather";
 import type { MemoryItem } from "../storage/types";
 
@@ -384,14 +383,20 @@ export class AnthropicAssistantProvider implements AssistantProvider {
         case "send_email": {
           // HIGH RISK — the model must have shown the draft and received an
           // explicit "sí" before calling this (enforced in the system prompt).
-          const draft = {
+          // SOLO desde el buzón del propio usuario: sin Gmail/Outlook enlazado
+          // no se envía nada (el SMTP del servicio es solo para códigos).
+          if (!this.extras.mail) {
+            return {
+              data: { error: "El correo no está disponible: conecta Google u Outlook en Ajustes." },
+              isError: true,
+            };
+          }
+          const result = await this.extras.mail.send({
             to: String(input.to),
             subject: String(input.subject),
             body: String(input.body),
             senderName: this.ownerName,
-          };
-          // Preferente: el buzón del propio usuario (Gmail/Outlook conectado).
-          const result = this.extras.mail ? await this.extras.mail.send(draft) : await sendMail(draft);
+          });
           receipt("email.send", result.ok ? `Email enviado a ${input.to}` : "Email NO enviado", result.ok);
           return { data: result, isError: !result.ok };
         }
@@ -583,12 +588,26 @@ function stablePrompt(ctx: AssistantContext): string {
     `EMAIL (send_email${ctx.mailFrom ? ` — sale desde ${ctx.mailFrom}` : ""}):`,
     ctx.mailFrom
       ? `- Disponible. Flujo OBLIGATORIO: 1) redacta el borrador (Para / Asunto / Cuerpo) y`
-      : `- SIN REMITENTE AÚN: si pide enviar un email, redacta el borrador igualmente y avisa`,
+      : `- NO PUEDE ENVIAR: no hay Gmail ni Outlook enlazado. Si pide un email, redacta el borrador`,
     ctx.mailFrom
       ? `  muéstraselo; 2) espera un "sí"/"envíalo" EXPLÍCITO; 3) solo entonces llama a send_email.`
-      : `  de que conecte Google u Outlook en Ajustes para poder enviarlo desde su propio correo.`,
-    `- Redacta en español, tono profesional cercano, y firma con el nombre de ${ctx.ownerName}.`,
-    `  Nunca envíes sin destinatario claro ni sin confirmación. Nunca inventes direcciones.`,
+      : `  para que lo copie y dile que conecte Google u Outlook en Ajustes para enviarlo desde SU correo.`,
+    `- CÓMO SE ESCRIBE UN BUEN CORREO (síguelo siempre):`,
+    `  · No transcribas lo que te dictó: conviértelo en un correo bien escrito. "dile a Juan que`,
+    `    mañana no llego" → un párrafo educado que avisa, explica en una línea y propone alternativa.`,
+    `  · ASUNTO concreto de 3-7 palabras que resuma el contenido ("Cambio de hora — reunión del`,
+    `    jueves"), nunca "Hola", "Aviso" ni frases enteras.`,
+    `  · ESTRUCTURA: saludo acorde al destinatario (formal: "Estimado Sr. García:"; normal:`,
+    `    "Hola, Juan:"); primera frase = a qué vas; un párrafo corto por idea (2-3 frases);`,
+    `    los datos clave (fechas, horas, importes, direcciones) explícitos y correctos; cierre con`,
+    `    la acción esperada si la hay ("¿Le viene bien el jueves a las 10?"); despedida`,
+    `    ("Un saludo," / formal: "Atentamente,") y debajo la firma: ${ctx.ownerName}.`,
+    `  · TONO profesional y natural: ni robótico ni coloquial. Sin emojis, sin MAYÚSCULAS de`,
+    `    énfasis, sin muletillas ("espero que este correo te encuentre bien" PROHIBIDO). Trata de`,
+    `    usted a desconocidos y empresas; tutea solo si el usuario tutea a esa persona.`,
+    `  · Breve: casi ningún correo necesita más de 120 palabras. Relee mentalmente: cero faltas.`,
+    `- Nunca envíes sin destinatario claro ni sin confirmación. Nunca inventes direcciones ni datos:`,
+    `  si te falta un dato clave (hora, dirección), pregúntalo ANTES de redactar.`,
     ``,
     `TELÉFONO (make_phone_call):`,
     ctx.canCall

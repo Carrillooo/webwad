@@ -71,16 +71,23 @@ export async function resolveProviders(userId: string, authed: boolean): Promise
   }
 
   // Outlook attaches independently of Google (tasks may live only there).
+  const lectoresExtra: CalendarProvider[] = [];
   if (!serverConfig.demoMode && isMicrosoftConfigured()) {
     try {
       const msToken = await getMsAccessToken(userId, authed);
       if (msToken) {
         providers.outlookTasks = new MicrosoftTasksProvider(msToken);
-        // Sin Google, el calendario real es el de Outlook: al enlazar la
-        // cuenta Microsoft aparecen todos los eventos que ya tenía.
+        const outlookCal = new MicrosoftCalendarProvider(msToken);
         if (providers.calendar.kind === "mock") {
-          providers.calendar = new MicrosoftCalendarProvider(msToken);
+          // Sin Google, el calendario real es el de Outlook: al enlazar la
+          // cuenta Microsoft aparecen todos los eventos que ya tenía.
+          providers.calendar = outlookCal;
           providers.demoMode = false;
+        } else {
+          // Con las DOS cuentas, la agenda es la suma: Outlook se lee también
+          // (antes se ignoraba por completo si había Google). Se escribe en
+          // Google, que es donde ZERO crea los eventos.
+          lectoresExtra.push(outlookCal);
         }
       }
     } catch {
@@ -88,9 +95,9 @@ export async function resolveProviders(userId: string, authed: boolean): Promise
     }
   }
 
-  // Calendarios enlazados por iCal: sus eventos se mezclan en las lecturas
-  // (y ocupan huecos), sea cual sea el calendario base. Solo lectura.
-  providers.calendar = new MergedCalendarProvider(providers.calendar, userId);
+  // Agenda única: el calendario base + las cuentas secundarias + los
+  // calendarios enlazados por iCal, sin duplicados y con caché corta.
+  providers.calendar = new MergedCalendarProvider(providers.calendar, userId, lectoresExtra);
 
   return providers;
 }

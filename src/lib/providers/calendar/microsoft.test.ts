@@ -19,12 +19,21 @@ function graphEvent(over: Record<string, unknown> = {}) {
   };
 }
 
+/** Desde que ZERO lee TODOS los calendarios, cada consulta empieza por pedir
+ *  la lista. Estas simulaciones devuelven una cuenta con un solo calendario. */
+function esListaDeCalendarios(url: string): boolean {
+  return url.includes("/me/calendars?");
+}
+const UN_CALENDARIO = () =>
+  new Response(JSON.stringify({ value: [{ id: "def", isDefaultCalendar: true }] }), { status: 200 });
+
 describe("MicrosoftCalendarProvider", () => {
   it("lista eventos con horas UTC bien formadas y datos mapeados", async () => {
     vi.stubGlobal(
       "fetch",
       vi.fn(async (url: string, init?: RequestInit) => {
-        expect(String(url)).toContain("/me/calendarView?");
+        if (esListaDeCalendarios(String(url))) return UN_CALENDARIO();
+        expect(String(url)).toContain("/calendarView?");
         expect(new Headers(init?.headers).get("Prefer")).toContain('outlook.timezone="UTC"');
         return new Response(JSON.stringify({ value: [graphEvent()] }), { status: 200 });
       }),
@@ -53,7 +62,11 @@ describe("MicrosoftCalendarProvider", () => {
     });
     vi.stubGlobal(
       "fetch",
-      vi.fn(async () => new Response(JSON.stringify({ value: [allDay] }), { status: 200 })),
+      vi.fn(async (url: string) =>
+        esListaDeCalendarios(String(url))
+          ? UN_CALENDARIO()
+          : new Response(JSON.stringify({ value: [allDay] }), { status: 200 }),
+      ),
     );
     const [ev] = await new MicrosoftCalendarProvider("tok").listEvents(
       "2026-08-13T00:00:00Z",
@@ -66,7 +79,8 @@ describe("MicrosoftCalendarProvider", () => {
   it("crear con idempotencyKey no duplica si ya existe título+comienzo iguales", async () => {
     const existing = graphEvent();
     const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
-      if (String(url).includes("/me/calendarView")) {
+      if (esListaDeCalendarios(String(url))) return UN_CALENDARIO();
+      if (String(url).includes("/calendarView")) {
         return new Response(JSON.stringify({ value: [existing] }), { status: 200 });
       }
       throw new Error(`no debería crear: ${init?.method} ${url}`);
@@ -79,12 +93,14 @@ describe("MicrosoftCalendarProvider", () => {
       idempotencyKey: "k1",
     });
     expect(ev.id).toBe("ev1");
-    expect(fetchMock).toHaveBeenCalledTimes(1); // solo la comprobación
+    // Solo lectura: lista de calendarios + vista. Ninguna llamada de creación.
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
   it("crear evento nuevo manda subject y horas UTC a Graph", async () => {
     const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
-      if (String(url).includes("/me/calendarView")) {
+      if (esListaDeCalendarios(String(url))) return UN_CALENDARIO();
+      if (String(url).includes("/calendarView")) {
         return new Response(JSON.stringify({ value: [] }), { status: 200 });
       }
       expect(init?.method).toBe("POST");
@@ -121,8 +137,10 @@ describe("MicrosoftCalendarProvider", () => {
   it("freeBusy usa los eventos con hora (ignora los de día completo)", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn(async () =>
-        new Response(
+      vi.fn(async (url: string) =>
+        esListaDeCalendarios(String(url))
+          ? UN_CALENDARIO()
+          : new Response(
           JSON.stringify({
             value: [
               graphEvent(),

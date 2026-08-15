@@ -2,6 +2,8 @@ import { CalendarProvider, CalendarRef, CalendarEvent, CreateEventInput } from "
 
 const GRAPH = "https://graph.microsoft.com/v1.0";
 const TZ = "Europe/Madrid";
+/** Tope de calendarios por cuenta: más que esto es ruido y latencia. */
+const MAX_CALENDARS = 15;
 
 /**
  * Calendario de Outlook vía Microsoft Graph. Se usa como calendario principal
@@ -102,15 +104,68 @@ export class MicrosoftCalendarProvider implements CalendarProvider {
     }));
   }
 
-  async listEvents(rangeStartIso: string, rangeEndIso: string): Promise<CalendarEvent[]> {
+  /** Ids de todos los calendarios de Outlook (el suyo y los compartidos). */
+  private async allCalendarIds(): Promise<string[]> {
+    const j = await this.req<{ value: { id: string; isDefaultCalendar?: boolean }[] }>(
+      "GET",
+      "/me/calendars?$top=50",
+    );
+    const cals = j.value ?? [];
+    return [
+      ...cals.filter((c) => c.isDefaultCalendar).map((c) => c.id),
+      ...cals.filter((c) => !c.isDefaultCalendar).map((c) => c.id),
+    ].slice(0, MAX_CALENDARS);
+  }
+
+  private async eventsOfCalendar(
+    path: string,
+    calendarId: string,
+    rangeStartIso: string,
+    rangeEndIso: string,
+  ): Promise<CalendarEvent[]> {
     const qs = new URLSearchParams({
       startDateTime: new Date(rangeStartIso).toISOString(),
       endDateTime: new Date(rangeEndIso).toISOString(),
       $top: "200",
       $orderby: "start/dateTime",
     });
-    const j = await this.req<{ value: MEvent[] }>("GET", `/me/calendarView?${qs.toString()}`);
-    return j.value.filter((e) => !e.isCancelled).map((e) => this.map(e, "primary"));
+    const j = await this.req<{ value: MEvent[] }>("GET", `${path}?${qs.toString()}`);
+    return (j.value ?? []).filter((e) => !e.isCancelled).map((e) => this.map(e, calendarId));
+  }
+
+  /**
+   * Sin calendarId: TODOS los calendarios de Outlook a la vez. Antes solo se
+   * leía el principal, así que un calendario compartido del trabajo no salía.
+   */
+  async listEvents(rangeStartIso: string, rangeEndIso: string, calendarId?: string): Promise<CalendarEvent[]> {
+    if (calendarId && calendarId !== "primary") {
+      return this.eventsOfCalendar(
+        `/me/calendars/${encodeURIComponent(calendarId)}/calendarView`,
+        calendarId,
+        rangeStartIso,
+        rangeEndIso,
+      );
+    }
+    const ids = await this.allCalendarIds().catch(() => []);
+    if (!ids.length) {
+      // Sin lista de calendarios seguimos leyendo el principal: mejor la
+      // agenda de siempre que ninguna agenda.
+      return this.eventsOfCalendar("/me/calendarView", "primary", rangeStartIso, rangeEndIso);
+    }
+    const perCalendar = await Promise.all(
+      ids.map((id) =>
+        this.eventsOfCalendar(
+          `/me/calendars/${encodeURIComponent(id)}/calendarView`,
+          id,
+          rangeStartIso,
+          rangeEndIso,
+        ).catch((e) => {
+          console.error(`calendario de Outlook "${id}" no se pudo leer`, e);
+          return [] as CalendarEvent[];
+        }),
+      ),
+    );
+    return perCalendar.flat().sort((a, b) => a.start.localeCompare(b.start));
   }
 
   async getEvent(id: string): Promise<CalendarEvent | null> {

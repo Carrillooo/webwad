@@ -12,7 +12,26 @@ anterior sigue: multiusuario SaaS, ZERO Pro 20 €/mes con 14 días de prueba y
 paywall (la pasarela de pago sigue siendo lo ÚNICO que falta), datos por
 cuenta, crons multiusuario, iCal por usuario, WhatsApp. 147 tests._
 
-## 🆕 Última sesión (5) — Historial, atajos y accesibilidad
+## 🆕 Última sesión (6) — Agenda única: Google + Outlook + enlazados
+
+Se arreglaron dos fallos de raíz que dejaban eventos fuera de la vista:
+
+- **Solo se leía el calendario `primary`.** Cualquier calendario compartido o
+  suscrito (el del trabajo, el del colegio, uno de un grupo) no aparecía.
+  Ahora Google y Outlook consultan **todos** sus calendarios en paralelo
+  (tope 15, los fallos de uno no tumban el resto) y `freeBusy` también, así
+  que ZERO no propone huecos encima de algo que está en otro calendario.
+- **Outlook se ignoraba si había Google.** Con las dos cuentas conectadas,
+  ahora la agenda es la suma: se escribe en Google y se lee de las dos.
+- **Sin duplicados**: el mismo acto en las dos cuentas (una invitación que
+  llega a Gmail y a Outlook) se enseña una vez, y sobrevive la copia editable.
+- **Más rápido**: caché de 20 s de la agenda por usuario y rango (se tira
+  entera al crear/mover/borrar) y caché de 5 min de la lista de calendarios.
+- **Editar eventos de calendarios secundarios**: al mostrar todos los
+  calendarios, mover o borrar uno que no está en `primary` daba 404; ahora se
+  localiza el calendario del evento antes de escribir. 11 tests nuevos (183).
+
+## Sesión anterior — Historial, atajos y accesibilidad
 
 - **Historial de conversaciones**: las tablas `assistant_sessions` /
   `assistant_messages` existían sin usar y al recargar se perdía todo. Ahora

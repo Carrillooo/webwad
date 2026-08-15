@@ -110,6 +110,106 @@ function GoogleConnection() {
   );
 }
 
+/** Enlazar OTROS calendarios (iCloud, festivos, Calendly…) por URL iCal:
+ *  sus eventos aparecen en el calendario de ZERO en solo lectura. */
+function ExternalCalendars() {
+  const [cals, setCals] = useState<{ id: string; name: string; url: string }[] | null>(null);
+  const [name, setName] = useState("");
+  const [url, setUrl] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = () =>
+    fetch("/api/external-calendars")
+      .then((r) => r.json())
+      .then((d) => setCals(d.calendars ?? []))
+      .catch(() => setCals([]));
+
+  useEffect(() => {
+    void load();
+  }, []);
+
+  const add = async () => {
+    if (busy || !url.trim()) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const r = await fetch("/api/external-calendars", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: name.trim() || "Calendario", url: url.trim() }),
+      });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) {
+        setError(d.error ?? "No se pudo enlazar.");
+        return;
+      }
+      setName("");
+      setUrl("");
+      await load();
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="glass holo-border rounded-2xl px-4 py-3 space-y-2.5">
+      {cals === null ? (
+        <p className="text-xs text-faint">Comprobando…</p>
+      ) : (
+        <>
+          {cals.map((c) => (
+            <div key={c.id} className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <div className="text-sm truncate">{c.name}</div>
+                <div className="text-[11px] text-faint truncate">{c.url}</div>
+              </div>
+              <button
+                onClick={async () => {
+                  await fetch(`/api/external-calendars?id=${encodeURIComponent(c.id)}`, { method: "DELETE" });
+                  await load();
+                }}
+                className="px-2.5 py-1 rounded-lg text-[11px] shrink-0"
+                style={{ background: "rgb(248 113 113 / 0.14)", color: "rgb(220 38 38)" }}
+              >
+                Quitar
+              </button>
+            </div>
+          ))}
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Nombre (p. ej. Festivos Madrid)"
+            className="w-full glass px-3 py-2 text-sm bg-transparent outline-none rounded-xl"
+          />
+          <input
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+            placeholder="Enlace iCal (https://… o webcal://…)"
+            className="w-full glass px-3 py-2 text-sm bg-transparent outline-none rounded-xl"
+          />
+          {error && (
+            <p className="text-[11px] leading-snug" style={{ color: "rgb(220 38 38)" }}>{error}</p>
+          )}
+          <button
+            onClick={() => void add()}
+            disabled={busy || !url.trim()}
+            className="w-full py-2 rounded-xl text-sm disabled:opacity-40"
+            style={{ background: "rgb(var(--nova-accent) / 0.2)" }}
+          >
+            {busy ? "Comprobando el enlace…" : "Enlazar calendario"}
+          </button>
+          <p className="text-[11px] text-faint leading-snug">
+            Vale cualquier enlace iCal: un calendario público de iCloud, otro Google compartido,
+            festivos, Calendly, un horario… Sus eventos se ven en ZERO y cuentan al buscar huecos,
+            pero no se pueden editar desde aquí.
+          </p>
+        </>
+      )}
+    </div>
+  );
+}
+
 /** Enlace iCal para suscribir la agenda de ZERO desde Apple, Google u Outlook. */
 function CalendarFeed() {
   const [feed, setFeed] = useState<{ configured: boolean; url?: string; webcal?: string } | null>(null);
@@ -603,6 +703,11 @@ export function Settings() {
                 </section>
 
                 {/* La apariencia es fija (tema blanco de marca): sin ajustes. */}
+
+                <section>
+                  <h3 className="text-[11px] uppercase tracking-wide text-faint mb-1.5 px-4">Otros calendarios</h3>
+                  <ExternalCalendars />
+                </section>
 
                 <section>
                   <h3 className="text-[11px] uppercase tracking-wide text-faint mb-1.5 px-4">Suscribir el calendario</h3>

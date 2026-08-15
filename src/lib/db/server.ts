@@ -166,6 +166,16 @@ const SCHEMA_STATEMENTS = [
     expires_at timestamptz not null,
     created_at timestamptz not null default now()
   )`,
+  // Calendarios externos enlazados por URL iCal (iCloud, festivos, Calendly…).
+  `create table if not exists external_calendars (
+    id uuid primary key default gen_random_uuid(),
+    user_id text not null references profiles(id) on delete cascade,
+    name text not null,
+    url text not null,
+    created_at timestamptz not null default now(),
+    unique (user_id, url)
+  )`,
+  `create index if not exists idx_extcal_user on external_calendars(user_id)`,
   // Llamadas telefónicas que ZERO hace en nombre del usuario (Twilio).
   `create table if not exists phone_calls (
     id uuid primary key default gen_random_uuid(),

@@ -14,6 +14,7 @@ import { GoogleSheetsProvider } from "./sheets/google";
 import { SheetsProvider } from "./sheets/types";
 import { MicrosoftTasksProvider } from "./tasks/microsoft";
 import { MicrosoftCalendarProvider } from "./calendar/microsoft";
+import { MergedCalendarProvider } from "./calendar/merged";
 import { isGoogleConfigured } from "../google/oauth";
 import { getAccessToken } from "../google/connection";
 import { isMicrosoftConfigured } from "../microsoft/oauth";
@@ -86,6 +87,10 @@ export async function resolveProviders(userId: string, authed: boolean): Promise
       /* leave outlook off */
     }
   }
+
+  // Calendarios enlazados por iCal: sus eventos se mezclan en las lecturas
+  // (y ocupan huecos), sea cual sea el calendario base. Solo lectura.
+  providers.calendar = new MergedCalendarProvider(providers.calendar, userId);
 
   return providers;
 }

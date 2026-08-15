@@ -31,7 +31,7 @@ export interface CalendarEvent {
   hangoutLink?: string;
   /** true until the backing service has confirmed persistence. */
   pending?: boolean;
-  source?: "mock" | "google" | "outlook";
+  source?: "mock" | "google" | "outlook" | "external";
 }
 
 export interface FreeSlot {

@@ -12,7 +12,22 @@ anterior sigue: multiusuario SaaS, ZERO Pro 20 €/mes con 14 días de prueba y
 paywall (la pasarela de pago sigue siendo lo ÚNICO que falta), datos por
 cuenta, crons multiusuario, iCal por usuario, WhatsApp. 147 tests._
 
-## 🆕 Última sesión (3) — ZERO llama por teléfono (Twilio)
+## 🆕 Última sesión (4) — Calendarios enlazados por iCal
+
+- **Ajustes → Otros calendarios**: se enlaza cualquier calendario por su URL
+  iCal (iCloud público, otro Google compartido, festivos, Calendly, horarios…;
+  `webcal://` se convierte solo). Sus eventos aparecen en el calendario de
+  ZERO **en solo lectura** y cuentan al buscar huecos (freeBusy).
+- Piezas: parser ICS propio (`ics-parse.ts`: plegado, escapes, TZID vía Intl,
+  VALUE=DATE, RRULE DAILY/WEEKLY/MONTHLY/YEARLY con INTERVAL/COUNT/UNTIL/
+  BYDAY, expansión limitada a la ventana con tope), `calendar/external.ts`
+  (tabla `external_calendars` + memoria, fetch con guardas SSRF —localhost e
+  IPs privadas bloqueadas—, 2 MB máx., caché 10 min) y
+  `MergedCalendarProvider` (envuelve Google/Outlook/mock; ids `ext:` no se
+  pueden editar). Ruta guardada `/api/external-calendars` que comprueba el
+  enlace EN EL ALTA (nada de enlaces muertos). Máx. 10 por usuario. 8 tests.
+
+## Sesión anterior — ZERO llama por teléfono (Twilio)
 
 - **«Llama a la peluquería y pide cita el viernes por la tarde»**: herramienta
   `make_phone_call` (ALTO RIESGO: repite número+objetivo y exige un "sí")

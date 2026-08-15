@@ -38,6 +38,10 @@ export interface Settings {
   /** Conversación seguida: si ZERO te hace una pregunta, el micro se reabre
    *  solo al terminar de hablar, sin tocar nada. */
   autoListen: boolean;
+  /** Escala del texto de toda la app: 1 = normal, 1.15 = grande, 1.3 = muy grande. */
+  fontScale: number;
+  /** Alto contraste: textos secundarios más legibles y bordes más marcados. */
+  highContrast: boolean;
   language: string;
   timezone: string;
   defaultCalendarId: string;
@@ -61,6 +65,8 @@ export const defaultSettings: Settings = {
   voiceName: null,
   clapEnabled: false,
   autoListen: true,
+  fontScale: 1,
+  highContrast: false,
   language: "es-ES",
   timezone: "Europe/Madrid",
   defaultCalendarId: "primary",

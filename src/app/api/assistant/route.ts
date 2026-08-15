@@ -12,6 +12,7 @@ import { requestOrigin } from "@/lib/http/origin";
 import { isTwilioConfigured, serverConfig } from "@/lib/config";
 import { placeCall } from "@/lib/twilio/place";
 import { listCalls } from "@/lib/twilio/store";
+import { saveTurn } from "@/lib/conversations/store";
 
 const BodySchema = z.object({
   messages: z
@@ -103,12 +104,16 @@ export async function POST(req: NextRequest) {
     canCall: isTwilioConfigured() && serverConfig.anthropic.apiKey.length > 0,
   };
   const startedAt = Date.now();
+  const lastUser = [...parsed.data.messages].reverse().find((m) => m.role === "user")?.content ?? "";
   try {
     const turn = await assistant.respond(parsed.data.messages, ctx, parsed.data.state ?? {});
     const ms = Date.now() - startedAt;
     // Visible en la terminal: si ZERO va lento, aquí se ve exactamente cuánto
     // tarda el modelo (el resto de la app son milisegundos).
     console.log(`[zero] respuesta en ${ms} ms (${assistant.kind})`);
+    // Historial: se guarda DESPUÉS de responder y sin esperar, para no añadir
+    // ni un milisegundo a la respuesta hablada.
+    void saveTurn(userId, lastUser, turn.reply ?? "");
     return NextResponse.json({ turn, demoMode: providers.demoMode, ms });
   } catch (err) {
     // If Anthropic fails (billing, rate limit, outage), degrade to the local
@@ -121,6 +126,7 @@ export async function POST(req: NextRequest) {
           ctx,
           parsed.data.state ?? {},
         );
+        void saveTurn(userId, lastUser, turn.reply ?? "");
         return NextResponse.json({ turn, demoMode: providers.demoMode, fallback: "mock" });
       } catch (err2) {
         console.error("mock fallback error", err2);

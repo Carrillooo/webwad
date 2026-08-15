@@ -705,6 +705,41 @@ export function Settings() {
                 {/* La apariencia es fija (tema blanco de marca): sin ajustes. */}
 
                 <section>
+                  <h3 className="text-[11px] uppercase tracking-wide text-faint mb-1.5 px-4">Accesibilidad</h3>
+                  <Group>
+                    <Row label="Tamaño del texto" hint="Agranda toda la app, no solo las letras">
+                      <div className="flex gap-1.5 shrink-0" role="group" aria-label="Tamaño del texto">
+                        {([
+                          [1, "A", "Normal"],
+                          [1.15, "A", "Grande"],
+                          [1.3, "A", "Muy grande"],
+                        ] as const).map(([value, letra, titulo], i) => (
+                          <button
+                            key={titulo}
+                            type="button"
+                            onClick={() => set("fontScale", value)}
+                            aria-pressed={settings.fontScale === value}
+                            aria-label={titulo}
+                            title={titulo}
+                            className="w-10 h-9 rounded-lg grid place-items-center transition-colors"
+                            style={
+                              settings.fontScale === value
+                                ? { background: "rgb(var(--nova-primary) / 0.85)", color: "#fff" }
+                                : { background: "rgb(var(--nova-fg) / 0.07)" }
+                            }
+                          >
+                            <span style={{ fontSize: `${0.8 + i * 0.22}rem`, lineHeight: 1 }}>{letra}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </Row>
+                    <Row label="Alto contraste" hint="Textos y bordes más marcados, sin brillos">
+                      <Toggle checked={settings.highContrast} onChange={(v) => set("highContrast", v)} />
+                    </Row>
+                  </Group>
+                </section>
+
+                <section>
                   <h3 className="text-[11px] uppercase tracking-wide text-faint mb-1.5 px-4">Otros calendarios</h3>
                   <ExternalCalendars />
                 </section>

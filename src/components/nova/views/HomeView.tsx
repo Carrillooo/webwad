@@ -2,6 +2,32 @@
 import { motion } from "motion/react";
 import { useBriefing } from "@/hooks/useBriefing";
 import { humanTime } from "@/lib/datetime";
+import { ASK_EVENT } from "@/lib/events";
+
+/** Atajos: quien abre ZERO por primera vez mira la piedra y no sabe qué decir.
+ *  Un toque aquí equivale a decirlo en voz alta. */
+const ATAJOS = [
+  "¿Qué tengo hoy?",
+  "¿Qué huecos tengo mañana?",
+  "Añádeme una tarea",
+  "Resume mi día",
+];
+
+function Atajos() {
+  return (
+    <div className="flex flex-wrap justify-center gap-2" aria-label="Sugerencias">
+      {ATAJOS.map((t) => (
+        <button
+          key={t}
+          onClick={() => window.dispatchEvent(new CustomEvent(ASK_EVENT, { detail: t }))}
+          className="glass px-3 py-1.5 rounded-full text-xs text-dim hover:text-fg transition-colors"
+        >
+          {t}
+        </button>
+      ))}
+    </div>
+  );
+}
 
 /** Calm resting view. A few high-signal cards, never crowded. */
 export function HomeView() {
@@ -27,7 +53,9 @@ export function HomeView() {
   ];
 
   return (
-    <div className="h-full flex flex-col justify-center gap-4">
+    // En móvil la piedra vive centrada abajo: el hueco evita que tape los
+    // atajos (y que se coma el toque, porque ella también es pulsable).
+    <div className="h-full flex flex-col justify-center gap-4 pb-52 sm:pb-0">
       <div className="grid gap-3 sm:grid-cols-3">
         {cards.map((c, i) => (
           <motion.div
@@ -43,9 +71,7 @@ export function HomeView() {
           </motion.div>
         ))}
       </div>
-      <p className="text-center text-xs text-faint">
-        Prueba: “¿Qué tengo mañana?” · “Añádeme entrenamiento mañana a las 19:30 durante hora y media.”
-      </p>
+      <Atajos />
     </div>
   );
 }

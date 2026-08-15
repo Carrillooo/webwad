@@ -57,6 +57,29 @@ body {
   height: 100%;
 }
 
+/* Accesibilidad — tamaño de texto. Tailwind mide en rem, así que mover el
+   tamaño base escala TODA la interfaz de forma proporcionada (no solo el
+   texto: también botones y espacios, que es lo que hace falta para que se
+   pueda usar de verdad con la vista cansada). */
+html {
+  font-size: calc(16px * var(--nova-font-scale, 1));
+}
+
+/* Accesibilidad — alto contraste. Sobre el tema blanco: los grises
+   secundarios bajan hasta casi el negro (contraste AAA), los bordes dejan de
+   ser insinuaciones y se quitan brillos y cuadrícula, que restan nitidez. */
+:root[data-contrast="high"] {
+  --fg-dim: #1c1c22;
+  --fg-faint: #33333c;
+  --panel-alpha: 0.08;
+  --panel-border-alpha: 0.42;
+  --grid-alpha: 0.02;
+  --nova-glow: 0;
+}
+:root[data-contrast="high"] .glow-text {
+  text-shadow: none;
+}
+
 body {
   color: var(--fg);
   font-family: var(--font-sans), system-ui, -apple-system, sans-serif;

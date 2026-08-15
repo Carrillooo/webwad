@@ -26,7 +26,7 @@ const TABS: { key: MonitorView; label: string }[] = [
   { key: "planner", label: "Planner" },
   { key: "documents", label: "Docs" },
   { key: "briefing", label: "Briefing" },
-  { key: "history", label: "Actividad" },
+  { key: "history", label: "Historial" },
 ];
 
 /** The transforming holographic monitor. Drops from the top; each view builds

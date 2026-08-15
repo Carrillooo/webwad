@@ -17,6 +17,7 @@ import { Settings } from "./Settings";
 import { OAuthNotice } from "./OAuthNotice";
 import { AuthScreen, PaywallScreen } from "./AuthScreen";
 import { useAccount } from "@/hooks/useAccount";
+import { ASK_EVENT } from "@/lib/events";
 
 const CENTER_STATES = new Set(["listening", "transcribing", "thinking", "planning"]);
 
@@ -98,6 +99,16 @@ export function NovaApp() {
     useNova.getState().setNovaState("idle");
     useNova.getState().setView("home");
   }, []);
+
+  // Atajos de la pantalla de inicio: un toque equivale a decirlo en voz alta.
+  useEffect(() => {
+    const onAsk = (e: Event) => {
+      const text = (e as CustomEvent<string>).detail;
+      if (typeof text === "string" && text.trim()) void send(text.trim());
+    };
+    window.addEventListener(ASK_EVENT, onAsk);
+    return () => window.removeEventListener(ASK_EVENT, onAsk);
+  }, [send]);
 
   // El saludo y la IA usan el nombre de la cuenta con sesión.
   useEffect(() => {

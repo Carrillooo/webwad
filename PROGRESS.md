@@ -12,7 +12,27 @@ anterior sigue: multiusuario SaaS, ZERO Pro 20 €/mes con 14 días de prueba y
 paywall (la pasarela de pago sigue siendo lo ÚNICO que falta), datos por
 cuenta, crons multiusuario, iCal por usuario, WhatsApp. 147 tests._
 
-## 🆕 Última sesión (4) — Calendarios enlazados por iCal
+## 🆕 Última sesión (5) — Historial, atajos y accesibilidad
+
+- **Historial de conversaciones**: las tablas `assistant_sessions` /
+  `assistant_messages` existían sin usar y al recargar se perdía todo. Ahora
+  cada turno se guarda **después** de responder y sin esperar (latencia
+  intacta). Monitor → **Historial** tiene dos pestañas: *Conversaciones*
+  (agrupadas: los turnos seguidos van juntos; si pasan +2 h se abre una nueva,
+  con «Hoy/Ayer», despliegue de la charla y botón de borrar todo) y
+  *Actividad* (los recibos de siempre). API: `/api/conversations` (GET/DELETE).
+- **Atajos en la pantalla de inicio**: cuatro sugerencias pulsables
+  («¿Qué tengo hoy?», «¿Qué huecos tengo mañana?»…) para quien abre ZERO y no
+  sabe qué decir. Van por un evento (`nova:ask`) que NovaApp convierte en una
+  petición, igual que si se hubiera dicho en voz alta. En móvil se reservó
+  hueco abajo: la piedra los tapaba y se comía el toque.
+- **Accesibilidad** (Ajustes → Accesibilidad): **tamaño del texto** en tres
+  pasos (mueve el tamaño base, así que escala TODA la interfaz —botones y
+  espacios incluidos— porque Tailwind mide en rem) y **alto contraste**
+  (grises secundarios casi negros, bordes marcados, sin brillos ni cuadrícula).
+  Ambos persisten por usuario. 6 tests nuevos (172 en total).
+
+## Sesión anterior — Calendarios enlazados por iCal
 
 - **Ajustes → Otros calendarios**: se enlaza cualquier calendario por su URL
   iCal (iCloud público, otro Google compartido, festivos, Calendly, horarios…;

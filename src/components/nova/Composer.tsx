@@ -67,14 +67,22 @@ export function Composer({ onSend }: Props) {
               key="proposal"
               initial={{ opacity: 0, y: 10, filter: "blur(6px)" }}
               animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-              exit={{ opacity: 0, y: 10 }}
-              className="glass holo-border p-3 flex items-center gap-3 w-full max-w-md pointer-events-auto"
+              // Salir siempre más rápido que entrar: al decidir se mira, al
+              // confirmar ya no hay nada que leer.
+              exit={{ opacity: 0, y: 8, transition: { duration: 0.14 } }}
+              transition={{ duration: 0.26, ease: [0.23, 1, 0.32, 1] }}
+              className="glass-raised holo-border p-3 flex items-center gap-2.5 w-full max-w-md pointer-events-auto"
+              data-active="true"
             >
               <span className="flex-1 text-sm">{proposal.summary}</span>
-              <button onClick={() => onSend("Sí")} className="px-3 py-1.5 rounded-lg text-sm" style={{ background: "rgb(var(--nova-accent) / 0.22)" }}>
+              <button
+                onClick={() => onSend("Sí")}
+                className="px-3.5 py-2 rounded-xl text-sm font-medium text-white"
+                style={{ background: "rgb(var(--nova-accent))" }}
+              >
                 {proposal.risk === "high" ? "Confirmar" : "Aplicar"}
               </button>
-              <button onClick={() => onSend("No, cancela")} className="px-3 py-1.5 rounded-lg text-sm text-dim">
+              <button onClick={() => onSend("No, cancela")} className="px-3 py-2 rounded-xl text-sm text-dim">
                 Descartar
               </button>
             </motion.div>
@@ -85,11 +93,15 @@ export function Composer({ onSend }: Props) {
           {open && (
             <motion.div
               key="input"
-              initial={{ opacity: 0, y: 14, scale: 0.98 }}
+              // Crece DESDE el botón del teclado (abajo a la derecha), no
+              // desde su propio centro: así se ve de dónde ha salido, y al
+              // cerrarlo vuelve por el mismo sitio.
+              style={{ transformOrigin: "bottom right" }}
+              initial={{ opacity: 0, y: 10, scale: 0.94 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 14, scale: 0.98 }}
-              transition={{ type: "spring", stiffness: 320, damping: 28 }}
-              className="glass holo-border flex items-center gap-2 px-3 py-2 w-full max-w-md pointer-events-auto"
+              exit={{ opacity: 0, y: 10, scale: 0.94 }}
+              transition={{ type: "spring", stiffness: 420, damping: 34, opacity: { duration: 0.16 } }}
+              className="glass-raised flex items-center gap-2 px-3 py-2 w-full max-w-md pointer-events-auto"
             >
               <input
                 ref={inputRef}
@@ -114,15 +126,13 @@ export function Composer({ onSend }: Props) {
         </AnimatePresence>
       </div>
 
-      {/* Keyboard toggle — bottom-right, mirrors the core bottom-left.
-          NOTE: inline position:fixed because .holo-border sets position:relative. */}
+      {/* Keyboard toggle — bottom-right, mirrors the core bottom-left. */}
       {!open && (
         <button
           type="button"
           onClick={() => setOpen(true)}
           aria-label="Escribir a ZERO"
-          className="glass holo-border w-11 h-11 grid place-items-center text-dim hover:text-fg transition-colors z-40"
-          style={{ position: "fixed", bottom: 20, right: 16 }}
+          className="fixed bottom-5 right-4 glass hover-lift w-11 h-11 grid place-items-center text-dim hover:text-fg z-40 rounded-full"
         >
           <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
             <rect x="2" y="6" width="20" height="12" rx="2" />

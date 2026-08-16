@@ -515,6 +515,64 @@ Nota honesta: las contraseñas usan **scrypt**, no bcrypt/argon2. Es un KDF con
 coste de memoria de los recomendados por OWASP y viene en el propio Node;
 cambiarlo invalidaría los hashes ya guardados.
 
+## FASE — Repaso de diseño con las skills de emilkowalski ✅
+
+Revisión y rehecho de la interfaz aplicando `apple-design` y `emil-design-eng`
+(instaladas en `.claude/skills/`). El cristal NO se ha tocado: es la identidad.
+
+**Sistema de diseño** (`globals.css`)
+- Curvas y tiempos como variables: `--ease-out/-in-out/-drawer`, `--t-press`
+  120 ms · `--t-fast` 160 ms · `--t-ui` 220 ms · `--t-panel` 300 ms. Nada de la
+  interfaz pasa de 300 ms.
+- Tres pesos de material — `.glass` (fondo), `.glass-raised` (panel flotante,
+  más desenfoque y más sombra) y `.glass-solid` (opaco, para leer). Ya no se
+  apila vidrio sobre vidrio.
+- Elevación en tres niveles (`--shadow-1/2/3`) y borde de luz superior.
+- Respuesta al pulsar en TODO lo pulsable (`scale(.97)` a 120 ms), hover solo
+  con puntero de verdad (`@media (hover: hover)`).
+- Tracking por tamaño: títulos apretados, minúsculas normales, mayúsculas
+  pequeñas abiertas.
+- `holo-border` bajado del 60 % al 22 %: media interfaz parecía estar avisando
+  de algo. El acento fuerte se reserva para `data-active`.
+
+**Movimiento**
+- Pastilla de pestaña única que se desliza (`layoutId`) en vez de encenderse y
+  apagarse en cada botón.
+- El monitor entra y sale por el MISMO sitio, materializándose (desenfoque +
+  escala), no apareciendo.
+- El compositor crece desde el botón del teclado (`transform-origin`), no
+  desde su centro.
+- Salir siempre más rápido que entrar (modal 340→160 ms).
+- `prefers-reduced-motion` ya no mata todas las transiciones: quita el
+  movimiento y conserva el fundido. Añadidos
+  `prefers-reduced-transparency` y `prefers-contrast`.
+
+**Maquetación y contenido**
+- Nueva capa de reposo (`Resting.tsx`): línea del día bajo el saludo (abre el
+  monitor al pulsarla) y tres sugerencias encima de la piedra. Antes había
+  500 px de nada y quien entraba por primera vez no sabía qué decir.
+- El monitor arranca bajo la cabecera MEDIDA (antes 86 px fijos: se comía la
+  fecha, y con el texto ampliado era peor).
+- Con el monitor abierto en móvil la piedra se recoge a una esquina: ~200 px
+  de contenido recuperados y fuera el colchón `pb-52`.
+- La barra de pestañas se difumina en el borde en vez de cortarse.
+- Ajustes: filas sólidas estilo iOS, acción principal en acento sólido,
+  destructiva como texto rojo (no bloques rosas).
+
+**Dos fallos reales encontrados de camino**
+- `.holo-border` y `.glass` ponían `position: relative` sin capa de cascada;
+  en Tailwind v4 eso gana a las utilidades, así que **los bloques del
+  calendario dejaban de ser absolutos**: se salían del panel y se pintaban a
+  la hora equivocada. Metidos en `@layer components`.
+- La respuesta al pulsar del cristal no llegaba a verse nunca: iba en la gema,
+  que tiene una animación de flotar que pisa cualquier `transform`. Movida al
+  botón.
+- La barra superior decía «Sincronizado» siempre, también en demo. Ahora dice
+  el estado real (regla número uno del proyecto: no fingir).
+
+Verificado en navegador (`scripts/shots.mjs`, `scripts/check-csp.mjs`):
+198 tests, cero errores de consola.
+
 ## NEXT SESSION
 
 **Orden exacta para continuar:** «Añade la pasarela de pago con **Stripe**

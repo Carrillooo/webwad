@@ -72,8 +72,16 @@
   transition: opacity .12s linear;
 }
 .crystal-facets { opacity: .98; }
-.crystal-button:hover .crystal-gem { filter: brightness(1.08); }
-.crystal-button:active .crystal-gem { transform: translateY(2px) scale(.97); }
+@media (hover: hover) and (pointer: fine) {
+  .crystal-button:hover .crystal-gem { filter: brightness(1.08); }
+}
+/* La respuesta al pulsar va en el BOTÓN, no en la gema: la gema tiene una
+   animación de flotar que pisa cualquier transform suelto, así que el
+   hundido de antes no llegaba a verse nunca. */
+.crystal-button {
+  transition: transform var(--t-press, 120ms) var(--ease-out, ease-out);
+}
+.crystal-button:active:not(:disabled) { transform: scale(.965); }
 .crystal-button[data-state="listening"] .crystal-gem,
 .crystal-button[data-state="transcribing"] .crystal-gem {
   filter: brightness(calc(1 + var(--crystal-level) * .32));

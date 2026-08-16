@@ -37,6 +37,29 @@
 
   --radius: 20px;
   --blur: 18px;
+
+  /* ---- Curvas ----------------------------------------------------------
+     Las de serie (ease, ease-out) no tienen fuerza: el movimiento sale
+     blando y parece que la interfaz duda. Estas arrancan de golpe, que es
+     justo el instante que el usuario está mirando. */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);       /* entra / sale */
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);   /* se mueve por la pantalla */
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);    /* paneles, estilo iOS */
+
+  /* ---- Tiempos ---------------------------------------------------------
+     Nada de la interfaz pasa de 300 ms: por encima se percibe como lentitud
+     aunque el trabajo sea instantáneo. */
+  --t-press: 120ms;   /* respuesta al pulsar */
+  --t-fast: 160ms;    /* color, hover, iconos */
+  --t-ui: 220ms;      /* pestañas, tarjetas, vistas */
+  --t-panel: 300ms;   /* monitor y hojas */
+
+  /* ---- Elevación -------------------------------------------------------
+     Una superficie grande pesa más que una pequeña: más sombra y más
+     desenfoque. Es lo que las hace leerse como capas y no como recuadros. */
+  --shadow-1: 0 1px 2px rgb(16 16 20 / 0.05), 0 2px 8px rgb(16 16 20 / 0.045);
+  --shadow-2: 0 2px 6px rgb(16 16 20 / 0.06), 0 12px 32px rgb(16 16 20 / 0.09);
+  --shadow-3: 0 8px 20px rgb(16 16 20 / 0.09), 0 32px 64px rgb(16 16 20 / 0.14);
 }
 
 @theme inline {
@@ -123,17 +146,83 @@ body::before {
   animation: none;
 }
 
-/* Glass panel utility */
+/* ============================================================
+   Materiales. Tres pesos, y el peso dice la jerarquía:
+     .glass         capa de fondo (tarjetas, píldoras)
+     .glass-raised  capa flotante grande (el monitor, las hojas)
+     .glass-solid   cuando hace falta leer texto sin discusión
+   Regla: nunca se apila un material claro sobre otro material claro — la
+   legibilidad se cae por el barranco. Por eso las filas de dentro de un
+   panel son sólidas, no vidrio sobre vidrio.
+   ============================================================ */
 .glass {
   background: rgb(var(--panel) / var(--panel-alpha));
   border: 1px solid rgb(var(--nova-border) / var(--panel-border-alpha));
   backdrop-filter: blur(var(--blur)) saturate(140%);
   -webkit-backdrop-filter: blur(var(--blur)) saturate(140%);
   border-radius: var(--radius);
+  box-shadow: var(--shadow-1);
 }
 
-.holo-border {
-  position: relative;
+.glass-raised {
+  background: rgb(255 255 255 / 0.72);
+  border: 1px solid rgb(var(--nova-border) / 0.1);
+  /* Superficie grande = material más grueso: más desenfoque y más sombra. */
+  backdrop-filter: blur(calc(var(--blur) * 1.6)) saturate(180%);
+  -webkit-backdrop-filter: blur(calc(var(--blur) * 1.6)) saturate(180%);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-3);
+}
+
+.glass-solid {
+  background: rgb(255 255 255 / 0.94);
+  border: 1px solid rgb(var(--nova-border) / 0.09);
+  border-radius: calc(var(--radius) - 6px);
+  box-shadow: var(--shadow-1);
+}
+
+/* Borde de luz superior: es lo que hace que una superficie translúcida
+   parezca material de verdad y no un rectángulo con opacidad. */
+.glass-raised::after,
+.glass::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgb(255 255 255 / 0.5), transparent 42%);
+  mix-blend-mode: overlay;
+}
+/* En @layer components a propósito: en Tailwind v4 las utilidades viven en
+   la capa `utilities`, que gana a `components`. Sin la capa, esta regla se
+   imponía a `fixed`/`absolute` y descolocaba a quien ya venía posicionado
+   (el botón del teclado se iba a la esquina y los bloques del calendario se
+   salían del panel). */
+@layer components {
+  .glass,
+  .glass-raised {
+    position: relative;
+  }
+}
+
+/* Donde el contenido se mete debajo de una barra flotante, se difumina el
+   borde en lugar de cortarlo con una línea de 1px. */
+.scroll-edge-x {
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 14px, #000 calc(100% - 22px), transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 14px, #000 calc(100% - 22px), transparent);
+}
+.scroll-edge-y {
+  -webkit-mask-image: linear-gradient(180deg, transparent, #000 12px, #000 calc(100% - 14px), transparent);
+  mask-image: linear-gradient(180deg, transparent, #000 12px, #000 calc(100% - 14px), transparent);
+}
+
+/* La capa importa: sin ella esta regla ponía `relative` a la fuerza y rompía
+   a quien ya venía posicionado — los bloques del calendario dejaban de ser
+   absolutos y se salían del panel. */
+@layer components {
+  .holo-border {
+    position: relative;
+  }
 }
 .holo-border::before {
   content: "";
@@ -141,16 +230,27 @@ body::before {
   inset: 0;
   border-radius: inherit;
   padding: 1px;
+  /* Antes iba al 60 % en TODOS los paneles: media interfaz parecía estar
+     avisando de algo. El acento marca, no grita — y quien de verdad está
+     activo lo sube con .holo-border[data-active]. */
   background: linear-gradient(
     135deg,
-    rgb(var(--nova-primary) / calc(0.6 * var(--nova-glow))),
-    rgb(var(--nova-accent) / calc(0.5 * var(--nova-glow))),
-    transparent 70%
+    rgb(var(--nova-primary) / calc(0.22 * var(--nova-glow))),
+    rgb(var(--nova-accent) / calc(0.14 * var(--nova-glow))),
+    transparent 62%
   );
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
   pointer-events: none;
+}
+.holo-border[data-active="true"]::before {
+  background: linear-gradient(
+    135deg,
+    rgb(var(--nova-primary) / calc(0.7 * var(--nova-glow))),
+    rgb(var(--nova-accent) / calc(0.45 * var(--nova-glow))),
+    transparent 70%
+  );
 }
 
 .text-dim {
@@ -165,6 +265,66 @@ body::before {
   text-shadow: 0 0 calc(10px * var(--nova-glow)) rgb(var(--nova-primary) / 0.28);
 }
 
+/* ============================================================
+   Respuesta al pulsar.
+   Todo lo que se puede pulsar responde EN EL MOMENTO en que se pulsa, no
+   al soltar. Es el detalle que más cambia la sensación de que la interfaz
+   te está escuchando, y no lo nota nadie — que es exactamente el objetivo.
+   ============================================================ */
+button,
+[role="button"],
+summary {
+  transition: transform var(--t-press) var(--ease-out), opacity var(--t-fast) var(--ease-out),
+    color var(--t-fast) ease, background-color var(--t-fast) ease, border-color var(--t-fast) ease;
+}
+button:active:not(:disabled):not([data-nopress]),
+[role="button"]:active:not([data-nopress]) {
+  transform: scale(0.97);
+}
+/* Una superficie grande encoge menos: al 0.97 un panel entero se deforma. */
+button[data-press="soft"]:active:not(:disabled) {
+  transform: scale(0.99);
+}
+
+/* El hover en una pantalla táctil se queda pegado después de tocar. Solo
+   se aplica donde hay un puntero de verdad. */
+@media (hover: hover) and (pointer: fine) {
+  .hover-lift:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-2);
+  }
+}
+.hover-lift {
+  transition: transform var(--t-fast) var(--ease-out), box-shadow var(--t-fast) var(--ease-out);
+}
+
+/* ============================================================
+   Tipografía. El tracking depende del tamaño: un solo valor para todo
+   está mal en alguna parte. Los títulos grandes se leen demasiado
+   separados según crecen, así que se aprietan; el texto pequeño necesita
+   lo contrario.
+   ============================================================ */
+h1,
+h2,
+.t-display {
+  letter-spacing: -0.021em;
+  line-height: 1.12;
+  font-optical-sizing: auto;
+}
+h3,
+.t-title {
+  letter-spacing: -0.012em;
+  line-height: 1.25;
+}
+.t-label {
+  /* Mayúsculas diminutas: aquí el tracking va al revés, hacia fuera. */
+  letter-spacing: 0.07em;
+  line-height: 1.3;
+}
+.tnum {
+  font-variant-numeric: tabular-nums;
+}
+
 /* Scrollbars */
 .nova-scroll::-webkit-scrollbar {
   width: 6px;
@@ -174,7 +334,12 @@ body::before {
   border-radius: 3px;
 }
 
-/* Accessibility: honor reduced motion + the app's reduced-effects toggle */
+/* ============================================================
+   Accesibilidad. «Menos movimiento» no es «ningún aviso»: es la versión
+   suave. Antes se mataba TODA transición a 0.001 ms, incluidos los
+   fundidos de opacidad, que son justamente los que ayudan a entender qué
+   ha cambiado. Ahora se quita el movimiento y se conserva el fundido.
+   ============================================================ */
 @media (prefers-reduced-motion: reduce) {
   :root {
     --nova-motion: 0;
@@ -183,9 +348,41 @@ body::before {
   *,
   *::before,
   *::after {
+    /* Fuera los bucles: flotar, respirar, la cuadrícula que se desplaza. */
     animation-duration: 0.001ms !important;
     animation-iteration-count: 1 !important;
-    transition-duration: 0.001ms !important;
+    /* Se queda un fundido corto, y solo en propiedades que no mueven nada. */
+    transition-property: opacity, color, background-color, border-color, box-shadow, filter !important;
+    transition-duration: 140ms !important;
+    transition-timing-function: var(--ease-out) !important;
+  }
+}
+
+/* Menos transparencia: el material se vuelve casi sólido en vez de
+   desaparecer. Sin esto, quien activa este ajuste se queda sin fondo. */
+@media (prefers-reduced-transparency: reduce) {
+  .glass {
+    background: rgb(255 255 255 / 0.96);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+  .glass-raised {
+    background: rgb(255 255 255 / 0.99);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
+
+/* Más contraste: fondos sólidos y un borde que se ve de verdad. */
+@media (prefers-contrast: more) {
+  .glass,
+  .glass-raised {
+    background: #fff;
+    border-color: rgb(var(--nova-border) / 0.5);
+  }
+  .glass::after,
+  .glass-raised::after {
+    display: none;
   }
 }
 

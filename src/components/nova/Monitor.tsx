@@ -1,5 +1,5 @@
 "use client";
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useNova, type MonitorView } from "@/lib/store";
 import { HomeView } from "./views/HomeView";
 import { CalendarView } from "./views/CalendarView";
@@ -36,35 +36,37 @@ export function Monitor({ onClose }: { onClose?: () => void }) {
   const setView = useNova((s) => s.setView);
   const View = VIEWS[view];
 
-  return (
-    <div className="glass holo-border relative h-full min-h-0 flex flex-col overflow-hidden">
-      {/* scanline sheen */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 opacity-40"
-        style={{
-          background:
-            "linear-gradient(180deg, rgb(var(--nova-primary) / 0.06), transparent 30%, transparent 70%, rgb(var(--nova-accent) / 0.05))",
-        }}
-      />
+  const quieto = useReducedMotion();
 
-      {/* Tab strip */}
+  return (
+    <div className="glass-raised relative h-full min-h-0 flex flex-col overflow-hidden">
+      {/* Tab strip: la pastilla activa es UNA sola que se desliza entre
+          pestañas. Antes cada botón encendía y apagaba su propio fondo y el
+          salto no contaba de dónde a dónde ibas. */}
       <div className="flex items-center gap-1 px-3 pt-3 shrink-0">
-        <nav className="flex gap-1 overflow-x-auto nova-scroll flex-1" aria-label="Vistas de ZERO">
+        <nav
+          className="flex gap-1 overflow-x-auto nova-scroll flex-1 scroll-edge-x"
+          aria-label="Vistas de ZERO"
+        >
           {TABS.map((t) => (
             <button
               key={t.key}
               type="button"
               onClick={() => setView(t.key)}
-              aria-current={view === t.key}
-              className="text-xs px-3 py-1.5 rounded-full whitespace-nowrap transition-colors"
-              style={
-                view === t.key
-                  ? { background: "rgb(var(--nova-primary) / 0.22)", color: "var(--fg)" }
-                  : { color: "var(--fg-faint)" }
-              }
+              aria-current={view === t.key ? "page" : undefined}
+              className="relative text-xs px-3 py-1.5 rounded-full whitespace-nowrap shrink-0"
+              style={{ color: view === t.key ? "var(--fg)" : "var(--fg-faint)" }}
             >
-              {t.label}
+              {view === t.key && (
+                <motion.span
+                  layoutId="tab-activa"
+                  aria-hidden
+                  className="absolute inset-0 rounded-full"
+                  style={{ background: "rgb(var(--nova-primary) / 0.16)" }}
+                  transition={quieto ? { duration: 0 } : { type: "spring", stiffness: 420, damping: 38 }}
+                />
+              )}
+              <span className="relative">{t.label}</span>
             </button>
           ))}
         </nav>
@@ -73,9 +75,11 @@ export function Monitor({ onClose }: { onClose?: () => void }) {
             type="button"
             onClick={onClose}
             aria-label="Cerrar monitor"
-            className="text-dim hover:text-fg text-lg leading-none px-2 shrink-0"
+            className="text-faint hover:text-fg w-7 h-7 grid place-items-center rounded-full shrink-0"
           >
-            ×
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <path d="M6 6l12 12M18 6 6 18" />
+            </svg>
           </button>
         )}
       </div>
@@ -84,10 +88,12 @@ export function Monitor({ onClose }: { onClose?: () => void }) {
         <AnimatePresence mode="wait">
           <motion.div
             key={view}
-            initial={{ opacity: 0, scale: 0.98, filter: "blur(10px)" }}
-            animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
-            exit={{ opacity: 0, scale: 1.01, filter: "blur(10px)" }}
-            transition={{ duration: 0.34, ease: [0.22, 1, 0.36, 1] }}
+            // 220 ms: por encima de 300 una vista se percibe lenta aunque los
+            // datos ya estén. El desenfoque tapa la costura del cruce.
+            initial={{ opacity: 0, y: 6, filter: "blur(8px)" }}
+            animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+            exit={{ opacity: 0, y: -4, filter: "blur(8px)" }}
+            transition={{ duration: quieto ? 0.12 : 0.22, ease: [0.23, 1, 0.32, 1] }}
             className="absolute inset-4"
           >
             <View />

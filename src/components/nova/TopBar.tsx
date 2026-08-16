@@ -22,13 +22,31 @@ export function TopBar() {
   // con el nombre de pila basta y cabe siempre.
   const firstName = userName?.trim().split(/\s+/)[0] ?? null;
 
+  // El estado real de ZERO, no una etiqueta decorativa. Antes ponía
+  // "Sincronizado" siempre — incluso en demo, donde no hay nada que
+  // sincronizar. La regla número uno del proyecto es no fingir.
+  const ESTADO: Record<string, string> = {
+    idle: "Listo",
+    listening: "Escuchando",
+    transcribing: "Escuchando",
+    thinking: "Pensando",
+    planning: "Pensando",
+    executing: "Trabajando",
+    speaking: "Hablando",
+    success: "Hecho",
+    warning: "Atención",
+    error: "Error",
+  };
+  const estado = demoMode ? "Modo demo" : (ESTADO[novaState] ?? "Listo");
+  const alerta = novaState === "error" || novaState === "warning";
+
   return (
     <header className="flex flex-col-reverse sm:flex-row sm:items-start sm:justify-between px-5 pt-4 gap-2 sm:gap-3">
       <div className="min-w-0">
-        <h1 className="text-xl font-medium glow-text truncate">
+        <h1 className="text-[1.4rem] font-semibold truncate">
           {now ? `${greeting(now)}${firstName ? `, ${firstName}` : ""}.` : " "}
         </h1>
-        <p className="text-dim text-xs sm:text-sm mt-0.5 tabular-nums">
+        <p className="text-dim text-xs sm:text-sm mt-1 tnum">
           {now ? (
             <>
               <span className="capitalize">{humanDay(now)}</span>
@@ -48,7 +66,7 @@ export function TopBar() {
           <button
             type="button"
             onClick={() => setSettingsOpen(true)}
-            className="text-[10px] font-semibold tracking-wide px-2 py-1 rounded-full"
+            className="text-[0.63rem] font-semibold t-label px-2 py-1 rounded-full"
             style={{ background: "rgba(251,191,36,0.14)", color: "rgb(180 83 9)", border: "1px solid rgba(180,83,9,0.45)" }}
             title="Datos simulados: nada llega a tu Google. Pulsa para ver qué falta."
           >
@@ -56,24 +74,31 @@ export function TopBar() {
           </button>
         )}
         <span
-          className="flex items-center gap-1.5 text-[11px] text-dim glass px-2.5 py-1"
-          title={`Estado de ZERO: ${novaState}`}
+          className="flex items-center gap-1.5 text-[0.7rem] text-dim glass px-2.5 py-1 rounded-full"
+          aria-live="polite"
+          title={`Estado de ZERO: ${estado}`}
         >
           <span
             className="w-1.5 h-1.5 rounded-full"
             style={{
-              background: novaState === "error" ? "rgb(220 38 38)" : "rgb(var(--nova-accent))",
+              background: alerta
+                ? "rgb(var(--danger))"
+                : demoMode
+                  ? "rgb(var(--warning))"
+                  : "rgb(var(--success))",
               boxShadow: "0 0 6px currentColor",
+              transition: "background-color var(--t-fast) ease",
             }}
           />
-          Sincronizado
+          {estado}
         </span>
         <button
           type="button"
           aria-label={panelOpen ? "Cerrar monitor" : "Abrir monitor"}
           aria-pressed={panelOpen}
           onClick={() => setPanelOpen(!panelOpen)}
-          className="glass holo-border w-9 h-9 grid place-items-center text-dim hover:text-fg transition-colors"
+          className="glass holo-border w-9 h-9 grid place-items-center text-dim hover:text-fg"
+          data-active={panelOpen}
         >
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
             <rect x="3" y="4" width="18" height="13" rx="2" />
@@ -84,7 +109,7 @@ export function TopBar() {
           type="button"
           aria-label="Configuración"
           onClick={() => setSettingsOpen(true)}
-          className="glass holo-border w-9 h-9 grid place-items-center text-dim hover:text-fg transition-colors"
+          className="glass holo-border w-9 h-9 grid place-items-center text-dim hover:text-fg"
         >
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
             <circle cx="12" cy="12" r="3" />

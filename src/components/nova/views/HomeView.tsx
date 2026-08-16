@@ -16,14 +16,19 @@ const ATAJOS = [
 function Atajos() {
   return (
     <div className="flex flex-wrap justify-center gap-2" aria-label="Sugerencias">
-      {ATAJOS.map((t) => (
-        <button
+      {ATAJOS.map((t, i) => (
+        <motion.button
           key={t}
           onClick={() => window.dispatchEvent(new CustomEvent(ASK_EVENT, { detail: t }))}
-          className="glass px-3 py-1.5 rounded-full text-xs text-dim hover:text-fg transition-colors"
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          // Los atajos entran DESPUÉS de las tarjetas y en cascada corta: se
+          // lee de arriba abajo, como se mira.
+          transition={{ delay: 0.16 + i * 0.04, duration: 0.24, ease: [0.23, 1, 0.32, 1] }}
+          className="glass-solid px-3.5 py-2 rounded-full text-xs text-dim hover:text-fg"
         >
           {t}
-        </button>
+        </motion.button>
       ))}
     </div>
   );
@@ -53,21 +58,27 @@ export function HomeView() {
   ];
 
   return (
-    // En móvil la piedra vive centrada abajo: el hueco evita que tape los
-    // atajos (y que se coma el toque, porque ella también es pulsable).
-    <div className="h-full flex flex-col justify-center gap-4 pb-52 sm:pb-0">
-      <div className="grid gap-3 sm:grid-cols-3">
+    // Con el monitor abierto la piedra se recoge a una esquina, así que ya no
+    // hace falta el colchón de 200 px que antes dejaba media vista vacía.
+    // En móvil el panel es mucho más alto que su contenido: centrar dejaba las
+    // tarjetas flotando en un vacío. Arriba se leen; en escritorio, donde el
+    // panel y el contenido se parecen, sí se centran.
+    <div className="h-full flex flex-col justify-start sm:justify-center gap-5">
+      <div className="grid gap-2.5 sm:grid-cols-3">
         {cards.map((c, i) => (
           <motion.div
             key={c.label}
-            initial={{ opacity: 0, y: 10, filter: "blur(6px)" }}
+            initial={{ opacity: 0, y: 8, filter: "blur(5px)" }}
             animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-            transition={{ delay: i * 0.08 }}
-            className="glass holo-border p-4"
+            // 45 ms entre tarjetas: se nota la cascada sin que la vista
+            // tarde en estar entera.
+            transition={{ delay: i * 0.045, duration: 0.26, ease: [0.23, 1, 0.32, 1] }}
+            className="glass-solid hover-lift p-4"
           >
-            <div className="text-[11px] uppercase tracking-wide text-faint">{c.label}</div>
-            <div className="text-lg font-medium mt-1 glow-text truncate">{c.value}</div>
-            <div className="text-xs text-dim">{c.sub}</div>
+            <div className="text-[0.68rem] uppercase t-label text-faint">{c.label}</div>
+            {/* El dato es lo que se viene a leer: manda en tamaño y peso. */}
+            <div className="text-[1.35rem] font-semibold t-title mt-1.5 truncate">{c.value}</div>
+            <div className="text-xs text-dim mt-0.5">{c.sub}</div>
           </motion.div>
         ))}
       </div>

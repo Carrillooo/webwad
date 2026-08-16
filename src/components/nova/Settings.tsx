@@ -21,7 +21,7 @@ function Row({ label, hint, children }: { label: string; hint?: string; children
 /** Grupo redondeado con separadores finos, como las tarjetas de Ajustes de iOS. */
 function Group({ children }: { children: React.ReactNode }) {
   return (
-    <div className="glass holo-border rounded-2xl overflow-hidden divide-y divide-[rgb(var(--nova-fg)/0.08)]">
+    <div className="glass-solid rounded-2xl overflow-hidden divide-y divide-[rgb(var(--nova-fg)/0.08)]">
       {children}
     </div>
   );
@@ -71,7 +71,7 @@ function GoogleConnection() {
 
   if (!state.configured) {
     return (
-      <div className="glass px-3 py-2.5 text-xs text-dim">
+      <div className="glass-solid px-3 py-2.5 text-xs text-dim">
         Google no está configurado. Añade credenciales (ver <span className="text-fg">/setup</span>) para conectar Calendar, Tasks y Docs reales.
       </div>
     );
@@ -79,7 +79,7 @@ function GoogleConnection() {
 
   const connected = state.connection.connected;
   return (
-    <div className="glass holo-border px-3 py-2.5 flex items-center justify-between gap-3">
+    <div className="glass-solid px-3 py-2.5 flex items-center justify-between gap-3">
       <div className="min-w-0">
         <div className="text-sm">Google</div>
         <div className="text-[11px] text-faint truncate">
@@ -92,8 +92,8 @@ function GoogleConnection() {
             await fetch("/api/google/disconnect", { method: "POST" });
             setState({ ...state, connection: { connected: false } });
           }}
-          className="px-3 py-1.5 rounded-lg text-xs text-[rgb(220,38,38)]"
-          style={{ background: "rgba(248,113,113,0.14)" }}
+          className="px-3 py-1.5 rounded-lg text-xs font-medium"
+          style={{ color: "rgb(var(--danger))" }}
         >
           Desconectar
         </button>
@@ -101,7 +101,7 @@ function GoogleConnection() {
         <a
           href="/api/google/authorize"
           className="px-3 py-1.5 rounded-lg text-xs"
-          style={{ background: "rgb(var(--nova-accent) / 0.22)" }}
+          style={{ background: "rgb(var(--nova-accent))", color: "#fff" }}
         >
           Conectar
         </a>
@@ -153,7 +153,7 @@ function ExternalCalendars() {
   };
 
   return (
-    <div className="glass holo-border rounded-2xl px-4 py-3 space-y-2.5">
+    <div className="glass-solid rounded-2xl px-4 py-3 space-y-2.5">
       {cals === null ? (
         <p className="text-xs text-faint">Comprobando…</p>
       ) : (
@@ -169,8 +169,8 @@ function ExternalCalendars() {
                   await fetch(`/api/external-calendars?id=${encodeURIComponent(c.id)}`, { method: "DELETE" });
                   await load();
                 }}
-                className="px-2.5 py-1 rounded-lg text-[11px] shrink-0"
-                style={{ background: "rgb(248 113 113 / 0.14)", color: "rgb(220 38 38)" }}
+                className="px-2.5 py-1 rounded-lg text-[11px] shrink-0 font-medium"
+                style={{ color: "rgb(var(--danger))" }}
               >
                 Quitar
               </button>
@@ -180,13 +180,13 @@ function ExternalCalendars() {
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Nombre (p. ej. Festivos Madrid)"
-            className="w-full glass px-3 py-2 text-sm bg-transparent outline-none rounded-xl"
+            className="w-full glass-solid px-3 py-2 text-sm bg-transparent outline-none rounded-xl"
           />
           <input
             value={url}
             onChange={(e) => setUrl(e.target.value)}
             placeholder="Enlace iCal (https://… o webcal://…)"
-            className="w-full glass px-3 py-2 text-sm bg-transparent outline-none rounded-xl"
+            className="w-full glass-solid px-3 py-2 text-sm bg-transparent outline-none rounded-xl"
           />
           {error && (
             <p className="text-[11px] leading-snug" style={{ color: "rgb(220 38 38)" }}>{error}</p>
@@ -195,7 +195,7 @@ function ExternalCalendars() {
             onClick={() => void add()}
             disabled={busy || !url.trim()}
             className="w-full py-2 rounded-xl text-sm disabled:opacity-40"
-            style={{ background: "rgb(var(--nova-accent) / 0.2)" }}
+            style={{ background: "rgb(var(--nova-accent))", color: "#fff" }}
           >
             {busy ? "Comprobando el enlace…" : "Enlazar calendario"}
           </button>
@@ -226,7 +226,7 @@ function CalendarFeed() {
 
   if (!feed.configured || !feed.url) {
     return (
-      <div className="glass px-3 py-2.5 text-xs text-dim">
+      <div className="glass-solid px-3 py-2.5 text-xs text-dim">
         Falta <span className="text-fg">CALENDAR_FEED_SECRET</span> (o{" "}
         <span className="text-fg">TOKEN_ENCRYPTION_KEY</span>) para firmar el enlace de suscripción.
       </div>
@@ -244,7 +244,7 @@ function CalendarFeed() {
   };
 
   return (
-    <div className="glass holo-border px-3 py-2.5 space-y-2">
+    <div className="glass-solid px-3 py-2.5 space-y-2">
       <p className="text-[11px] text-faint leading-snug">
         Suscríbete desde iPhone, Mac, Google Calendar u Outlook y verás aquí todo lo que ZERO
         apunte. Es de solo lectura: quien tenga el enlace ve la agenda, pero no puede tocarla.
@@ -254,12 +254,12 @@ function CalendarFeed() {
         <button
           onClick={copy}
           className="px-3 py-1.5 rounded-lg text-xs"
-          style={{ background: "rgb(var(--nova-accent) / 0.22)" }}
+          style={{ background: "rgb(var(--nova-accent))", color: "#fff" }}
         >
           {copied ? "Copiado ✓" : "Copiar enlace"}
         </button>
         {feed.webcal && (
-          <a href={feed.webcal} className="px-3 py-1.5 rounded-lg text-xs glass holo-border">
+          <a href={feed.webcal} className="px-3 py-1.5 rounded-lg text-xs glass-solid">
             Añadir a Apple
           </a>
         )}
@@ -303,7 +303,7 @@ function AccountSection() {
   return (
     <section>
       <h3 className="text-[11px] uppercase tracking-wide text-faint mb-1.5 px-4">Cuenta</h3>
-      <div className="glass holo-border rounded-2xl px-4 py-3 space-y-2">
+      <div className="glass-solid rounded-2xl px-4 py-3 space-y-2">
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
           <div className="text-sm truncate">{account.name}</div>
@@ -314,8 +314,8 @@ function AccountSection() {
             await fetch("/api/auth/logout", { method: "POST" });
             window.location.reload();
           }}
-          className="px-3 py-1.5 rounded-lg text-xs shrink-0 text-[rgb(220,38,38)]"
-          style={{ background: "rgba(248,113,113,0.14)" }}
+          className="px-3 py-1.5 rounded-lg text-xs shrink-0 font-medium"
+          style={{ color: "rgb(var(--danger))" }}
         >
           Cerrar sesión
         </button>
@@ -336,8 +336,8 @@ function AccountSection() {
       {account.isOwner && (
         <a
           href="/admin"
-          className="block text-center text-[12px] py-1.5 rounded-lg"
-          style={{ background: "rgb(var(--nova-accent) / 0.18)" }}
+          className="block text-center text-[0.78rem] py-2 rounded-xl font-medium"
+          style={{ background: "rgb(var(--nova-fg) / 0.05)", color: "var(--fg-dim)" }}
         >
           Panel de administración →
         </a>
@@ -393,7 +393,7 @@ function MicCheck() {
   };
 
   return (
-    <div className="glass holo-border px-3 py-2.5 space-y-2">
+    <div className="glass-solid px-3 py-2.5 space-y-2">
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
           <div className="text-sm">Micrófono</div>
@@ -403,7 +403,7 @@ function MicCheck() {
           onClick={() => void probar()}
           disabled={busy}
           className="px-3 py-1.5 rounded-lg text-xs shrink-0 disabled:opacity-40"
-          style={{ background: "rgb(var(--nova-accent) / 0.22)" }}
+          style={{ background: "rgb(var(--nova-accent))", color: "#fff" }}
         >
           {busy ? "Probando…" : "Probar"}
         </button>
@@ -456,7 +456,7 @@ function Diagnostico() {
 
   if (!demoMode && faltan.length === 0) {
     return (
-      <div className="glass holo-border px-3 py-2.5 text-xs">
+      <div className="glass-solid px-3 py-2.5 text-xs">
         <span className="text-fg">Todo conectado.</span>{" "}
         <span className="text-faint">ZERO trabaja con tus cuentas de verdad.</span>
       </div>
@@ -465,7 +465,7 @@ function Diagnostico() {
 
   return (
     <div
-      className="glass px-3 py-2.5 text-xs space-y-1.5"
+      className="glass-solid px-3 py-2.5 text-xs space-y-1.5"
       style={{ border: "1px solid rgba(180,83,9,0.45)" }}
     >
       <div style={{ color: "rgb(180 83 9)" }} className="font-semibold">
@@ -508,7 +508,7 @@ function DatabaseStatus() {
   }, []);
 
   return (
-    <div className="glass holo-border px-3 py-2.5 flex items-center justify-between gap-3">
+    <div className="glass-solid px-3 py-2.5 flex items-center justify-between gap-3">
       <div className="min-w-0">
         <div className="text-sm">Base de datos Vercel</div>
         <div className="text-[11px] text-faint">
@@ -542,7 +542,7 @@ function OutlookConnection() {
 
   if (!state.configured) {
     return (
-      <div className="glass px-3 py-2.5 text-xs text-dim">
+      <div className="glass-solid px-3 py-2.5 text-xs text-dim">
         Outlook sin configurar: añade <span className="text-fg">MICROSOFT_CLIENT_ID</span> y{" "}
         <span className="text-fg">MICROSOFT_CLIENT_SECRET</span> en Vercel (ver /setup).
       </div>
@@ -551,7 +551,7 @@ function OutlookConnection() {
 
   const connected = state.connection.connected;
   return (
-    <div className="glass holo-border px-3 py-2.5 flex items-center justify-between gap-3">
+    <div className="glass-solid px-3 py-2.5 flex items-center justify-between gap-3">
       <div className="min-w-0">
         <div className="text-sm">Outlook (Microsoft To Do)</div>
         <div className="text-[11px] text-faint truncate">
@@ -564,8 +564,8 @@ function OutlookConnection() {
             await fetch("/api/microsoft/disconnect", { method: "POST" });
             setState({ ...state, connection: { connected: false } });
           }}
-          className="px-3 py-1.5 rounded-lg text-xs text-[rgb(220,38,38)]"
-          style={{ background: "rgba(248,113,113,0.14)" }}
+          className="px-3 py-1.5 rounded-lg text-xs font-medium"
+          style={{ color: "rgb(var(--danger))" }}
         >
           Desconectar
         </button>
@@ -573,7 +573,7 @@ function OutlookConnection() {
         <a
           href="/api/microsoft/authorize"
           className="px-3 py-1.5 rounded-lg text-xs"
-          style={{ background: "rgb(var(--nova-accent) / 0.22)" }}
+          style={{ background: "rgb(var(--nova-accent))", color: "#fff" }}
         >
           Conectar
         </a>
@@ -607,7 +607,7 @@ function NotificationsSetting() {
       </Row>
       {subscribed && (
         <Row label="Enviar un aviso de prueba">
-          <button onClick={() => void test()} className="px-3 py-1.5 rounded-lg text-xs" style={{ background: "rgb(var(--nova-accent) / 0.22)" }}>
+          <button onClick={() => void test()} className="px-3 py-1.5 rounded-lg text-xs" style={{ background: "rgb(var(--nova-accent))", color: "#fff" }}>
             Probar
           </button>
         </Row>
@@ -630,10 +630,10 @@ export function Settings() {
         <>
           <motion.div
             className="fixed inset-0 z-40"
-            style={{ background: "rgb(0 0 0 / 0.55)", backdropFilter: "blur(4px)", WebkitBackdropFilter: "blur(4px)" }}
+            style={{ background: "rgb(8 8 12 / 0.5)", backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)" }}
             initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            animate={{ opacity: 1, transition: { duration: 0.22, ease: [0.23, 1, 0.32, 1] } }}
+            exit={{ opacity: 0, transition: { duration: 0.16 } }}
             onClick={() => setOpen(false)}
           />
           {/* Modal centrado (≈ media pantalla en escritorio), estilo hoja de iOS. */}
@@ -647,8 +647,10 @@ export function Settings() {
               style={{ background: "var(--bg-0)", boxShadow: "0 24px 80px rgb(0 0 0 / 0.25)" }}
               initial={{ opacity: 0, scale: 0.94, y: 18 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.96, y: 12 }}
-              transition={{ type: "spring", stiffness: 340, damping: 30 }}
+              // Cerrar es más rápido que abrir: al abrir el usuario está
+              // decidiendo, al cerrar ya ha decidido y solo estorba.
+              exit={{ opacity: 0, scale: 0.97, y: 10, transition: { duration: 0.16, ease: [0.23, 1, 0.32, 1] } }}
+              transition={{ type: "spring", stiffness: 340, damping: 32 }}
             >
               <header className="flex items-center justify-between px-5 py-3.5 border-b border-[rgb(var(--nova-fg)/0.08)] shrink-0">
                 <span className="w-12" aria-hidden />
@@ -773,7 +775,7 @@ export function Settings() {
                   </div>
                 </section>
 
-                <button onClick={() => update(defaultSettings)} className="w-full glass holo-border rounded-2xl py-2.5 text-sm text-dim hover:text-fg">
+                <button onClick={() => update(defaultSettings)} className="w-full glass-solid rounded-2xl py-2.5 text-sm text-dim hover:text-fg">
                   Restablecer valores
                 </button>
               </div>

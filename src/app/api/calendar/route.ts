@@ -1,13 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { resolveProviders } from "@/lib/providers";
 import { guardApi } from "@/lib/api-guard";
+import { leerQuery } from "@/lib/security/input";
 import { dayBounds, weekBounds } from "@/lib/datetime";
+
+const Query = z.object({
+  // Una fecha que el navegador no sepa leer daba NaN y rompía los rangos.
+  date: z.string().datetime({ offset: true }).or(z.string().date()).optional(),
+  range: z.enum(["day", "week", "month"]).default("day"),
+});
 
 /** GET /api/calendar?date=ISO&range=day|week|month */
 export async function GET(req: NextRequest) {
-  const { searchParams } = new URL(req.url);
-  const dateParam = searchParams.get("date");
-  const range = searchParams.get("range") ?? "day";
+  const q = leerQuery(req, Query);
+  if (!q.ok) return q.res;
+  const { date: dateParam, range } = q.data;
   const base = dateParam ? new Date(dateParam) : new Date();
 
   let start: Date, end: Date;

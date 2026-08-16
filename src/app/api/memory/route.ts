@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { guardApi } from "@/lib/api-guard";
+import { leerQuery } from "@/lib/security/input";
 import { getStorage } from "@/lib/providers/storage";
 
 /** GET /api/memory — list controlled memory items. */
@@ -31,11 +32,11 @@ export async function POST(req: NextRequest) {
 
 /** DELETE /api/memory?id=... — forget_memory. */
 export async function DELETE(req: NextRequest) {
-  const id = new URL(req.url).searchParams.get("id");
-  if (!id) return NextResponse.json({ error: "id requerido" }, { status: 400 });
+  const q = leerQuery(req, z.object({ id: z.string().min(1).max(120) }));
+  if (!q.ok) return q.res;
   const g = await guardApi(req);
   if (g.res) return g.res;
   const { userId, authed } = g.ctx;
-  await getStorage(authed).removeMemory(userId, id);
+  await getStorage(authed).removeMemory(userId, q.data.id);
   return NextResponse.json({ ok: true });
 }

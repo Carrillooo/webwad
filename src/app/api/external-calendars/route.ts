@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { guardApi } from "@/lib/api-guard";
+import { leerQuery } from "@/lib/security/input";
 import {
   listExternalCalendars,
   addExternalCalendar,
@@ -50,8 +51,9 @@ export async function POST(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   const g = await guardApi(req);
   if (g.res) return g.res;
-  const id = req.nextUrl.searchParams.get("id") ?? "";
-  const ok = await removeExternalCalendar(g.ctx.userId, id);
+  const q = leerQuery(req, z.object({ id: z.string().min(1).max(120) }));
+  if (!q.ok) return q.res;
+  const ok = await removeExternalCalendar(g.ctx.userId, q.data.id);
   return ok
     ? NextResponse.json({ ok: true })
     : NextResponse.json({ error: "No existe ese calendario." }, { status: 404 });

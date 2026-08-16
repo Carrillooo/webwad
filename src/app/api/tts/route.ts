@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { serverConfig, isElevenLabsConfigured } from "@/lib/config";
 import { guardApi } from "@/lib/api-guard";
+import { leerQuery } from "@/lib/security/input";
 
 export const runtime = "nodejs";
 
@@ -47,8 +48,12 @@ async function synthesize(text: string): Promise<Response> {
 /** GET ?text=... → streamed audio (playable as an <audio> src, lowest latency).
  *  GET without `text` → {configured} so the client knows whether to use it. */
 export async function GET(req: NextRequest) {
-  const text = req.nextUrl.searchParams.get("text");
-  if (!text) return NextResponse.json({ configured: isElevenLabsConfigured() });
+  if (!req.nextUrl.searchParams.get("text")) {
+    return NextResponse.json({ configured: isElevenLabsConfigured() });
+  }
+  const q = leerQuery(req, z.object({ text: z.string().min(1).max(MAX_TEXT) }));
+  if (!q.ok) return q.res;
+  const { text } = q.data;
   if (!isElevenLabsConfigured()) {
     return NextResponse.json({ error: "not_configured" }, { status: 503 });
   }
@@ -56,7 +61,7 @@ export async function GET(req: NextRequest) {
   const g = await guardApi(req);
   if (g.res) return g.res;
   try {
-    return await synthesize(text.slice(0, MAX_TEXT));
+    return await synthesize(text);
   } catch {
     return NextResponse.json({ error: "network" }, { status: 502 });
   }

@@ -476,6 +476,45 @@ Mientras tanto, ZERO sigue funcionando con los MockProviders.
 - **CÓMO COMPROBAR:** `GET /api/tts` → `{"configured":true}`. Si falla la síntesis,
   ZERO sigue hablando con la voz del navegador (nunca se queda mudo).
 
+## FASE — Endurecimiento de seguridad (política del proyecto) ✅
+
+Aplicada la política de seguridad completa. Resumen en `docs/SECURITY.md`
+(segunda mitad: «Seguridad de la aplicación web»).
+
+- **Límite de peticiones global** (`src/middleware.ts` + `src/lib/security/rate-limit.ts`):
+  auth 5 / sensible 10 / general 100 cada 15 min, por identidad de sesión o IP.
+  429 con `Retry-After` y `RateLimit-*`. Va en el middleware, así que ninguna
+  ruta nueva puede quedarse sin límite por olvido. Ajustable con
+  `RATE_LIMIT_AUTH|SENSIBLE|GENERAL`.
+- **Cabeceras de seguridad** en todas las respuestas: CSP, HSTS, `nosniff`,
+  `X-Frame-Options: DENY`, `Referrer-Policy`, `Permissions-Policy` (micrófono
+  solo propio), COOP.
+  ⚠️ El CSP va **sin nonce a propósito**: Next solo sella el nonce en páginas
+  dinámicas y la portada de ZERO es estática — con `nonce`+`strict-dynamic` el
+  navegador bloquea todos los chunks y la web se queda en blanco. Comprobado en
+  navegador real: `node scripts/check-csp.mjs http://localhost:PUERTO`.
+- **CSRF**: el middleware rechaza con 403 toda mutación con `Origin` ajeno.
+  Excepciones: webhooks (firma HMAC) y vueltas de OAuth (estado firmado).
+- **Validación de entradas**: `src/lib/security/input.ts` (`leerQuery`, `leerBody`)
+  aplicado a los parámetros de URL que iban sin comprobar — `/api/calendar`
+  (date/range), `/api/tts` (text), `/api/documents` (q), `/api/memory` (id),
+  `/api/push/subscribe` (endpoint), `/api/external-calendars` (id).
+- **Validación de arranque**: `src/instrumentation.ts` → `revisarEntorno()`
+  (`src/lib/env.ts`). No exige todas las credenciales (regla «demo primero»),
+  exige coherencia. **La app NO arranca** si: hay OAuth sin `TOKEN_ENCRYPTION_KEY`,
+  la clave de cifrado es de juguete en producción, el OAuth está a medias, o
+  falta `DATABASE_URL` en producción fuera de demo.
+- **Registro de seguridad** (`src/lib/security/log.ts`): `auth.fallo`,
+  `auth.bloqueo`, `rate.limite`, `input.rechazado`, `origen.rechazado`,
+  `acceso.denegado`, `webhook.firma`. Nunca escribe contraseñas, tokens ni
+  contenido; del email solo el dominio, de la IP solo dos octetos (RGPD).
+- **Tests nuevos**: `rate-limit.test.ts`, `log.test.ts`, `env.test.ts`.
+  198 tests en verde.
+
+Nota honesta: las contraseñas usan **scrypt**, no bcrypt/argon2. Es un KDF con
+coste de memoria de los recomendados por OWASP y viene en el propio Node;
+cambiarlo invalidaría los hashes ya guardados.
+
 ## NEXT SESSION
 
 **Orden exacta para continuar:** «Añade la pasarela de pago con **Stripe**

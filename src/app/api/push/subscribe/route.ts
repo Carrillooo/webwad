@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { guardApi } from "@/lib/api-guard";
+import { leerQuery } from "@/lib/security/input";
 import { saveSubscription, removeSubscription } from "@/lib/push/store";
 import { isPushConfigured, serverConfig } from "@/lib/config";
 
@@ -30,11 +31,11 @@ export async function GET() {
 
 /** DELETE /api/push/subscribe?endpoint=... — unsubscribe. */
 export async function DELETE(req: NextRequest) {
-  const endpoint = new URL(req.url).searchParams.get("endpoint");
-  if (!endpoint) return NextResponse.json({ error: "endpoint requerido" }, { status: 400 });
+  const q = leerQuery(req, z.object({ endpoint: z.string().url().max(600) }));
+  if (!q.ok) return q.res;
   const g = await guardApi(req);
   if (g.res) return g.res;
   const { userId, authed } = g.ctx;
-  await removeSubscription(userId, authed, endpoint);
+  await removeSubscription(userId, authed, q.data.endpoint);
   return NextResponse.json({ ok: true });
 }

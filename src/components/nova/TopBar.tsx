@@ -30,7 +30,13 @@ function Punto({
         }}
       />
       {estado}
-      {demoMode && <span className="text-faint">· por qué</span>}
+      {/* Una flecha basta para decir que se puede pulsar; poner "· conectar"
+          detrás de "Sin conectar" repetía la palabra. */}
+      {demoMode && (
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" className="text-faint shrink-0" aria-hidden>
+          <path d="m9 18 6-6-6-6" />
+        </svg>
+      )}
     </>
   );
   const clase = "flex items-center gap-1.5 text-[0.7rem] text-dim glass px-2.5 py-1 rounded-full whitespace-nowrap";
@@ -40,7 +46,7 @@ function Punto({
       type="button"
       onClick={onClick}
       className={clase}
-      title="Datos simulados: nada llega a tu Google. Pulsa para ver qué falta."
+      title="Todavía no hay ninguna cuenta enlazada: nada sale de aquí. Pulsa para conectarla."
     >
       {contenido}
     </button>
@@ -85,7 +91,10 @@ export function TopBar() {
     warning: "Atención",
     error: "Error",
   };
-  const estado = demoMode ? "Modo demo" : (ESTADO[novaState] ?? "Listo");
+  // "DEMO" delante de un cliente resta, y además no dice nada útil. "Sin
+  // conectar" es exactamente lo que pasa (no hay cuenta enlazada, nada sale
+  // de aquí) y le dice al usuario qué le falta por hacer.
+  const estado = demoMode ? "Sin conectar" : (ESTADO[novaState] ?? "Listo");
   const alerta = novaState === "error" || novaState === "warning";
 
   return (

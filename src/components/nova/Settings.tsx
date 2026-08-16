@@ -469,7 +469,7 @@ function Diagnostico() {
       style={{ border: "1px solid rgba(180,83,9,0.45)" }}
     >
       <div style={{ color: "rgb(180 83 9)" }} className="font-semibold">
-        {demoMode ? "Modo demo: nada llega a tus cuentas" : "Falta algo por conectar"}
+        {demoMode ? "Sin conectar: nada llega a tus cuentas" : "Falta algo por conectar"}
       </div>
       {faltan.length > 0 ? (
         <>

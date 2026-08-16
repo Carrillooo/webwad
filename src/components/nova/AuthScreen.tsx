@@ -142,7 +142,7 @@ export function AuthScreen({
   );
 
   return (
-    <main className="min-h-[100dvh] w-full grid place-items-center px-5 py-8">
+    <main className="min-h-full w-full grid place-items-center px-5 py-8">
       <motion.div
         className="w-full max-w-sm space-y-4"
         initial={{ opacity: 0, y: 14 }}
@@ -337,7 +337,7 @@ export function PaywallScreen({
   onLogout: () => void;
 }) {
   return (
-    <main className="min-h-[100dvh] w-full grid place-items-center px-5 py-8">
+    <main className="min-h-full w-full grid place-items-center px-5 py-8">
       <motion.div
         className="w-full max-w-sm space-y-4 text-center"
         initial={{ opacity: 0, y: 14 }}

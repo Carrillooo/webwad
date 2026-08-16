@@ -573,6 +573,30 @@ Revisión y rehecho de la interfaz aplicando `apple-design` y `emil-design-eng`
 Verificado en navegador (`scripts/shots.mjs`, `scripts/check-csp.mjs`):
 198 tests, cero errores de consola.
 
+### Repaso en móvil de verdad (captura de iPhone del usuario)
+
+El navegador de pruebas no simula las zonas seguras, así que se colaron tres
+fallos que solo aparecían en un iPhone con notch:
+
+- **`main` medía `100dvh` DENTRO de un `<body>` que ya lleva el relleno de las
+  safe areas**: el escenario se salía 93 px por debajo de la pantalla, y con él
+  el monitor y la piedra. Ahora `h-full`, y todo se ancla a un «escenario»
+  medido (`useEscenario`) en vez de a `window.innerHeight`.
+- **La piedra recogida se metía bajo la barra de gestos**: el `scale` de Motion
+  escala desde el CENTRO, así que el borde de abajo no está en
+  `y + alto*escala`. Corregido con `anclarAbajo()`.
+- **La capa de reposo iba `fixed` con separaciones en rem**: la línea del día
+  se subía por encima del saludo y las sugerencias pisaban la piedra. Ahora va
+  EN FLUJO debajo de la cabecera, así que la separación la decide el contenido
+  y aguanta cualquier notch y tamaño de letra.
+
+Además: la piedra en móvil se centra en el hueco real que queda (antes un
+offset fijo dejaba 390 px de nada en un iPhone alto), y la cabecera tiene UNA
+píldora de estado en vez de dos avisos diciendo lo mismo.
+
+Comprobado con `scripts/shots-movil.mjs`, que además falla si algo se solapa
+o se sale del área segura (iPhone con notch, iPhone sin notch y escritorio).
+
 ## NEXT SESSION
 
 **Orden exacta para continuar:** «Añade la pasarela de pago con **Stripe**

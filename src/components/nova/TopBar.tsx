@@ -3,6 +3,54 @@ import { useEffect, useState } from "react";
 import { useNova } from "@/lib/store";
 import { greeting, humanDay, humanTime } from "@/lib/datetime";
 
+/** Píldora de estado. Pulsable solo cuando hay algo que explicar (demo). */
+function Punto({
+  alerta,
+  demoMode,
+  estado,
+  onClick,
+}: {
+  alerta: boolean;
+  demoMode: boolean;
+  estado: string;
+  onClick?: () => void;
+}) {
+  const contenido = (
+    <>
+      <span
+        className="w-1.5 h-1.5 rounded-full"
+        style={{
+          background: alerta
+            ? "rgb(var(--danger))"
+            : demoMode
+              ? "rgb(var(--warning))"
+              : "rgb(var(--success))",
+          boxShadow: "0 0 6px currentColor",
+          transition: "background-color var(--t-fast) ease",
+        }}
+      />
+      {estado}
+      {demoMode && <span className="text-faint">· por qué</span>}
+    </>
+  );
+  const clase = "flex items-center gap-1.5 text-[0.7rem] text-dim glass px-2.5 py-1 rounded-full whitespace-nowrap";
+
+  return onClick ? (
+    <button
+      type="button"
+      onClick={onClick}
+      className={clase}
+      title="Datos simulados: nada llega a tu Google. Pulsa para ver qué falta."
+    >
+      {contenido}
+    </button>
+  ) : (
+    <span className={clase} aria-live="polite" title={`Estado de ZERO: ${estado}`}>
+      {contenido}
+    </span>
+  );
+}
+
 export function TopBar() {
   const [now, setNow] = useState<Date | null>(null);
   const userName = useNova((s) => s.userName);
@@ -60,38 +108,16 @@ export function TopBar() {
       </div>
 
       <div className="flex items-center gap-2 justify-end">
-        {demoMode && (
-          // Pulsable: el usuario ve "DEMO" y lo primero que quiere saber es por
-          // qué. Lleva directo a Ajustes, donde está el diagnóstico.
-          <button
-            type="button"
-            onClick={() => setSettingsOpen(true)}
-            className="text-[0.63rem] font-semibold t-label px-2 py-1 rounded-full"
-            style={{ background: "rgba(251,191,36,0.14)", color: "rgb(180 83 9)", border: "1px solid rgba(180,83,9,0.45)" }}
-            title="Datos simulados: nada llega a tu Google. Pulsa para ver qué falta."
-          >
-            DEMO · por qué
-          </button>
-        )}
-        <span
-          className="flex items-center gap-1.5 text-[0.7rem] text-dim glass px-2.5 py-1 rounded-full"
-          aria-live="polite"
-          title={`Estado de ZERO: ${estado}`}
-        >
-          <span
-            className="w-1.5 h-1.5 rounded-full"
-            style={{
-              background: alerta
-                ? "rgb(var(--danger))"
-                : demoMode
-                  ? "rgb(var(--warning))"
-                  : "rgb(var(--success))",
-              boxShadow: "0 0 6px currentColor",
-              transition: "background-color var(--t-fast) ease",
-            }}
-          />
-          {estado}
-        </span>
+        {/* Una sola píldora de estado. Antes había DOS avisos diciendo lo
+            mismo — "DEMO · por qué" y "Modo demo" — y entre los dos se comían
+            la fila entera del móvil. En demo la píldora es pulsable y lleva a
+            Ajustes, que es donde se explica qué falta. */}
+        <Punto
+          alerta={alerta}
+          demoMode={demoMode}
+          estado={estado}
+          onClick={demoMode ? () => setSettingsOpen(true) : undefined}
+        />
         <button
           type="button"
           aria-label={panelOpen ? "Cerrar monitor" : "Abrir monitor"}

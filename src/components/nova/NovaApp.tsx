@@ -26,15 +26,33 @@ const CENTER_STATES = new Set(["listening", "transcribing", "thinking", "plannin
 const CORE_W = 240;
 const CORE_H = 230;
 
-function useViewport() {
-  const [size, setSize] = useState({ w: 390, h: 844 });
-  useEffect(() => {
-    const onResize = () => setSize({ w: window.innerWidth, h: window.innerHeight });
-    onResize();
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
+/**
+ * El ESCENARIO: el rectángulo realmente utilizable, ya descontadas las zonas
+ * seguras del móvil (notch arriba, barra de gestos abajo).
+ *
+ * No vale `window.innerHeight`: el <body> lleva el relleno de las safe areas,
+ * así que la pantalla útil es más corta y empieza más abajo. Usando el alto
+ * de ventana, la piedra —que va en `fixed`, o sea en coordenadas de pantalla—
+ * se metía debajo de la barra de gestos de un iPhone.
+ */
+function useEscenario() {
+  const [caja, setCaja] = useState({ x: 0, y: 0, w: 390, h: 844 });
+  const ref = useCallback((el: HTMLElement | null) => {
+    if (!el) return;
+    const medir = () => {
+      const r = el.getBoundingClientRect();
+      if (r.height > 0) setCaja({ x: r.left, y: r.top, w: r.width, h: r.height });
+    };
+    medir();
+    const ro = new ResizeObserver(medir);
+    ro.observe(el);
+    window.addEventListener("resize", medir);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", medir);
+    };
   }, []);
-  return size;
+  return [ref, caja] as const;
 }
 
 /**
@@ -46,11 +64,16 @@ function useViewport() {
  * render (antes está la puerta de sesión), así que un efecto con ref normal
  * se quedaba con el valor por defecto para siempre.
  */
-function useHeaderHeight() {
-  const [alto, setAlto] = useState(86);
+function useAltoMedido(porDefecto: number) {
+  const [alto, setAlto] = useState(porDefecto);
   const ref = useCallback((el: HTMLDivElement | null) => {
     if (!el) return;
-    const medir = () => setAlto(Math.ceil(el.getBoundingClientRect().height));
+    // Se conserva el último alto conocido: cuando el bloque desaparece (ZERO
+    // se pone a escuchar) su alto pasaría a 0 y la piedra daría un salto.
+    const medir = () => {
+      const h = Math.ceil(el.getBoundingClientRect().height);
+      if (h > 0) setAlto(h);
+    };
     medir();
     const ro = new ResizeObserver(medir);
     ro.observe(el);
@@ -66,8 +89,10 @@ export function NovaApp() {
   const novaState = useNova((s) => s.novaState);
   const panelOpen = useNova((s) => s.panelOpen);
   const setPanelOpen = useNova((s) => s.setPanelOpen);
-  const { w, h } = useViewport();
-  const [headerRef, headerH] = useHeaderHeight();
+  const [escenarioRef, escenario] = useEscenario();
+  const { w, h } = { w: escenario.w, h: escenario.h };
+  const [headerRef, headerH] = useAltoMedido(86);
+  const [reposoRef, reposoH] = useAltoMedido(0);
   const quieto = useReducedMotion();
   // Muelle crítico (sin rebote): lo que se coloca, se coloca. El rebote se
   // reserva para lo que el usuario ha lanzado con el dedo.
@@ -163,17 +188,32 @@ export function NovaApp() {
   // la misma mitad de pantalla: se recoge a una esquina y devuelve ~200 px de
   // sitio útil. Vuela con el mismo muelle, así que se entiende que es la misma.
   const compact = mobile && panelOpen;
+  // En móvil la piedra se centra en el HUECO que queda (entre el bloque de
+  // reposo y el botón del teclado), no a un offset fijo del fondo. Con un
+  // offset fijo, en un iPhone alto quedaban 400 px de nada en medio.
+  // El escalado no mueve el centro del contenedor, así que basta con centrar.
+  const arribaLibre = headerH + reposoH;
+  const hueco = Math.max(CORE_H * dockScale, h - arribaLibre - 96);
+  // La piedra va en `fixed`: sus coordenadas son de pantalla, así que hay que
+  // sumarles dónde empieza el escenario (debajo del notch).
+  const X = escenario.x;
+  const Y = escenario.y;
+  // El `scale` de Motion escala desde el CENTRO del contenedor, así que el
+  // borde de abajo no está en `y + alto*escala`. Sin esta cuenta, la piedra
+  // recogida se salía por debajo de la pantalla en un iPhone.
+  const anclarAbajo = (escala: number, margen: number) =>
+    Y + h - margen - CORE_H / 2 - (CORE_H * escala) / 2;
   const dock = compact
-    ? { x: 2, y: h - CORE_H * 0.5 - 20, scale: 0.5 }
+    ? { x: X + 2, y: anclarAbajo(0.5, 12), scale: 0.5 }
     : mobile
-      ? { x: w / 2 - CORE_W / 2, y: h - CORE_H * dockScale - 132, scale: dockScale }
-      : { x: 4, y: h - CORE_H * dockScale - 66, scale: dockScale };
-  const center = { x: w / 2 - CORE_W / 2, y: h / 2 - CORE_H / 2 - 68, scale: centerScale };
+      ? { x: X + w / 2 - CORE_W / 2, y: Y + arribaLibre + hueco / 2 - CORE_H / 2, scale: dockScale }
+      : { x: X + 4, y: anclarAbajo(dockScale, 24), scale: dockScale };
+  const center = { x: X + w / 2 - CORE_W / 2, y: Y + h / 2 - CORE_H / 2 - 68, scale: centerScale };
 
   // Puerta de la app de pago: sin sesión → entrar; prueba caducada → plan.
   if (gate === "loading") {
     return (
-      <main className="h-[100dvh] grid place-items-center">
+      <main className="h-full grid place-items-center">
         <p className="text-faint text-sm tracking-[0.4em]">ZERO</p>
       </main>
     );
@@ -182,7 +222,10 @@ export function NovaApp() {
   if (gate === "paywall") return <PaywallScreen email={account?.email ?? ""} onLogout={logout} />;
 
   return (
-    <main className="relative h-[100dvh] w-full overflow-hidden">
+    // `h-full` y no `100dvh`: el <body> ya lleva el relleno de las zonas
+    // seguras, así que con 100dvh el escenario se salía 93 px por debajo de la
+    // pantalla en un iPhone con notch — y con él, el monitor y la piedra.
+    <main ref={escenarioRef} className="relative h-full w-full overflow-hidden">
       <div ref={headerRef} className="max-w-3xl mx-auto"><TopBar /></div>
 
       <AnimatePresence>
@@ -243,7 +286,9 @@ export function NovaApp() {
         />
       </motion.div>
 
-      <Resting />
+      <div ref={reposoRef}>
+        <Resting />
+      </div>
       <Composer onSend={(t) => void send(t)} />
       <Settings />
       <OAuthNotice />

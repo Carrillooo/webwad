@@ -54,7 +54,9 @@ function Resumen() {
 
 function Sugerencias() {
   return (
-    <div className="flex flex-wrap justify-center gap-2 px-6" aria-label="Cosas que puedes pedirle">
+    // Alineadas a la izquierda, como el saludo: se leen en la misma columna
+    // en vez de flotar centradas en mitad de la pantalla.
+    <div className="flex flex-wrap gap-2" aria-label="Cosas que puedes pedirle">
       {SUGERENCIAS.map((t, i) => (
         <motion.button
           key={t}
@@ -81,24 +83,22 @@ export function Resting() {
   return (
     <AnimatePresence>
       {visible && (
+        // EN FLUJO, justo debajo de la cabecera — no flotando con márgenes
+        // fijos. La versión anterior iba `fixed` con separaciones en rem y en
+        // un iPhone de verdad se descolocaba: la línea del día se subía por
+        // encima del saludo (el `fixed` ignora el hueco del notch, que sí
+        // desplaza la cabecera) y las sugerencias acababan pisando la piedra.
+        // Colocado en flujo, la separación la decide el propio contenido y
+        // aguanta cualquier pantalla, notch y tamaño de letra.
         <motion.div
           key="reposo"
-          className="pointer-events-none fixed inset-x-0 z-10 flex flex-col"
-          style={{ top: 0, bottom: 0 }}
+          className="relative z-10 px-5 pt-3 max-w-3xl mx-auto w-full"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0, transition: { duration: 0.14 } }}
         >
-          {/* Línea del día, justo debajo del saludo. */}
-          <div className="pointer-events-auto mt-[6.6rem] sm:mt-24 px-5 max-w-3xl mx-auto w-full">
-            <Resumen />
-          </div>
-
-          <div className="flex-1" />
-
-          {/* Sugerencias encima de la piedra: en móvil vive centrada abajo, en
-              escritorio en la esquina, así que el hueco cambia. */}
-          <div className="pointer-events-auto mb-[19rem] sm:mb-24">
+          <Resumen />
+          <div className="mt-6">
             <Sugerencias />
           </div>
         </motion.div>

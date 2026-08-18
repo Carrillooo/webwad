@@ -616,6 +616,142 @@ function NotificationsSetting() {
   );
 }
 
+/**
+ * Derechos del RGPD ejercibles desde la propia app: descargar todo (art. 20,
+ * portabilidad) y borrar la cuenta (art. 17, supresión).
+ *
+ * Los Términos ya prometían «puedes borrar tu cuenta cuando quieras», pero
+ * hasta ahora solo podía hacerlo el administrador. Una promesa que no se
+ * puede cumplir es peor que no hacerla.
+ */
+function TusDatos() {
+  const [borrando, setBorrando] = useState(false);
+  const [texto, setTexto] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [ocupado, setOcupado] = useState(false);
+
+  const borrar = async () => {
+    if (texto !== "BORRAR" || ocupado) return;
+    setOcupado(true);
+    setError(null);
+    try {
+      const r = await fetch("/api/account/delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ confirmacion: "BORRAR" }),
+      });
+      if (!r.ok) {
+        const d = await r.json().catch(() => ({}));
+        setError(d.error ?? "No se pudo borrar la cuenta.");
+        return;
+      }
+      // Recarga DURA a propósito: navegar por dentro dejaría vivo el estado
+      // en memoria (agenda, memoria, nombre) de una cuenta que ya no existe.
+      window.location.replace(window.location.origin);
+    } finally {
+      setOcupado(false);
+    }
+  };
+
+  return (
+    <div className="glass-solid rounded-2xl px-4 py-3 space-y-3">
+      <div>
+        <a
+          href="/api/account/export"
+          className="block text-center text-[0.82rem] py-2 rounded-xl font-medium"
+          style={{ background: "rgb(var(--nova-fg) / 0.05)", color: "var(--fg-dim)" }}
+        >
+          Descargar todos mis datos
+        </a>
+        <p className="text-[11px] text-faint leading-snug mt-1.5">
+          Un fichero con tu cuenta, tus preferencias, lo que ZERO recuerda y tus conversaciones.
+          Tu calendario y tu correo viven en Google o Microsoft: se descargan desde allí.
+        </p>
+      </div>
+
+      {!borrando ? (
+        <button
+          onClick={() => setBorrando(true)}
+          className="w-full text-center text-[0.82rem] py-2 rounded-xl font-medium"
+          style={{ color: "rgb(var(--danger))" }}
+        >
+          Borrar mi cuenta
+        </button>
+      ) : (
+        <div className="space-y-2">
+          <p className="text-[12px] leading-snug">
+            Se borra <strong>todo</strong>: tu cuenta, tus conexiones con Google y Microsoft, lo
+            que ZERO recuerda y tus conversaciones. <strong>No hay vuelta atrás.</strong> Lo que
+            haya en tu propio calendario o correo no se toca.
+          </p>
+          <p className="text-[12px] text-dim">
+            Para confirmar, escribe <strong>BORRAR</strong>:
+          </p>
+          <input
+            value={texto}
+            onChange={(e) => setTexto(e.target.value)}
+            aria-label="Escribe BORRAR para confirmar"
+            className="w-full glass-solid px-3 py-2 text-sm bg-transparent outline-none rounded-xl"
+          />
+          {error && (
+            <p className="text-[11px] leading-snug" style={{ color: "rgb(var(--danger))" }}>{error}</p>
+          )}
+          <div className="flex gap-2">
+            <button
+              onClick={() => {
+                setBorrando(false);
+                setTexto("");
+                setError(null);
+              }}
+              className="flex-1 py-2 rounded-xl text-sm"
+              style={{ background: "rgb(var(--nova-fg) / 0.05)", color: "var(--fg-dim)" }}
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={() => void borrar()}
+              disabled={texto !== "BORRAR" || ocupado}
+              className="flex-1 py-2 rounded-xl text-sm font-medium text-white disabled:opacity-40"
+              style={{ background: "rgb(var(--danger))" }}
+            >
+              {ocupado ? "Borrando…" : "Borrar para siempre"}
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Los textos legales, accesibles también desde dentro de la app: hasta ahora
+ *  solo se llegaba a ellos desde la pantalla de registro. */
+function Legal() {
+  const PAGINAS = [
+    { href: "/legal/aviso-legal", label: "Aviso legal" },
+    { href: "/legal/terminos", label: "Términos del servicio" },
+    { href: "/legal/privacidad", label: "Política de privacidad" },
+    { href: "/legal/cookies", label: "Política de cookies" },
+  ];
+  return (
+    <div className="glass-solid rounded-2xl overflow-hidden divide-y divide-[rgb(var(--nova-fg)/0.08)]">
+      {PAGINAS.map((p) => (
+        <a
+          key={p.href}
+          href={p.href}
+          target="_blank"
+          rel="noreferrer"
+          className="flex items-center justify-between gap-3 px-4 py-3 min-h-[48px] text-sm"
+        >
+          {p.label}
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-faint shrink-0">
+            <path d="m9 18 6-6-6-6" />
+          </svg>
+        </a>
+      ))}
+    </div>
+  );
+}
+
 export function Settings() {
   const open = useNova((s) => s.settingsOpen);
   const setOpen = useNova((s) => s.setSettingsOpen);
@@ -773,6 +909,16 @@ export function Settings() {
                     <Diagnostico />
                     <DatabaseStatus />
                   </div>
+                </section>
+
+                <section>
+                  <h3 className="text-[11px] uppercase tracking-wide text-faint mb-1.5 px-4">Tus datos</h3>
+                  <TusDatos />
+                </section>
+
+                <section>
+                  <h3 className="text-[11px] uppercase tracking-wide text-faint mb-1.5 px-4">Legal</h3>
+                  <Legal />
                 </section>
 
                 <button onClick={() => update(defaultSettings)} className="w-full glass-solid rounded-2xl py-2.5 text-sm text-dim hover:text-fg">

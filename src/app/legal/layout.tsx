@@ -10,9 +10,13 @@ export default function LegalLayout({ children }: { children: ReactNode }) {
         <footer className="pt-6 text-[12px] text-faint border-t border-[rgb(var(--nova-fg)/0.1)]">
           <Link href="/" style={{ color: "rgb(var(--nova-accent))" }}>← Volver a ZERO</Link>
           {" · "}
+          <a href="/legal/aviso-legal" style={{ color: "rgb(var(--nova-accent))" }}>Aviso legal</a>
+          {" · "}
           <a href="/legal/terminos" style={{ color: "rgb(var(--nova-accent))" }}>Términos</a>
           {" · "}
           <a href="/legal/privacidad" style={{ color: "rgb(var(--nova-accent))" }}>Privacidad</a>
+          {" · "}
+          <a href="/legal/cookies" style={{ color: "rgb(var(--nova-accent))" }}>Cookies</a>
         </footer>
       </article>
     </main>

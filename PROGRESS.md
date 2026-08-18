@@ -597,6 +597,49 @@ píldora de estado en vez de dos avisos diciendo lo mismo.
 Comprobado con `scripts/shots-movil.mjs`, que además falla si algo se solapa
 o se sale del área segura (iPhone con notch, iPhone sin notch y escritorio).
 
+## FASE — Cumplimiento legal para vender en España ✅
+
+Auditoría contra los cuatro riesgos típicos (privacidad, cookies, términos,
+aviso legal) y cierre de los huecos.
+
+**Lo que ya estaba bien**
+- Política de privacidad con cláusula de Uso Limitado de Google.
+- Términos del servicio.
+- Casilla obligatoria de aceptación en el registro.
+- **Cookies: no hace falta banner.** ZERO no lleva ni un rastreador; la única
+  cookie es `zero_session`, técnica y necesaria, exenta de consentimiento
+  (art. 22.2 LSSI y Guía de cookies de la AEPD). Poner un banner sería peor UX
+  y no aportaría nada.
+
+**Lo que faltaba y ahora está**
+- **`/legal/aviso-legal`** (art. 10 LSSI-CE) — no existía. Obligatorio para
+  cualquier web con actividad económica. Los datos salen de `LEGAL_NOMBRE`,
+  `LEGAL_NIF`, `LEGAL_DOMICILIO`…; si faltan, la página **lo dice** en lugar de
+  inventárselos (`src/lib/legal.ts`).
+- **`/legal/cookies`** — política dedicada que explica qué cookie hay y por qué
+  no hay banner, con el aviso de que añadir analítica lo cambiaría.
+- **Derecho de desistimiento de 14 días** en los términos (art. 102 RDL 1/2007).
+  Faltaba y es obligatorio al cobrar a consumidores.
+- **Responsable del tratamiento identificado** y **base jurídica de cada
+  tratamiento** en la privacidad; lista completa de encargados (Vercel, Neon,
+  Anthropic, ElevenLabs, Google, Microsoft, Twilio) y transferencias.
+- **`Ajustes → Tus datos`**: «Descargar todos mis datos» (portabilidad, art. 20)
+  y «Borrar mi cuenta» con confirmación escribiendo BORRAR (supresión, art. 17).
+  Endpoints `/api/account/export` y `/api/account/delete`, en el tramo
+  `sensible` del limitador.
+- **Enlaces legales desde dentro de la app** (antes solo se llegaba desde el
+  registro) y las cuatro páginas en el pie.
+
+**Un incumplimiento real corregido:** los Términos prometían «puedes borrar tu
+cuenta cuando quieras» y NO se podía — solo el administrador podía hacerlo
+desde `/admin`. Prometer en unos términos algo que la app no cumple es
+exactamente lo que hace que te denuncien.
+
+⚠️ **PENDIENTE DEL TITULAR:** definir `LEGAL_NOMBRE`, `LEGAL_NIF` y
+`LEGAL_DOMICILIO` en Vercel. Sin ellos el aviso legal sale marcado como
+incompleto y no se debería cobrar. Y estos textos son una base sólida, no
+asesoramiento jurídico: que los revise un abogado antes de facturar en serio.
+
 ## NEXT SESSION
 
 **Orden exacta para continuar:** «Añade la pasarela de pago con **Stripe**

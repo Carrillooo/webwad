@@ -112,7 +112,10 @@ export function tramoDeRuta(pathname: string): Tramo {
     pathname.startsWith("/api/admin") ||
     pathname.startsWith("/api/calls") ||
     pathname.startsWith("/api/billing") ||
-    pathname.startsWith("/api/push/send")
+    pathname.startsWith("/api/push/send") ||
+    // Borrar la cuenta y descargarse todos los datos son operaciones de una
+    // vez y sin vuelta atrás: no hay motivo para permitir cien por cuarto de hora.
+    pathname.startsWith("/api/account/")
   ) {
     return "sensible";
   }

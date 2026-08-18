@@ -41,6 +41,8 @@ describe("límite de peticiones", () => {
     expect(tramoDeRuta("/api/auth/google/start")).toBe("auth");
     expect(tramoDeRuta("/api/admin/users")).toBe("sensible");
     expect(tramoDeRuta("/api/calls/start")).toBe("sensible");
+    expect(tramoDeRuta("/api/account/delete")).toBe("sensible");
+    expect(tramoDeRuta("/api/account/export")).toBe("sensible");
     expect(tramoDeRuta("/api/assistant")).toBe("general");
   });
 

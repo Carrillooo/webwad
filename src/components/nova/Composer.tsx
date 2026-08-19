@@ -112,14 +112,16 @@ export function Composer({ onSend }: Props) {
                 aria-label="Entrada de texto para ZERO"
                 className="flex-1 bg-transparent outline-none text-sm placeholder:text-faint min-w-0"
               />
-              <button onClick={submit} aria-label="Enviar" className="text-dim hover:text-fg disabled:opacity-40" disabled={!value.trim()}>
+              <button onClick={submit} aria-label="Enviar" className="w-10 h-10 grid place-items-center rounded-full shrink-0 text-dim hover:text-fg disabled:opacity-40" disabled={!value.trim()}>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
                   <path d="m22 2-7 20-4-9-9-4Z" />
                   <path d="M22 2 11 13" />
                 </svg>
               </button>
-              <button onClick={() => setOpen(false)} aria-label="Ocultar teclado" className="text-faint hover:text-fg text-lg leading-none">
-                ×
+              <button onClick={() => setOpen(false)} aria-label="Ocultar teclado" className="w-10 h-10 grid place-items-center rounded-full shrink-0 text-faint hover:text-fg">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                  <path d="M6 6l12 12M18 6 6 18" />
+                </svg>
               </button>
             </motion.div>
           )}

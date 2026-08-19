@@ -28,9 +28,21 @@ export function useAccount() {
   const [me, setMe] = useState<MeResponse | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const [espera, setEspera] = useState<number | null>(null);
+
   const refresh = useCallback(async () => {
     try {
       const r = await fetch("/api/auth/me");
+      if (r.status === 429) {
+        // ANTES esto metía la respuesta de error como si fueran datos de la
+        // cuenta: `authRequired` y `plan` llegaban indefinidos y la app abría
+        // medio rota, sin decir nada. Ahora se reconoce y se avisa.
+        const d = await r.json().catch(() => ({}));
+        setEspera(Math.max(5, Number(d.retryAfter) || 60));
+        return;
+      }
+      if (!r.ok) throw new Error(`estado ${r.status}`);
+      setEspera(null);
       setMe(await r.json());
     } catch {
       // Sin red no bloqueamos la app: se comporta como demo local.
@@ -44,6 +56,14 @@ export function useAccount() {
     void refresh();
   }, [refresh]);
 
+  // Si el servidor pidió esperar, se reintenta solo: sin esto la app se
+  // quedaba clavada hasta que la persona recargaba a mano.
+  useEffect(() => {
+    if (espera === null) return;
+    const id = window.setTimeout(() => void refresh(), Math.min(espera, 60) * 1000);
+    return () => window.clearTimeout(id);
+  }, [espera, refresh]);
+
   const logout = useCallback(async () => {
     try {
       await fetch("/api/auth/logout", { method: "POST" });
@@ -53,13 +73,15 @@ export function useAccount() {
   }, []);
 
   const account = me?.account ?? null;
-  const gate: "loading" | "auth" | "paywall" | null = loading
+  const gate: "loading" | "auth" | "paywall" | "espera" | null = loading
     ? "loading"
-    : me?.authRequired && !account
-      ? "auth"
-      : account && account.subscription.status === "expired"
-        ? "paywall"
-        : null;
+    : espera !== null && !me
+      ? "espera"
+      : me?.authRequired && !account
+        ? "auth"
+        : account && account.subscription.status === "expired"
+          ? "paywall"
+          : null;
 
-  return { loading, me, account, gate, refresh, logout };
+  return { loading, me, account, gate, espera, refresh, logout };
 }

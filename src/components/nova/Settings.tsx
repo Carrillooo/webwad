@@ -1,19 +1,23 @@
 "use client";
 import { AnimatePresence, motion } from "motion/react";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNova, defaultSettings, type Settings as S } from "@/lib/store";
 import { usePush } from "@/hooks/usePush";
 
 /** Fila estilo Ajustes de iOS: etiqueta (y pista opcional) a la izquierda,
  *  control a la derecha. Va dentro de un <Group> que pinta los separadores. */
 function Row({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
+  // El control recibe la etiqueta de la fila para que tenga nombre accesible.
+  const conNombre = React.isValidElement<{ label?: string }>(children)
+    ? React.cloneElement(children, { label: children.props.label ?? label })
+    : children;
   return (
     <label className="flex items-center justify-between gap-3 px-4 py-3 min-h-[48px]">
       <span className="min-w-0">
         <span className="block text-sm">{label}</span>
         {hint && <span className="block text-[11px] text-faint leading-snug mt-0.5">{hint}</span>}
       </span>
-      {children}
+      {conNombre}
     </label>
   );
 }
@@ -28,12 +32,13 @@ function Group({ children }: { children: React.ReactNode }) {
 }
 
 /** Interruptor estilo Apple: verde al activar, con el tirador animado. */
-function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
+function Toggle({ checked, onChange, label }: { checked: boolean; onChange: (v: boolean) => void; label?: string }) {
   return (
     <button
       type="button"
       role="switch"
       aria-checked={checked}
+      aria-label={label}
       onClick={() => onChange(!checked)}
       className="relative w-[50px] h-[30px] rounded-full shrink-0 transition-colors duration-200"
       style={{ background: checked ? "rgb(52 199 89)" : "rgb(var(--nova-fg) / 0.22)" }}
@@ -100,7 +105,7 @@ function GoogleConnection() {
       ) : (
         <a
           href="/api/google/authorize"
-          className="px-3 py-1.5 rounded-lg text-xs"
+          className="px-4 py-2.5 rounded-xl text-xs font-medium"
           style={{ background: "rgb(var(--nova-accent))", color: "#fff" }}
         >
           Conectar
@@ -253,7 +258,7 @@ function CalendarFeed() {
       <div className="flex gap-2">
         <button
           onClick={copy}
-          className="px-3 py-1.5 rounded-lg text-xs"
+          className="px-4 py-2.5 rounded-xl text-xs font-medium"
           style={{ background: "rgb(var(--nova-accent))", color: "#fff" }}
         >
           {copied ? "Copiado ✓" : "Copiar enlace"}
@@ -572,7 +577,7 @@ function OutlookConnection() {
       ) : (
         <a
           href="/api/microsoft/authorize"
-          className="px-3 py-1.5 rounded-lg text-xs"
+          className="px-4 py-2.5 rounded-xl text-xs font-medium"
           style={{ background: "rgb(var(--nova-accent))", color: "#fff" }}
         >
           Conectar
@@ -590,7 +595,7 @@ function NotificationsSetting() {
     default: "Activa avisos de eventos y tareas.",
     denied: "Permiso denegado en el navegador.",
     granted: "Permitido — activa la suscripción.",
-    subscribed: "Activadas ✓",
+    subscribed: "Activadas",
   };
   const canEnable = state === "default" || state === "granted";
   const subscribed = state === "subscribed";
@@ -601,7 +606,7 @@ function NotificationsSetting() {
           <Toggle checked onChange={() => {}} />
         ) : (
           <span className={canEnable ? "" : "opacity-40 pointer-events-none"}>
-            <Toggle checked={false} onChange={() => void enable()} />
+            <Toggle checked={false} onChange={() => void enable()} label="Avisos en el móvil" />
           </span>
         )}
       </Row>
@@ -793,7 +798,7 @@ export function Settings() {
                 <h2 className="text-base font-semibold glow-text">Ajustes</h2>
                 <button
                   onClick={() => setOpen(false)}
-                  className="w-12 text-right text-sm font-medium"
+                  className="w-14 h-11 -mr-2 grid place-items-end content-center text-sm font-medium"
                   style={{ color: "rgb(var(--nova-accent))" }}
                 >
                   Listo
@@ -825,10 +830,10 @@ export function Settings() {
                     <Row label="Hablar con ZERO" hint="El micrófono y las respuestas por voz">
                       <Toggle checked={settings.voiceEnabled} onChange={(v) => set("voiceEnabled", v)} />
                     </Row>
-                    <Row label="Activar con 2 palmadas 👏">
+                    <Row label="Activar con dos palmadas">
                       <Toggle checked={settings.clapEnabled} onChange={(v) => set("clapEnabled", v)} />
                     </Row>
-                    <Row label="Conversación seguida 🎙️" hint="Si ZERO te pregunta, el micro se abre solo">
+                    <Row label="Conversación seguida" hint="Si ZERO te pregunta, el micro se abre solo">
                       <Toggle checked={settings.autoListen} onChange={(v) => set("autoListen", v)} />
                     </Row>
                     <Row label="Sonidos" hint="El bip al empezar a escuchar">

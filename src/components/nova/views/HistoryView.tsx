@@ -83,9 +83,26 @@ function Conversations() {
                   {whenLabel(c.updatedAt)} · {c.messages.length} mensajes
                 </span>
               </span>
-              <span className="text-faint text-xs shrink-0" aria-hidden>
-                {abierta ? "▲" : "▼"}
-              </span>
+              {/* Un chevrón que gira, no dos triángulos de teclado: los
+                  glifos sueltos son lo que delata una interfaz sin acabar. */}
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden
+                className="text-faint shrink-0"
+                style={{
+                  transform: `rotate(${abierta ? 180 : 0}deg)`,
+                  transition: "transform var(--t-ui) var(--ease-out)",
+                }}
+              >
+                <path d="m6 9 6 6 6-6" />
+              </svg>
             </button>
             {abierta && (
               <div className="px-3 pb-3 space-y-2 border-t border-[rgb(var(--nova-fg)/0.08)] pt-2.5">

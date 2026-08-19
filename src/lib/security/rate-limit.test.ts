@@ -43,13 +43,16 @@ describe("límite de peticiones", () => {
     expect(tramoDeRuta("/api/calls/start")).toBe("sensible");
     expect(tramoDeRuta("/api/account/delete")).toBe("sensible");
     expect(tramoDeRuta("/api/account/export")).toBe("sensible");
-    expect(tramoDeRuta("/api/assistant")).toBe("general");
+    expect(tramoDeRuta("/api/assistant")).toBe("ia");
+    expect(tramoDeRuta("/api/tts")).toBe("ia");
+    expect(tramoDeRuta("/api/calendar")).toBe("general");
   });
 
   it("los límites son los de la política del proyecto", () => {
     expect(configDe("auth").max).toBe(5);
     expect(configDe("sensible").max).toBe(10);
-    expect(configDe("general").max).toBe(100);
+    expect(configDe("ia").max).toBe(60);
+    expect(configDe("general").max).toBe(300);
     expect(configDe("general").ventanaMs).toBe(15 * 60_000);
   });
 });

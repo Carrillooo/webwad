@@ -54,7 +54,7 @@ export function Monitor({ onClose }: { onClose?: () => void }) {
               type="button"
               onClick={() => setView(t.key)}
               aria-current={view === t.key ? "page" : undefined}
-              className="relative text-xs px-3 py-1.5 rounded-full whitespace-nowrap shrink-0"
+              className="relative text-[0.8rem] px-3.5 py-3 rounded-full whitespace-nowrap shrink-0"
               style={{ color: view === t.key ? "var(--fg)" : "var(--fg-faint)" }}
             >
               {view === t.key && (
@@ -75,7 +75,7 @@ export function Monitor({ onClose }: { onClose?: () => void }) {
             type="button"
             onClick={onClose}
             aria-label="Cerrar monitor"
-            className="text-faint hover:text-fg w-7 h-7 grid place-items-center rounded-full shrink-0"
+            className="text-faint hover:text-fg w-11 h-11 grid place-items-center rounded-full shrink-0"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
               <path d="M6 6l12 12M18 6 6 18" />

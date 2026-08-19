@@ -640,6 +640,40 @@ exactamente lo que hace que te denuncien.
 incompleto y no se debería cobrar. Y estos textos son una base sólida, no
 asesoramiento jurídico: que los revise un abogado antes de facturar en serio.
 
+## FASE — Caza de bugs y orden en la interfaz (feedback externo) ✅
+
+Una persona que probó ZERO dijo: «tiene varios bugs, necesita una interfaz más
+ordenada, se nota que es IA y el dominio es de Vercel». Se añade
+`scripts/caza-bugs.mjs`, que recorre la app y apunta errores de consola,
+peticiones fallidas, textos rotos, desbordes y controles inalcanzables.
+
+**Bug grave, introducido por el propio limitador de peticiones**
+- El límite general de 100/15 min era demasiado bajo: ZERO consulta su estado
+  a menudo y un solo turno son 3-4 peticiones. Al saltar, `/api/auth/me`
+  devolvía 429 y **`useAccount` metía la respuesta de error como si fueran los
+  datos de la cuenta** (no comprobaba `r.ok`): la app abría medio rota, sin
+  plan, sin datos y sin explicación.
+- Arreglado en tres frentes: tramos nuevos (`ia` 60/15 min para asistente y
+  voz —lo que cuesta dinero—, `general` a 300 para lecturas), `useAccount`
+  reconoce el 429 y reintenta solo, y hay una pantalla que lo explica con un
+  botón de reintentar.
+
+**Accesibilidad**
+- Los interruptores de Ajustes no tenían nombre accesible: un lector de
+  pantalla decía «botón» sin decir qué activaba. `Row` reparte ahora su
+  etiqueta al control.
+
+**Orden en la interfaz (dianas de dedo, guía de Apple: 44 px)**
+- Pestañas del monitor 28 → 44 px. Iconos de la barra 36 → 44 px.
+- Barra del calendario en dos filas: flechas y «Hoy» a 40 px, y Día/Semana/Mes
+  repartidos a lo ancho. Antes todo iba apretujado a 25-28 px en una línea.
+- Botones de enviar y de cerrar el compositor: de 20 px a 40 px.
+
+**«Se nota que es IA»**
+- Fuera los emojis decorativos de Ajustes (👏 🎙️) y el «Activadas ✓».
+- Los glifos de teclado sustituidos por iconos: ▲▼ → chevrón que gira,
+  ‹› → flechas SVG, ☐ → nada (el borde discontinuo ya distingue la tarea).
+
 ## NEXT SESSION
 
 **Orden exacta para continuar:** «Añade la pasarela de pago con **Stripe**

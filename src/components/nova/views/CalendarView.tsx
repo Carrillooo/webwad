@@ -79,19 +79,36 @@ export function CalendarView() {
   return (
     <div className="h-full flex flex-col">
       {/* Navigation header */}
-      <div className="flex items-center gap-2 mb-3 shrink-0">
-        <button onClick={() => shift(-1)} aria-label="Anterior" className="glass w-7 h-7 grid place-items-center text-dim hover:text-fg rounded-lg">‹</button>
-        <button onClick={() => shift(1)} aria-label="Siguiente" className="glass w-7 h-7 grid place-items-center text-dim hover:text-fg rounded-lg">›</button>
-        <button onClick={goToday} className="glass px-2.5 h-7 text-[11px] text-dim hover:text-fg rounded-lg">Hoy</button>
-        <h2 className="text-sm font-medium capitalize flex-1 truncate">{title}</h2>
-        <div className="flex gap-0.5">
+      {/* Dos filas en móvil: metiendo flechas, «Hoy», el título y tres modos
+          en una sola línea, todo salía a 25-28 px de alto — imposible de
+          acertar con el dedo y con pinta de apretujado. */}
+      <div className="mb-3 shrink-0 space-y-2">
+        <div className="flex items-center gap-2">
+          <button onClick={() => shift(-1)} aria-label="Anterior" className="glass w-10 h-10 grid place-items-center text-dim hover:text-fg rounded-xl">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="m15 18-6-6 6-6" />
+            </svg>
+          </button>
+          <button onClick={() => shift(1)} aria-label="Siguiente" className="glass w-10 h-10 grid place-items-center text-dim hover:text-fg rounded-xl">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="m9 18 6-6-6-6" />
+            </svg>
+          </button>
+          <button onClick={goToday} className="glass px-3.5 h-10 text-xs text-dim hover:text-fg rounded-xl">Hoy</button>
+          <h2 className="text-sm font-medium capitalize flex-1 truncate text-right">{title}</h2>
+        </div>
+        <div className="flex gap-1">
           {(["day", "week", "month"] as Mode[]).map((m) => (
             <button
               key={m}
               onClick={() => switchMode(m)}
-              aria-current={mode === m}
-              className="text-[11px] px-2.5 py-1 rounded-full transition-colors"
-              style={mode === m ? { background: "rgb(var(--nova-primary) / 0.22)" } : { color: "var(--fg-faint)" }}
+              aria-current={mode === m ? "true" : undefined}
+              className="flex-1 text-xs py-3 rounded-xl"
+              style={
+                mode === m
+                  ? { background: "rgb(var(--nova-primary) / 0.16)", color: "var(--fg)" }
+                  : { color: "var(--fg-faint)" }
+              }
             >
               {m === "day" ? "Día" : m === "week" ? "Semana" : "Mes"}
             </button>
@@ -267,7 +284,7 @@ function WeekGrid({
                     className="rounded-[4px] px-0.5"
                     style={{ border: "1px dashed rgb(var(--nova-accent) / 0.55)", background: "rgb(var(--nova-accent) / 0.10)" }}
                   >
-                    <span className="text-[8px] leading-tight block truncate">☐ {t.title}</span>
+                    <span className="text-[8px] leading-tight block truncate">{t.title}</span>
                   </div>
                 ))}
                 {dayTasks.length > 2 && <div className="text-[8px] text-faint text-center">+{dayTasks.length - 2}</div>}
@@ -378,7 +395,7 @@ function MonthGrid({
                       : { border: "1px dashed rgb(var(--nova-accent) / 0.55)", background: "rgb(var(--nova-accent) / 0.10)" }
                   }
                 >
-                  {it.kind === "task" ? "☐ " : ""}{it.label}
+                  {it.label}
                 </span>
               ))}
               {items.length > 2 && <span className="text-[8px] text-faint text-center leading-none">+{items.length - 2}</span>}

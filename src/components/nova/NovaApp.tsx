@@ -84,7 +84,7 @@ function useAltoMedido(porDefecto: number) {
 
 export function NovaApp() {
   useThemeSync();
-  const { account, gate, refresh, logout, me } = useAccount();
+  const { account, gate, espera, refresh, logout, me } = useAccount();
   const { send, stopSpeaking } = useAssistant();
   const novaState = useNova((s) => s.novaState);
   const panelOpen = useNova((s) => s.panelOpen);
@@ -215,6 +215,27 @@ export function NovaApp() {
     return (
       <main className="h-full grid place-items-center">
         <p className="text-faint text-sm tracking-[0.4em]">ZERO</p>
+      </main>
+    );
+  }
+  // El servidor ha pedido esperar (demasiadas peticiones seguidas). Antes esto
+  // dejaba la app abierta pero sin datos y sin explicación ninguna.
+  if (gate === "espera") {
+    return (
+      <main className="h-full grid place-items-center px-8 text-center">
+        <div className="space-y-3 max-w-xs">
+          <p className="text-base font-semibold">Un momento</p>
+          <p className="text-sm text-dim leading-relaxed">
+            Has hecho muchas peticiones seguidas y ZERO ha frenado un poco para protegerse.
+            Vuelve a intentarlo en {espera && espera > 90 ? `${Math.ceil(espera / 60)} minutos` : "unos segundos"}.
+          </p>
+          <button
+            onClick={() => void refresh()}
+            className="glass-solid px-4 py-2 rounded-xl text-sm font-medium"
+          >
+            Reintentar ahora
+          </button>
+        </div>
       </main>
     );
   }

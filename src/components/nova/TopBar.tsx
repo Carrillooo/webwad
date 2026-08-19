@@ -39,7 +39,8 @@ function Punto({
       )}
     </>
   );
-  const clase = "flex items-center gap-1.5 text-[0.7rem] text-dim glass px-2.5 py-1 rounded-full whitespace-nowrap";
+  const clase =
+    "flex items-center gap-1.5 text-[0.7rem] text-dim glass px-3 py-2.5 rounded-full whitespace-nowrap";
 
   return onClick ? (
     <button
@@ -132,7 +133,7 @@ export function TopBar() {
           aria-label={panelOpen ? "Cerrar monitor" : "Abrir monitor"}
           aria-pressed={panelOpen}
           onClick={() => setPanelOpen(!panelOpen)}
-          className="glass holo-border w-9 h-9 grid place-items-center text-dim hover:text-fg"
+          className="glass holo-border w-11 h-11 grid place-items-center text-dim hover:text-fg"
           data-active={panelOpen}
         >
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
@@ -144,7 +145,7 @@ export function TopBar() {
           type="button"
           aria-label="Configuración"
           onClick={() => setSettingsOpen(true)}
-          className="glass holo-border w-9 h-9 grid place-items-center text-dim hover:text-fg"
+          className="glass holo-border w-11 h-11 grid place-items-center text-dim hover:text-fg"
         >
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
             <circle cx="12" cy="12" r="3" />

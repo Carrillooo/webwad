@@ -1,10 +1,19 @@
 /**
  * Limitador de peticiones con ventana deslizante.
  *
- * Tramos (política del proyecto):
- *   - general    100 peticiones / 15 min
+ * Tramos:
  *   - auth         5 peticiones / 15 min  (login, registro, entrar con Google)
- *   - sensible    10 peticiones / 15 min  (administración, pagos, llamadas)
+ *   - sensible    10 peticiones / 15 min  (administración, pagos, borrar cuenta)
+ *   - ia          60 peticiones / 15 min  (asistente y voz: lo que cuesta dinero)
+ *   - general    300 peticiones / 15 min  (lecturas: agenda, tareas, estado…)
+ *
+ * Por qué el general NO son 100: ZERO consulta su propio estado a menudo
+ * (agenda, tareas, capacidades, sesión), así que un solo turno de conversación
+ * son tres o cuatro peticiones. Con 100 cada cuarto de hora, una persona que
+ * usara la app de verdad —o dos compañeros detrás de la misma IP de oficina o
+ * de una red móvil con NAT— se quedaban fuera durante minutos. El abuso que
+ * hay que frenar es el que cuesta dinero (la IA y la voz) y el que roba
+ * cuentas (el login): ahí siguen los límites estrechos.
  *
  * La cuenta va por IDENTIDAD, no solo por IP: si hay sesión se usa la huella
  * de la cookie. Así una oficina entera detrás de la misma IP no se bloquea
@@ -16,7 +25,7 @@
  * lento de contraseñas y los permisos.
  */
 
-export type Tramo = "general" | "auth" | "sensible";
+export type Tramo = "general" | "auth" | "sensible" | "ia";
 
 export interface LimiteConfig {
   max: number;
@@ -37,8 +46,10 @@ export function configDe(tramo: Tramo): LimiteConfig {
       return { max: numeroEnv("RATE_LIMIT_AUTH", 5), ventanaMs: QUINCE_MIN };
     case "sensible":
       return { max: numeroEnv("RATE_LIMIT_SENSIBLE", 10), ventanaMs: QUINCE_MIN };
+    case "ia":
+      return { max: numeroEnv("RATE_LIMIT_IA", 60), ventanaMs: QUINCE_MIN };
     default:
-      return { max: numeroEnv("RATE_LIMIT_GENERAL", 100), ventanaMs: QUINCE_MIN };
+      return { max: numeroEnv("RATE_LIMIT_GENERAL", 300), ventanaMs: QUINCE_MIN };
   }
 }
 
@@ -107,6 +118,10 @@ export function tramoDeRuta(pathname: string): Tramo {
     pathname.startsWith("/api/auth/microsoft/start")
   ) {
     return "auth";
+  }
+  // Lo que gasta cuota de Anthropic o de ElevenLabs en cada llamada.
+  if (pathname === "/api/assistant" || pathname === "/api/tts") {
+    return "ia";
   }
   if (
     pathname.startsWith("/api/admin") ||

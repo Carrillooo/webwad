@@ -16,8 +16,14 @@ export function useBriefing() {
   useEffect(() => {
     let alive = true;
     fetch("/api/briefing")
-      .then((r) => r.json())
-      .then((d) => alive && setData(d));
+      .then((r) => (r.ok ? r.json() : null))
+      // Si la recarga falla (o el servidor pide esperar) se CONSERVA lo último
+      // que se supo. Antes se ponía a null y la línea del día desaparecía de
+      // golpe delante del usuario, como si se hubiera roto algo.
+      .then((d) => {
+        if (alive && d && Array.isArray(d.events)) setData(d);
+      })
+      .catch(() => {});
     return () => {
       alive = false;
     };

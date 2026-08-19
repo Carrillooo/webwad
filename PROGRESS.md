@@ -674,6 +674,39 @@ peticiones fallidas, textos rotos, desbordes y controles inalcanzables.
 - Los glifos de teclado sustituidos por iconos: ▲▼ → chevrón que gira,
   ‹› → flechas SVG, ☐ → nada (el borde discontinuo ya distingue la tarea).
 
+## FASE — ZERO no decía qué le pasaba (vídeo de un usuario) ✅
+
+Un vídeo de alguien intentando usar ZERO en Android: pulsa la piedra, sale
+**«Atención»** y nada más. Vuelve a pulsar, «Atención» otra vez. Nunca llega a
+escuchar y nunca se entera de por qué.
+
+**La causa raíz:** `lastReply` se guardaba en el estado pero **no se pintaba en
+ninguna parte de la interfaz**. La única forma de enterarse de lo que decía
+ZERO era oírlo — y en el fallo de micrófono ni siquiera se llegaba a hablar,
+porque `activate()` llama a `applyTurn` sin pasar por `speak`. El mensaje que
+explica cómo desbloquear el micrófono existía en el código desde hace
+sesiones; simplemente no había dónde leerlo.
+
+- **Nuevo bloque de respuesta** en la capa de reposo: lo último que ha dicho
+  ZERO, escrito, esté el monitor abierto o cerrado. Los avisos llevan icono,
+  borde ámbar y `role="alert"`, y se quedan hasta que se cierran; una
+  respuesta normal se va sola a los 12 s. Las sugerencias se apartan mientras
+  hay algo que leer. Es además accesibilidad básica: un asistente de voz que
+  solo habla no sirve a quien no oye.
+- **Mensajes reescritos**: eran de escritorio («pulsa el candado») y él estaba
+  en Android. Ahora se detecta el aparato, y son cortos: qué pasa, dónde se
+  arregla y qué puedes hacer YA (escribir con el teclado). Uno de ocho líneas
+  no lo lee nadie.
+- El aviso dura 6 s en vez de 2,5: no daba tiempo ni a leerlo.
+- **La línea del día parpadeaba**: `useBriefing` ponía los datos a null si la
+  recarga fallaba y el resumen desaparecía de golpe. Ahora conserva lo último
+  que supo.
+- **La etiqueta «Pulsa para hablar» pisaba la piedra** en pantallas estrechas
+  (la gema lleva `overflow: visible` y una sombra que se derrama): más aire.
+
+Comprobado que la cabecera `Permissions-Policy: microphone=(self)` NO bloquea
+el micrófono — el fallo del vídeo es permiso denegado en el navegador.
+
 ## NEXT SESSION
 
 **Orden exacta para continuar:** «Añade la pasarela de pago con **Stripe**

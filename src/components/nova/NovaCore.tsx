@@ -53,7 +53,10 @@ export function NovaCore({ level, onActivate, onActivateHelp, disabled, showHint
   };
 
   return (
-    <div className="flex flex-col items-center gap-1 select-none" style={{ width: 240 }}>
+    // gap-3 y no gap-1: la gema lleva `overflow: visible` y una sombra que se
+    // derrama por abajo, así que con la separación mínima el texto acababa
+    // pisando la punta de la piedra en pantallas estrechas.
+    <div className="flex flex-col items-center gap-3 select-none" style={{ width: 240 }}>
       <button
         type="button"
         aria-label={state !== "idle" ? label || "ZERO activa" : "Hablar con ZERO"}

@@ -117,17 +117,23 @@ export function NovaApp() {
       playActivationBeep();
       const r = await voice.start();
       if (r?.micDenied) {
-        // El navegador NO vuelve a preguntar cuando el permiso quedó
-        // bloqueado: hay que decir exactamente dónde desbloquearlo.
+        // El navegador NO vuelve a preguntar una vez se ha denegado, así que
+        // hay que decir dónde se desbloquea — y decirlo para el aparato que
+        // se está usando, que antes solo se explicaba el caso del ordenador.
+        const movil = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
         const MIC_MSGS: Record<string, string> = {
-          denied:
-            "El navegador tiene el micrófono bloqueado para esta web. Pulsa el candado 🔒 junto a la dirección → Micrófono → Permitir, recarga y prueba otra vez. Si sigue igual, revisa también los ajustes de privacidad del ordenador (Micrófono → permite el navegador).",
+          // Cortos a propósito: un aviso de ocho líneas no lo lee nadie. Se
+          // dice qué pasa, dónde se arregla y qué puedes hacer YA mientras
+          // tanto (escribir), que es lo que desatasca al usuario.
+          denied: movil
+            ? "Tengo el micrófono bloqueado. Toca el icono junto a la dirección → Permisos → Micrófono → Permitir, y recarga. Mientras tanto, escríbeme con el teclado de abajo."
+            : "Tengo el micrófono bloqueado. Pulsa el candado junto a la dirección → Micrófono → Permitir, y recarga. Mientras tanto, escríbeme con el teclado de abajo.",
           unsupported:
-            "Este navegador no permite usar el micrófono aquí. Abre ZERO en Chrome, Edge o Safari actualizados (y siempre por https).",
+            "Este navegador no me deja usar el micrófono. Prueba con Chrome, Edge o Safari actualizados. Mientras tanto, escríbeme con el teclado de abajo.",
           nomic:
-            "No encuentro ningún micrófono en este equipo. Conecta o activa uno y vuelve a intentarlo.",
+            "No encuentro ningún micrófono. Comprueba que no lo esté usando otra aplicación. Mientras tanto, escríbeme con el teclado de abajo.",
           error:
-            "El micrófono no arrancó. Cierra otras aplicaciones que lo estén usando (llamadas, grabadoras) y prueba de nuevo.",
+            "El micrófono no arrancó, normalmente porque lo tiene otra aplicación (una llamada o una grabadora). Ciérrala y prueba otra vez, o escríbeme con el teclado de abajo.",
         };
         useNova.getState().applyTurn(
           { reply: MIC_MSGS[r.reason ?? "error"] ?? MIC_MSGS.error, view: useNova.getState().view },
@@ -136,12 +142,12 @@ export function NovaApp() {
         useNova.getState().setNovaState("warning");
         setTimeout(() => {
           if (useNova.getState().novaState === "warning") useNova.getState().setNovaState("idle");
-        }, 2500);
+        }, 6000);
         return;
       }
       if (r?.noStt) {
         useNova.getState().applyTurn(
-          { reply: "El reconocimiento de voz no está disponible en este navegador. Pulsa el teclado para escribirme.", view: useNova.getState().view },
+          { reply: "Este navegador no entiende la voz. Escríbeme con el teclado de abajo a la derecha.", view: useNova.getState().view },
           useNova.getState().demoMode,
         );
         voice.stop();

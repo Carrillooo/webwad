@@ -1,0 +1,11 @@
+{
+  "name": "everen-site",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "setup": "npm i -D playwright@1.63.0 @gltf-transform/cli@4.5.1 serve@14.2.6 && npx playwright install chromium",
+    "dev": "serve . -l 5173",
+    "shoot": "node tools/shoot.mjs http://localhost:5173 shots/latest",
+    "intro": "node tools/shoot.mjs http://localhost:5173 shots/intro --intro"
+  }
+}

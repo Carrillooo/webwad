@@ -26,6 +26,7 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     // Kits de terceros guardados para otros proyectos (no son código de ZERO):
     "kits/**",
+    "sites/**",
   ]),
 ]);
 

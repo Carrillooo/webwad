@@ -67,4 +67,9 @@ Placeholders for P7: img-01 finca, img-02 tostador, img-03 taza servida, img-04.
 2026-11-15 P1: concepto 2 elegido; el usuario añade pedido online y configurador con taza 3D central y complementos.
 2026-11-15 P2: la red del entorno bloquea CDNs de las refs → capturas sin imágenes; Virtual Car Showroom no cargó.
   Se elimina el vídeo de vertido: el vertido se hace en 3D sobre la misma taza (une la mecánica principal y la secundaria).
-2026-11-15 Pagos: pendiente de confirmar con el usuario (demo sin cobro vs pago real).
+2026-11-15 Pagos: el usuario elige PAGO DE DEMO (sin cobro). Avisos visibles en carrito, confirmación y pie.
+2026-11-15 P4: sin assets críticos (todo 3D en código). Librerías y fuentes alojadas en vendor/ y assets/fonts (sin CDN).
+2026-11-15 P5: construido hero + viaje (vertido con scroll) + configurador 3D + complementos + pedido + visítanos.
+2026-11-15 P6: QA ronda 1–4. Arreglado: la página saltaba a «Crea» al cargar (scrollIntoView), cristal demasiado
+  opaco, desbordamiento horizontal del panel en móvil, hilo de caramelo enterrado en la espuma, la taza flotaba
+  sobre el panel al seguir bajando. Flujo de pedido probado en escritorio y móvil: 0 errores de consola.

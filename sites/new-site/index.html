@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Origen — Café de especialidad tostado en Madrid</title>
+  <meta name="description" content="Café de una sola finca, tostado en Madrid en lotes pequeños. Crea tu café capa a capa y recógelo recién hecho.">
+  <meta name="theme-color" content="#0B0907">
+  <link rel="preload" href="assets/fonts/fraunces-latin-opsz-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="assets/fonts/manrope-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="vendor/lenis.css">
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%23C8763A'/%3E%3Cpath d='M16 7c-4 5-4 13 0 18' stroke='%230B0907' stroke-width='2.4' fill='none'/%3E%3C/svg%3E">
+  <script type="importmap">
+    { "imports": { "three": "./vendor/three/three.module.min.js" } }
+  </script>
+  <script src="vendor/gsap.min.js" defer></script>
+  <script src="vendor/ScrollTrigger.min.js" defer></script>
+  <script src="vendor/lenis.min.js" defer></script>
+  <script type="module" src="main.js"></script>
+</head>
+<body>
+  <a class="skip" href="#crea">Saltar a «Crea tu café»</a>
+
+  <!-- Intro: una gota cae y abre la página -->
+  <div id="intro" aria-hidden="true">
+    <span class="intro-drop"></span>
+    <span class="intro-ring"></span><span class="intro-ring"></span><span class="intro-ring"></span>
+  </div>
+
+  <canvas id="cup" aria-hidden="true"></canvas>
+
+  <header class="nav" id="nav">
+    <a class="logo" href="#top" aria-label="Origen, inicio">Origen</a>
+    <nav class="nav-links" aria-label="Secciones">
+      <a href="#origen">El viaje</a>
+      <a href="#crea">Crea tu café</a>
+      <a href="#complementos">Complementos</a>
+      <a href="#visita">Visítanos</a>
+    </nav>
+    <div class="nav-actions">
+      <a class="btn btn-solid btn-sm" href="#crea">Pedir</a>
+      <button class="cart-btn" id="cartBtn" type="button" aria-label="Abrir pedido, 0 productos">
+        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M5 8h14l-1.2 11.2a2 2 0 0 1-2 1.8H8.2a2 2 0 0 1-2-1.8L5 8Z" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M9 8V6.5a3 3 0 0 1 6 0V8" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>
+        <span class="cart-count" id="cartCount">0</span>
+      </button>
+    </div>
+  </header>
+
+  <main id="top">
+    <!-- 1 · HERO -->
+    <section class="hero" id="hero">
+      <h1 class="hero-title">
+        <span class="line"><span>El café,</span></span>
+        <span class="line accent"><span>desde el origen.</span></span>
+      </h1>
+      <div class="hero-foot">
+        <p class="hero-copy">Tostamos en Madrid lotes pequeños de una sola finca. Pídelo aquí, tal y como te gusta, y recógelo recién hecho.</p>
+        <a class="btn btn-solid" href="#crea">Crea tu café</a>
+      </div>
+      <p class="scroll-cue" aria-hidden="true">Baja para servirlo</p>
+      <div class="cup-anchor" id="anchorHero" aria-hidden="true"></div>
+    </section>
+
+    <!-- 2 · EL VIAJE (vertido con scroll) -->
+    <section class="origen" id="origen" aria-label="El viaje del café">
+      <svg class="torn torn-top" viewBox="0 0 1440 40" preserveAspectRatio="none" aria-hidden="true"><path d="M0 40V22l38-7 41 9 52-14 37 10 60-12 44 15 50-9 33 6 58-15 47 13 39-6 56 10 44-14 61 9 35-7 52 12 40-10 57 6 49-11 38 13 55-8 46 5 51-12 43 10 60-7 36 9 48-13 52 11 37-5 46 9 44-8L1440 18v22Z"/></svg>
+      <div class="origen-inner">
+        <div class="chapters">
+          <article class="chapter is-active" data-chapter="0">
+            <h2>Una finca,<br><em>no una mezcla.</em></h2>
+            <p>Cada lote viene de La Esperanza, en Huila (Colombia), a 1.750 metros. Pagamos el doble del precio de mercado y sabemos quién recogió cada saco.</p>
+            <figure class="card card-a"><div class="ph ph-finca"></div><figcaption>Huila · 1.750 m · cosecha 2026</figcaption></figure>
+          </article>
+          <article class="chapter" data-chapter="1">
+            <h2>Tostado aquí,<br><em>cada martes.</em></h2>
+            <p>Quince kilos por tanda en Lavapiés. Tueste medio, lo justo para que sepa a fruta roja y panela, no a quemado.</p>
+            <figure class="card card-b"><div class="ph ph-tueste"></div><figcaption>Tostador de 15 kg · Madrid</figcaption></figure>
+          </article>
+          <article class="chapter" data-chapter="2">
+            <h2>Y servido<br><em>a tu manera.</em></h2>
+            <p>Base, leche, espuma, sirope y topping. Montas tu café capa a capa, lo pagas aquí y te lo tenemos listo a la hora que elijas.</p>
+            <figure class="card card-c"><div class="ph ph-taza"></div><figcaption>Doble con avena · listo en 4 min</figcaption></figure>
+          </article>
+        </div>
+        <div class="cup-anchor" id="anchorOrigen" aria-hidden="true"></div>
+        <div class="pour-meter" aria-hidden="true"><span id="pourBar"></span></div>
+      </div>
+    </section>
+
+    <!-- 3 · CREA TU CAFÉ (configurador) -->
+    <section class="crea" id="crea" aria-labelledby="creaTitle">
+      <div class="crea-stage" id="creaStage" aria-hidden="true">
+        <p class="drag-hint">Arrastra para girar</p>
+      </div>
+      <form class="crea-panel" id="creaForm" novalidate>
+        <div class="crea-head">
+          <h2 id="creaTitle">Crea <em>tu café.</em></h2>
+          <ol class="steps" id="steps" role="tablist" aria-label="Pasos"></ol>
+        </div>
+        <div class="step-body" id="stepBody"></div>
+        <div class="crea-foot">
+          <div class="summary">
+            <p class="summary-line" id="summaryLine"></p>
+            <p class="price" id="price" aria-live="polite"></p>
+          </div>
+          <div class="crea-actions">
+            <button type="button" class="btn btn-ghost" id="prevStep">Atrás</button>
+            <button type="button" class="btn btn-ghost" id="nextStep">Siguiente</button>
+            <button type="submit" class="btn btn-solid" id="addCoffee">Añadir al pedido</button>
+          </div>
+        </div>
+      </form>
+    </section>
+
+    <!-- 4 · COMPLEMENTOS -->
+    <section class="complementos" id="complementos" aria-labelledby="compTitle">
+      <svg class="torn torn-top" viewBox="0 0 1440 40" preserveAspectRatio="none" aria-hidden="true"><path d="M0 40V20l44 8 39-13 57 10 41-6 48 12 52-15 36 9 61-8 39 11 47-14 58 10 33-6 54 13 45-11 50 7 38-9 59 12 42-13 46 8 53-6 40 10 47-12 56 9 35-8 51 13 43-10 58 7 39-11 48 9 45-7 37 10L1440 16v24Z"/></svg>
+      <div class="comp-inner">
+        <div class="comp-head">
+          <h2 id="compTitle">Para <em>acompañar.</em></h2>
+          <p>Horneado cada mañana en el obrador de al lado. Añádelo a tu pedido y te lo damos junto al café.</p>
+        </div>
+        <ul class="comp-list" id="compList"></ul>
+        <div class="comp-cta">
+          <button class="btn btn-solid" type="button" id="openCartFromComp">Ver mi pedido</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5 · VISÍTANOS -->
+    <section class="visita" id="visita" aria-labelledby="visitaTitle">
+      <h2 id="visitaTitle">Calle del Pez, 14.<br><em>Madrid.</em></h2>
+      <div class="visita-grid">
+        <dl class="hours">
+          <div><dt>Lunes a viernes</dt><dd>08:00 – 20:00</dd></div>
+          <div><dt>Sábado y domingo</dt><dd>09:00 – 15:00</dd></div>
+        </dl>
+        <p>Recoge tu pedido en la barra de la izquierda: di tu nombre y el número de pedido. Si llegas tarde, te lo preparamos otra vez.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <p class="foot-word" aria-hidden="true">Origen</p>
+    <div class="foot-row">
+      <p>© 2026 Origen Café · Tostado en Madrid</p>
+      <p>Web de demostración: los pedidos no se cobran.</p>
+    </div>
+  </footer>
+
+  <!-- Pedido -->
+  <div class="drawer-scrim" id="scrim" hidden></div>
+  <aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-labelledby="drawerTitle" hidden>
+    <div class="drawer-head">
+      <h2 id="drawerTitle">Tu pedido</h2>
+      <button class="icon-btn" type="button" id="closeDrawer" aria-label="Cerrar pedido">
+        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="1.6"/></svg>
+      </button>
+    </div>
+    <div class="drawer-body" id="drawerBody"></div>
+  </aside>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <noscript><p class="noscript">Esta web necesita JavaScript para mostrar la taza y hacer pedidos.</p></noscript>
+</body>
+</html>

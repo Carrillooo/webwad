@@ -1,0 +1,185 @@
+{
+  "url": "https://apocalypsecoffee.com/",
+  "date": "2026-11-15T09:46:31.402Z",
+  "consoleErrors": [
+    "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED",
+    "pageerror: TypeError: Failed to fetch dynamically imported module: https://cdn.shopify.com/shopifycloud/shop-js/modules/v2/loader.init-shop-cart-sync.en.esm.js",
+    "pageerror: TypeError: Failed to fetch dynamically imported module: https://cdn.shopify.com/shopifycloud/shop-js/modules/v2/loader.shop-login-button.en.esm.js"
+  ],
+  "failedRequests": [
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://cdn.shopify.com/shopifycloud/shop-js/modules/v2/loader.init-shop-cart-sync.en.esm.js",
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://cdn.shopify.com/shopifycloud/shop-js/modules/v2/loader.shop-login-button.en.esm.js",
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://cdn.shopify.com/storefront/standard-actions.js",
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://shop.app/checkouts/internal/preloads.js?locale=en-US&shop_id=29215752226",
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://cdn.shopify.com/shopifycloud/storefront/assets/storefront/origin_trials-6af5f5e9.js",
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://cdn.shopify.com/extensions/01a1c48d-420a-7a60-ac90-f95fbee258b0/affliate-by-secomapp-140/assets/core.min.js",
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://cdn.shopify.com/extensions/01a1ced3-0919-7ad9-b5cd-5f6347f722c5/judgeme-858/assets/loader.js",
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://shop.app/pay/session?v=1&token=7746a85f-afb0-4248-a68f-f5262b81598d&shop_id=29215752226",
+    "net::ERR_ABORTED https://apocalypsecoffee.com/api/collect",
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://otlp-http-production.shopifysvc.com/v1/metrics",
+    "net::ERR_ABORTED https://apocalypsecoffee.com/shopify_pay/accelerated_checkout",
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://www.googletagmanager.com/gtag/js?id=G-7JVK99F429",
+    "net::ERR_ABORTED https://apocalypsecoffee.com/.well-known/shopify/monorail/unstable/produce_batch",
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://www.googletagmanager.com/gtag/js?id=G-7JSVS68MYV",
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://www.googletagmanager.com/gtag/js?id=AW-10848426368",
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://www.googletagmanager.com/gtag/js?id=GT-WF3BVDB",
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://connect.facebook.net/en_US/fbevents.js",
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://app.backinstock.org/widget/32655_1675166076.js?category=bis&v=6&shop=apocalypsecoffee.myshopify.com",
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://static.rechargecdn.com/assets/js/widget.min.js?shop=apocalypsecoffee.myshopify.com",
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://cdn1.stamped.io/files/widget.min.js?shop=apocalypsecoffee.myshopify.com",
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://widget.wickedreports.com/v2/4812/wr-af643226752d6ae95a59b0e488bf1c16.js?shop=apocalypsecoffee.myshopify.com",
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://cdn.shopify.com/proxy/7d38f3e50570233c90aab5cf13f561dbb5fe5310d915458b576853046e3d3e1c/d1639lhkj5l89m.cloudfront.net/js/storefront/uppromote.js?shop=apocalypsecoffee.myshopify.com&sp-cache-control=cHVibGljLCBtYXgtYWdlPTkwMA",
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://admin.revenuehunt.com/embed.js?shop=apocalypsecoffee.myshopify.com",
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://ct.pinterest.com/user/?cb=1794735995268&ed=%7B%22np%22%3A%22shopify-web-pixel%22%2C%22eventID%22%3A%22sh-de99fbe2-7092-48BC-AA05-BDAECC80434A%22%2C%22is_product_page%22%3A%22false%22%7D&ad=%7B%22mh%22%3A%22987bb863%22%2C%22sh%22%3A900%2C%22sw%22%3A1440%2C%22",
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://ct.pinterest.com/stats/",
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://ct.pinterest.com/v3/?cb=1794735995268&ad=%7B%22mh%22%3A%22987bb863%22%2C%22ua%22%3A%22Mozilla%2F5.0%20(X11%3B%20Linux%20x86_64)%20AppleWebKit%2F537.36%20(KHTML%2C%20like%20Gecko)%20HeadlessChrome%2F153.0.8010.12%20Safari%2F537.36%22%2C%22sh%22%3A900%2C%22sw%",
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://ct.pinterest.com/v3/",
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://ct.pinterest.com/v3/?cb=1794735995268&ed=%7B%22np%22%3A%22shopify-web-pixel%22%2C%22eventID%22%3A%22sh-de99fbe2-7092-48BC-AA05-BDAECC80434A%22%2C%22is_product_page%22%3A%22false%22%7D&ad=%7B%22mh%22%3A%22987bb863%22%2C%22ua%22%3A%22Mozilla%2F5.0%20(X11%3B%20",
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://cdn.shopify.com/s/files/1/0292/1575/2226/files/logo-arc-black_x320.png?v=1656338196",
+    "net::ERR_ABORTED https://apocalypsecoffee.com/api/event/collect",
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://ct.pinterest.com/user/?cb=1794736043037&ed=%7B%22np%22%3A%22shopify-web-pixel%22%2C%22eventID%22%3A%22sh-de9ab682-F3D3-4BDA-B636-42F4892B5C62%22%2C%22is_product_page%22%3A%22false%22%7D&ad=%7B%22mh%22%3A%22987bb863%22%2C%22sh%22%3A844%2C%22sw%22%3A390%2C%22l",
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://ct.pinterest.com/v3/?cb=1794736043037&ad=%7B%22mh%22%3A%22987bb863%22%2C%22ua%22%3A%22Mozilla%2F5.0%20(iPhone%3B%20CPU%20iPhone%20OS%2017_0%20like%20Mac%20OS%20X)%20AppleWebKit%2F605.1.15%20(KHTML%2C%20like%20Gecko)%20Version%2F17.0%20Mobile%2F15E148%20Safar",
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://ct.pinterest.com/v3/?cb=1794736043037&ed=%7B%22np%22%3A%22shopify-web-pixel%22%2C%22eventID%22%3A%22sh-de9ab682-F3D3-4BDA-B636-42F4892B5C62%22%2C%22is_product_page%22%3A%22false%22%7D&ad=%7B%22mh%22%3A%22987bb863%22%2C%22ua%22%3A%22Mozilla%2F5.0%20(iPhone%3B"
+  ],
+  "desktop": {
+    "title": "Buy Organic Coffee Beans Online | Apocalypse Coffee Roasters",
+    "libs": [
+      "Lenis",
+      "Lenis (script)"
+    ],
+    "loadedFonts": [
+      "DM Mono 400",
+      "DM Mono 500",
+      "Arnel 400",
+      "Lovely Mess 400",
+      "Akzidenz Grotesk BE 400",
+      "Akzidenz Grotesk BE 500"
+    ],
+    "bodyBackground": "rgb(9, 7, 5)",
+    "htmlBackground": "rgba(0, 0, 0, 0)",
+    "h1": {
+      "sel": "h1",
+      "text": "It'stheend…of bad coffee.",
+      "font": "Arnel, \"Bebas Neue\", sans-serif",
+      "size": "95.04px",
+      "weight": "400",
+      "color": "rgb(26, 26, 26)",
+      "lineHeight": "87.4368px",
+      "letterSpacing": "1.9008px",
+      "textTransform": "uppercase"
+    },
+    "h2": {
+      "sel": "h2",
+      "text": "BUILT TO survive the end.",
+      "font": "Arnel, \"Bebas Neue\", sans-serif",
+      "size": "77.76px",
+      "weight": "400",
+      "color": "rgb(240, 237, 232)",
+      "lineHeight": "71.5392px",
+      "letterSpacing": "2.3328px",
+      "textTransform": "uppercase"
+    },
+    "nav": {
+      "sel": "nav a, header a",
+      "text": "",
+      "font": "\"Akzidenz Grotesk BE\", \"DM Sans\", sans-serif",
+      "size": "18px",
+      "weight": "500",
+      "color": "rgb(26, 26, 26)",
+      "lineHeight": "18px",
+      "letterSpacing": "normal",
+      "textTransform": "uppercase"
+    },
+    "p": {
+      "sel": "p",
+      "text": "Roasted for the ones who don't follow the herd. We're puttin",
+      "font": "\"DM Mono\", ui-monospace, SFMono-Regular, monospace",
+      "size": "16px",
+      "weight": "400",
+      "color": "rgb(92, 87, 78)",
+      "lineHeight": "26.4px",
+      "letterSpacing": "0.16px",
+      "textTransform": "none"
+    },
+    "pageHeight": 17319,
+    "horizontalOverflow": false,
+    "screenshots": [
+      "desktop-000.png",
+      "desktop-015.png",
+      "desktop-030.png",
+      "desktop-045.png",
+      "desktop-060.png",
+      "desktop-075.png",
+      "desktop-090.png",
+      "desktop-100.png"
+    ]
+  },
+  "mobile": {
+    "title": "Buy Organic Coffee Beans Online | Apocalypse Coffee Roasters",
+    "libs": [
+      "Lenis",
+      "Lenis (script)"
+    ],
+    "loadedFonts": [
+      "DM Mono 400",
+      "DM Mono 500",
+      "Arnel 400",
+      "Lovely Mess 400",
+      "Akzidenz Grotesk BE 400",
+      "Akzidenz Grotesk BE 500"
+    ],
+    "bodyBackground": "rgb(9, 7, 5)",
+    "htmlBackground": "rgba(0, 0, 0, 0)",
+    "h1": {
+      "sel": "h1",
+      "text": "It'stheend…of bad coffee.",
+      "font": "Arnel, \"Bebas Neue\", sans-serif",
+      "size": "60px",
+      "weight": "400",
+      "color": "rgb(26, 26, 26)",
+      "lineHeight": "55.2px",
+      "letterSpacing": "1.2px",
+      "textTransform": "uppercase"
+    },
+    "h2": {
+      "sel": "h2",
+      "text": "BUILT TO survive the end.",
+      "font": "Arnel, \"Bebas Neue\", sans-serif",
+      "size": "48px",
+      "weight": "400",
+      "color": "rgb(240, 237, 232)",
+      "lineHeight": "44.16px",
+      "letterSpacing": "1.44px",
+      "textTransform": "uppercase"
+    },
+    "nav": {
+      "sel": "nav a, header a",
+      "text": "",
+      "font": "\"Akzidenz Grotesk BE\", \"DM Sans\", sans-serif",
+      "size": "18px",
+      "weight": "500",
+      "color": "rgb(26, 26, 26)",
+      "lineHeight": "18px",
+      "letterSpacing": "normal",
+      "textTransform": "uppercase"
+    },
+    "p": {
+      "sel": "p",
+      "text": "Roasted for the ones who don't follow the herd. We're puttin",
+      "font": "\"DM Mono\", ui-monospace, SFMono-Regular, monospace",
+      "size": "16px",
+      "weight": "400",
+      "color": "rgb(92, 87, 78)",
+      "lineHeight": "26.4px",
+      "letterSpacing": "0.16px",
+      "textTransform": "none"
+    },
+    "pageHeight": 13294,
+    "horizontalOverflow": false,
+    "screenshots": [
+      "mobile-000.png",
+      "mobile-035.png",
+      "mobile-070.png"
+    ]
+  }
+}

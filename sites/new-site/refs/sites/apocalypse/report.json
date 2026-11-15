@@ -1,0 +1,49 @@
+{
+  "url": "https://apocalypsecoffee.com/",
+  "date": "2026-11-15T09:44:48.296Z",
+  "consoleErrors": [],
+  "failedRequests": [
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://apocalypsecoffee.com/"
+  ],
+  "desktop": {
+    "title": "",
+    "libs": [],
+    "loadedFonts": [],
+    "bodyBackground": "rgba(0, 0, 0, 0)",
+    "htmlBackground": "rgba(0, 0, 0, 0)",
+    "h1": null,
+    "h2": null,
+    "nav": null,
+    "p": null,
+    "pageHeight": 900,
+    "horizontalOverflow": false,
+    "screenshots": [
+      "desktop-000.png",
+      "desktop-015.png",
+      "desktop-030.png",
+      "desktop-045.png",
+      "desktop-060.png",
+      "desktop-075.png",
+      "desktop-090.png",
+      "desktop-100.png"
+    ]
+  },
+  "mobile": {
+    "title": "",
+    "libs": [],
+    "loadedFonts": [],
+    "bodyBackground": "rgba(0, 0, 0, 0)",
+    "htmlBackground": "rgba(0, 0, 0, 0)",
+    "h1": null,
+    "h2": null,
+    "nav": null,
+    "p": null,
+    "pageHeight": 2120,
+    "horizontalOverflow": false,
+    "screenshots": [
+      "mobile-000.png",
+      "mobile-035.png",
+      "mobile-070.png"
+    ]
+  }
+}

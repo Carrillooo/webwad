@@ -1,0 +1,183 @@
+{
+  "url": "https://littleampscoffee.com/",
+  "date": "2026-11-15T09:46:31.419Z",
+  "consoleErrors": [
+    "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED",
+    "pageerror: TypeError: Failed to fetch dynamically imported module: https://cdn.shopify.com/shopifycloud/shop-js/modules/v2/loader.init-shop-cart-sync.en.esm.js"
+  ],
+  "failedRequests": [
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://cdn.shopify.com/extensions/01a1a6fc-d2ce-7a8f-a938-373232827d06/wholesale-gorilla-48/assets/wsg-embed.css",
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://cdn.shopify.com/shopifycloud/shop-js/modules/v2/loader.init-shop-cart-sync.en.esm.js",
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://cdn.shopify.com/storefront/standard-actions.js",
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://cdn.shopify.com/s/files/1/2194/0841/files/medium.png?v=1763439297",
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://static.klaviyo.com/onsite/js/Whekuf/klaviyo.js?company_id=Whekuf",
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://cdnjs.cloudflare.com/ajax/libs/mustache.js/3.1.0/mustache.js",
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://cdn.shopify.com/s/files/1/2194/0841/files/extra-high.png?v=1763439296",
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://subscription-admin.appstle.com/assets/js/appstle-subscription.min.js?shop=little-amps.myshopify.com&v=1794354174483",
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://www.wholesalegorilla.app/shop_assets/wsg-index.js?v=6",
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://cdn.jsdelivr.net/npm/dompurify@3.4.15/dist/purify.min.js",
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://cdn.shopify.com/s/files/1/2194/0841/files/low.png?v=1763439297",
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://cdn.shopify.com/shopifycloud/storefront/assets/storefront/origin_trials-6af5f5e9.js",
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://shop.app/checkouts/internal/preloads.js?locale=en-US&shop_id=21940841",
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://cdn.shopify.com/extensions/01a1a6fc-d2ce-7a8f-a938-373232827d06/wholesale-gorilla-48/assets/wsg-dependencies.js",
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://cdn.shopify.com/s/files/1/2194/0841/files/medium-roast.png?v=1763273365",
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://cdn.shopify.com/s/files/1/2194/0841/files/high.png?v=1763439296",
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://cdn.shopify.com/s/files/1/2194/0841/files/dark-roast.png?v=1763273365",
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://www.wholesalegorilla.app/shop_assets/wsg-exclusions.js?v=6",
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://cdn.shopify.com/s/files/1/2194/0841/files/new-blue-little-amps.png?v=1763589058",
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://cdn.shopify.com/s/files/1/2194/0841/files/footer-instagram.png?v=1763180164",
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://shop.app/pay/session?v=1&token=98fb8a6a-2d4d-44ae-a9fa-61de191b8140&shop_id=21940841",
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://open.spotify.com/embed/playlist/03TwDN6P860VlaKKIFWdFX",
+    "net::ERR_ABORTED https://littleampscoffee.com/shopify_pay/accelerated_checkout",
+    "net::ERR_ABORTED https://littleampscoffee.com/api/collect",
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://otlp-http-production.shopifysvc.com/v1/metrics",
+    "net::ERR_ABORTED https://littleampscoffee.com/.well-known/shopify/monorail/unstable/produce_batch",
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://www.googletagmanager.com/gtag/js?id=G-66X8JCT0VC",
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://www.googletagmanager.com/gtag/js?id=GT-WF8BL6VR",
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://connect.facebook.net/en_US/fbevents.js",
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://otlp-http-production.shopifysvc.com/v1/logs"
+  ],
+  "desktop": {
+    "title": "Little Amps Coffee Roasters - Harrisburg, PA Specialty Coffee",
+    "libs": [
+      "GSAP 3.12.7",
+      "ScrollTrigger",
+      "Swiper",
+      "video x1",
+      "GSAP (script)"
+    ],
+    "loadedFonts": [
+      "Roboto Mono 400",
+      "Inclusive Sans 400",
+      "Necto Mono 400",
+      "Little Amps 400"
+    ],
+    "bodyBackground": "rgb(255, 249, 242)",
+    "htmlBackground": "rgba(0, 0, 0, 0)",
+    "h1": {
+      "sel": "h1",
+      "text": "",
+      "font": "\"Little Amps\"",
+      "size": "49.78px",
+      "weight": "500",
+      "color": "rgb(82, 44, 37)",
+      "lineHeight": "49.78px",
+      "letterSpacing": "-4.978px",
+      "textTransform": "none"
+    },
+    "h2": {
+      "sel": "h2",
+      "text": "Tasty Coffee and Chill Vibes.",
+      "font": "\"Little Amps\"",
+      "size": "51px",
+      "weight": "500",
+      "color": "rgb(246, 237, 227)",
+      "lineHeight": "40.8px",
+      "letterSpacing": "-5.1px",
+      "textTransform": "none"
+    },
+    "nav": {
+      "sel": "nav a, header a",
+      "text": "Cafe Ordering",
+      "font": "\"Little Amps\"",
+      "size": "33px",
+      "weight": "500",
+      "color": "rgb(82, 44, 37)",
+      "lineHeight": "33px",
+      "letterSpacing": "-3.3px",
+      "textTransform": "none"
+    },
+    "p": {
+      "sel": "p",
+      "text": "At Little Amps Coffee we're on a never ending quest for the ",
+      "font": "\"Little Amps\"",
+      "size": "41px",
+      "weight": "500",
+      "color": "rgb(82, 44, 37)",
+      "lineHeight": "41px",
+      "letterSpacing": "-4.1px",
+      "textTransform": "none"
+    },
+    "pageHeight": 6792,
+    "horizontalOverflow": false,
+    "screenshots": [
+      "desktop-000.png",
+      "desktop-015.png",
+      "desktop-030.png",
+      "desktop-045.png",
+      "desktop-060.png",
+      "desktop-075.png",
+      "desktop-090.png",
+      "desktop-100.png"
+    ]
+  },
+  "mobile": {
+    "title": "Little Amps Coffee Roasters - Harrisburg, PA Specialty Coffee",
+    "libs": [
+      "GSAP 3.12.7",
+      "ScrollTrigger",
+      "Swiper",
+      "video x1",
+      "GSAP (script)"
+    ],
+    "loadedFonts": [
+      "Roboto Mono 400",
+      "Inclusive Sans 400",
+      "Necto Mono 400",
+      "Little Amps 400"
+    ],
+    "bodyBackground": "rgb(255, 249, 242)",
+    "htmlBackground": "rgba(0, 0, 0, 0)",
+    "h1": {
+      "sel": "h1",
+      "text": "",
+      "font": "\"Little Amps\"",
+      "size": "32.75px",
+      "weight": "500",
+      "color": "rgb(82, 44, 37)",
+      "lineHeight": "32.75px",
+      "letterSpacing": "-3.275px",
+      "textTransform": "none"
+    },
+    "h2": {
+      "sel": "h2",
+      "text": "Tasty Coffee and Chill Vibes.",
+      "font": "\"Little Amps\"",
+      "size": "40px",
+      "weight": "500",
+      "color": "rgb(246, 237, 227)",
+      "lineHeight": "32px",
+      "letterSpacing": "-4px",
+      "textTransform": "none"
+    },
+    "nav": {
+      "sel": "nav a, header a",
+      "text": "Cafe Ordering",
+      "font": "\"Little Amps\"",
+      "size": "33px",
+      "weight": "500",
+      "color": "rgb(82, 44, 37)",
+      "lineHeight": "33px",
+      "letterSpacing": "-3.3px",
+      "textTransform": "none"
+    },
+    "p": {
+      "sel": "p",
+      "text": "At Little Amps Coffee we're on a never ending quest for the ",
+      "font": "\"Little Amps\"",
+      "size": "41px",
+      "weight": "500",
+      "color": "rgb(82, 44, 37)",
+      "lineHeight": "41px",
+      "letterSpacing": "-4.1px",
+      "textTransform": "none"
+    },
+    "pageHeight": 10636,
+    "horizontalOverflow": false,
+    "screenshots": [
+      "mobile-000.png",
+      "mobile-035.png",
+      "mobile-070.png"
+    ]
+  }
+}

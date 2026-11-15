@@ -1,0 +1,170 @@
+{
+  "url": "https://www.wmf-coffeemachines.com/",
+  "date": "2026-11-15T09:46:31.485Z",
+  "consoleErrors": [
+    "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED",
+    "pageerror: Object"
+  ],
+  "failedRequests": [
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://assets.wmf-coffeemachines.com/f/267357/88x110/907d66b798/wmf_logo_white.svg",
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://assets.wmf-coffeemachines.com/f/267357/1920x1280/f95261fa5a/wmf-pcm_homecard_masteranimation_desktop_3-2_60fps_dark-bg_1920x1280.jpg/m/345x345",
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://assets.wmf-coffeemachines.com/f/267357/1920x1280/f95261fa5a/wmf-pcm_homecard_masteranimation_desktop_3-2_60fps_dark-bg_1920x1280.jpg/m/690x690",
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://assets.wmf-coffeemachines.com/f/267357/1920x1440/5662e03ea7/wmf-pcm_machine-layer_thumbnails_espresso-next_72ppi_4-3_1920x1440.png/m/32x0",
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://assets.wmf-coffeemachines.com/f/267357/x/e3d7ad4aee/wmf-pcm_homecard_masteranimation_desktop_3-2_60fps_dark-bg_1920x1280.mp4",
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://api.storyblok.com/v2/cdn/spaces/me/?version=published&cv=1794735994144&token=VYC97rMgwuNUyPrUapFsGQtt",
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://www.chatbase.co/embed.min.js",
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://assets.wmf-coffeemachines.com/f/267357/1440x810/e91be0d1b8/wmf-pcm_homecard_landscape_services_16-9_60fps_light-bg_1440x810.jpg/m/345x345",
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://assets.wmf-coffeemachines.com/f/267357/1080x1920/41ebb42e29/wmf-pcm_homecard_portrait_industriesandmore_72ppi_9-16_1080x1920.jpg/m/424x424",
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://cdn.cookielaw.org/scripttemplates/otSDKStub.js",
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://assets.wmf-coffeemachines.com/f/267357/1080x1080/d461432a07/wmf-pcm_homecard_square_campaginfilm_1-1_60fps_dark-bg_1080x1080.jpg/m/345x345",
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://assets.wmf-coffeemachines.com/f/267357/1920x1280/f95261fa5a/wmf-pcm_homecard_masteranimation_desktop_3-2_60fps_dark-bg_1920x1280.jpg/m/345x265",
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://assets.wmf-coffeemachines.com/f/267357/1080x1920/41ebb42e29/wmf-pcm_homecard_portrait_industriesandmore_72ppi_9-16_1080x1920.jpg/m/424x711",
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://assets.wmf-coffeemachines.com/f/267357/1440x810/e91be0d1b8/wmf-pcm_homecard_landscape_services_16-9_60fps_light-bg_1440x810.jpg/m/345x234",
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://assets.wmf-coffeemachines.com/f/267357/1080x1080/d461432a07/wmf-pcm_homecard_square_campaginfilm_1-1_60fps_dark-bg_1080x1080.jpg/m/345x276",
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://assets.wmf-coffeemachines.com/f/267357/1920x1080/895dfc64b5/wmf-pcm_home_cream-tile_16-9_1920x1080.jpg/m/345x234",
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://assets.wmf-coffeemachines.com/f/267357/1920x1080/895dfc64b5/wmf-pcm_home_cream-tile_16-9_1920x1080.jpg/m/345x345",
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://assets.wmf-coffeemachines.com/f/267357/1920x1080/f34a29dc67/wmf-pcm_homecard_landscape_conversation_16-9_60fps_brown_dark-bg_1920x1080.jpg/m/345x345",
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://assets.wmf-coffeemachines.com/f/267357/1600x1600/13ae34363b/wmf-pcm_homecard_square_ccnotification_en_1-1_60fps_brown_dark-bg_1600x1600_v2.jpg/m/345x345",
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://assets.wmf-coffeemachines.com/f/267357/1920x1920/a6720c6bb9/wmf-pcm_homecard_square_madeingermany_1-1_60fps_light-bg_1920x1920.jpg/m/345x345",
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://assets.wmf-coffeemachines.com/f/267357/x/f286b55e75/wmf-pcm_homecard_landscape_services_16-9_60fps_light-bg_1440x810.mp4",
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://assets.wmf-coffeemachines.com/f/267357/1920x1080/f34a29dc67/wmf-pcm_homecard_landscape_conversation_16-9_60fps_brown_dark-bg_1920x1080.jpg/m/345x234",
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://assets.wmf-coffeemachines.com/f/267357/1600x1600/13ae34363b/wmf-pcm_homecard_square_ccnotification_en_1-1_60fps_brown_dark-bg_1600x1600_v2.jpg/m/345x412",
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://assets.wmf-coffeemachines.com/f/267357/1920x1920/a6720c6bb9/wmf-pcm_homecard_square_madeingermany_1-1_60fps_light-bg_1920x1920.jpg/m/345x412",
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://assets.wmf-coffeemachines.com/f/267357/x/4e6ef3501a/wmf-pcm_homecard_square_campaginfilm_1-1_60fps_dark-bg_1080x1080.mp4",
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://assets.wmf-coffeemachines.com/f/267357/x/86a9dc043c/wmf-pcm_home_cream-tile_16-9_1920x1080.mp4",
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://assets.wmf-coffeemachines.com/f/267357/x/40f87c180b/wmf-pcm_homecard_landscape_conversation_16-9_60fps_brown_dark-bg_1920x1080.mp4",
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://assets.wmf-coffeemachines.com/f/267357/x/e6be3cf443/wmf-pcm_homecard_square_madeingermany_1-1_60fps_light-bg_1920x1920.mp4",
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://assets.wmf-coffeemachines.com/f/267357/x/1a9bfa0982/wmf-pcm_homecard_square_ccnotification_en_1-1_60fps_brown_dark-bg_1600x1600_v2.mp4",
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://assets.wmf-coffeemachines.com/f/267357/1920x1440/3ada49b86f/wmf-pcm_machine-layer_thumbnails_1500f_72ppi_4-3_1920x1440.png/m/32x0",
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://assets.wmf-coffeemachines.com/f/267357/1920x1440/5662e03ea7/wmf-pcm_machine-layer_thumbnails_espresso-next_72ppi_4-3_1920x1440.png/m/48x0",
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://api.storyblok.com/v2/cdn/spaces/me/?version=published&cv=1794736008869&token=VYC97rMgwuNUyPrUapFsGQtt",
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://assets.wmf-coffeemachines.com/f/267357/1080x1920/158e6b0c29/wmf-pcm_homecard_masteranimation_mobile_9-16_60fps_dark-bg_1080x1920.jpg/m/345x345",
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://assets.wmf-coffeemachines.com/f/267357/1080x1440/f3edc6f7c6/wmf-pcm_homecard_square_services_3-4_60fps_light-bg_1080x1440.jpg/m/345x345",
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://assets.wmf-coffeemachines.com/f/267357/1440x1920/fe2b05a4de/wmf-pcm_home_cream-tile_16-9_1440x1920.jpg/m/345x345",
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://assets.wmf-coffeemachines.com/f/267357/1440x1920/52d3f3b257/wmf-pcm_homecard_portrait_conversation_3-4_60fps_brown_dark-bg_1440x1920.jpg/m/345x345",
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://assets.wmf-coffeemachines.com/f/267357/1080x1920/158e6b0c29/wmf-pcm_homecard_masteranimation_mobile_9-16_60fps_dark-bg_1080x1920.jpg/m/345x719",
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://assets.wmf-coffeemachines.com/f/267357/1080x1440/f3edc6f7c6/wmf-pcm_homecard_square_services_3-4_60fps_light-bg_1080x1440.jpg/m/345x201",
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://assets.wmf-coffeemachines.com/f/267357/1440x1920/86003af682/wmf-pcm_homecard_portrait_industriesandmore_72ppi_1440x1920.jpg/m/1412x1412",
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://assets.wmf-coffeemachines.com/f/267357/x/b7eca66437/wmf-pcm_homecard_masteranimation_mobile_9-16_60fps_dark-bg_1080x1920.mp4",
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://assets.wmf-coffeemachines.com/f/267357/1440x1920/86003af682/wmf-pcm_homecard_portrait_industriesandmore_72ppi_1440x1920.jpg/m/1412x2078",
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://assets.wmf-coffeemachines.com/f/267357/1080x1080/d461432a07/wmf-pcm_homecard_square_campaginfilm_1-1_60fps_dark-bg_1080x1080.jpg/m/345x508",
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://assets.wmf-coffeemachines.com/f/267357/1440x1920/fe2b05a4de/wmf-pcm_home_cream-tile_16-9_1440x1920.jpg/m/345x403",
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://assets.wmf-coffeemachines.com/f/267357/1440x1920/52d3f3b257/wmf-pcm_homecard_portrait_conversation_3-4_60fps_brown_dark-bg_1440x1920.jpg/m/345x403",
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://assets.wmf-coffeemachines.com/f/267357/1600x1600/13ae34363b/wmf-pcm_homecard_square_ccnotification_en_1-1_60fps_brown_dark-bg_1600x1600_v2.jpg/m/345x355",
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://assets.wmf-coffeemachines.com/f/267357/1920x1920/a6720c6bb9/wmf-pcm_homecard_square_madeingermany_1-1_60fps_light-bg_1920x1920.jpg/m/345x355",
+    "net::ERR_TUNNEL_CONNECTION_FAILED https://assets.wmf-coffeemachines.com/f/267357/1920x1440/3ada49b86f/wmf-pcm_machine-layer_thumbnails_1500f_72ppi_4-3_1920x1440.png/m/48x0"
+  ],
+  "desktop": {
+    "title": "WMF Professional Coffee Machines",
+    "libs": [
+      "video x7",
+      "Nuxt",
+      "importmap: {\"imports\":{\"#entry\":\"/_nuxt/BRxxWjjr.js\"}}"
+    ],
+    "loadedFonts": [
+      "Noto Sans 100 900"
+    ],
+    "bodyBackground": "rgba(0, 0, 0, 0)",
+    "htmlBackground": "rgba(0, 0, 0, 0)",
+    "h1": {
+      "sel": "h1",
+      "text": "WMF Professional Coffee Machines",
+      "font": "\"Noto Sans\", sans-serif",
+      "size": "0px",
+      "weight": "400",
+      "color": "rgb(255, 255, 255)",
+      "lineHeight": "0px",
+      "letterSpacing": "normal",
+      "textTransform": "none"
+    },
+    "h2": {
+      "sel": "h2",
+      "text": "Ultimate range.\nPeak performance.",
+      "font": "\"Noto Sans\", sans-serif",
+      "size": "60px",
+      "weight": "640",
+      "color": "rgb(255, 255, 255)",
+      "lineHeight": "69.6px",
+      "letterSpacing": "-1.2px",
+      "textTransform": "none"
+    },
+    "nav": null,
+    "p": {
+      "sel": "p",
+      "text": "WMF Professional Coffee Machines",
+      "font": "\"Noto Sans\", sans-serif",
+      "size": "18px",
+      "weight": "640",
+      "color": "rgb(255, 255, 255)",
+      "lineHeight": "25.74px",
+      "letterSpacing": "normal",
+      "textTransform": "none"
+    },
+    "pageHeight": 3600,
+    "horizontalOverflow": false,
+    "screenshots": [
+      "desktop-000.png",
+      "desktop-015.png",
+      "desktop-030.png",
+      "desktop-045.png",
+      "desktop-060.png",
+      "desktop-075.png",
+      "desktop-090.png",
+      "desktop-100.png"
+    ]
+  },
+  "mobile": {
+    "title": "WMF Professional Coffee Machines",
+    "libs": [
+      "video x7",
+      "Nuxt",
+      "importmap: {\"imports\":{\"#entry\":\"/_nuxt/BRxxWjjr.js\"}}"
+    ],
+    "loadedFonts": [
+      "Noto Sans 100 900"
+    ],
+    "bodyBackground": "rgba(0, 0, 0, 0)",
+    "htmlBackground": "rgba(0, 0, 0, 0)",
+    "h1": {
+      "sel": "h1",
+      "text": "WMF Professional Coffee Machines",
+      "font": "\"Noto Sans\", sans-serif",
+      "size": "0px",
+      "weight": "400",
+      "color": "rgb(255, 255, 255)",
+      "lineHeight": "0px",
+      "letterSpacing": "normal",
+      "textTransform": "none"
+    },
+    "h2": {
+      "sel": "h2",
+      "text": "Ultimate range.\nPeak performance.",
+      "font": "\"Noto Sans\", sans-serif",
+      "size": "36px",
+      "weight": "640",
+      "color": "rgb(255, 255, 255)",
+      "lineHeight": "43.2px",
+      "letterSpacing": "-0.54px",
+      "textTransform": "none"
+    },
+    "nav": null,
+    "p": {
+      "sel": "p",
+      "text": "WMF Professional Coffee Machines",
+      "font": "\"Noto Sans\", sans-serif",
+      "size": "18px",
+      "weight": "640",
+      "color": "rgb(255, 255, 255)",
+      "lineHeight": "25.74px",
+      "letterSpacing": "normal",
+      "textTransform": "none"
+    },
+    "pageHeight": 4123,
+    "horizontalOverflow": false,
+    "screenshots": [
+      "mobile-000.png",
+      "mobile-035.png",
+      "mobile-070.png"
+    ]
+  }
+}

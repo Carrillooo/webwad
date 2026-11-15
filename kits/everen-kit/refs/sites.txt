@@ -1,0 +1,1 @@
+# One URL per line — live sites to study (tools/shoot.mjs saves them to refs/sites/)
